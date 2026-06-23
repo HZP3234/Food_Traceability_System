@@ -1,0 +1,12 @@
+Manifest-Version: 1.0
+Implementation-Title: mybatis-plus-spring-boot-autoconfigure
+Implementation-Version: 3.5.10
+Built-Gradle: 8.7
+Bundle-DocURL: https://baomidou.com/
+Build-OS: Windows 10
+Built-By: nieqiurong
+Build-Jdk: 21.0.3
+Build-Timestamp: 2025-01-12 20:59:02
+Automatic-Module-Name: com.baomidou.mybatis.plus.spring.boot.autoconfigu
+ re
+
