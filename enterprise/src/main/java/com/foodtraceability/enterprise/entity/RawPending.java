@@ -7,7 +7,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 @TableName("t_raw_pending")
 public class RawPending {
     @TableId(type = IdType.AUTO)
-    private int rawPendingId;
+    private Integer rawPendingId;
     private String pendingCode;
     private String productName;
     private String productCategory;
@@ -25,8 +25,8 @@ public class RawPending {
     private String updateTime;
     private int isDeleted;
 
-    public int getRawPendingId() { return rawPendingId; }
-    public void setRawPendingId(int rawPendingId) { this.rawPendingId = rawPendingId; }
+    public Integer getRawPendingId() { return rawPendingId; }
+    public void setRawPendingId(Integer rawPendingId) { this.rawPendingId = rawPendingId; }
 
     public String getPendingCode() { return pendingCode; }
     public void setPendingCode(String pendingCode) { this.pendingCode = pendingCode; }

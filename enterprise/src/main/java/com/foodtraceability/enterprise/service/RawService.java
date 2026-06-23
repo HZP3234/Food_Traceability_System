@@ -98,7 +98,7 @@ public class RawService {
     }
 
     // 软删除
-    public int deleteRaw(int rawBatchId) {
+    public int deleteRaw(Integer rawBatchId) {
         Raw raw = rawMapper.selectById(rawBatchId);
         if (raw != null) {
             raw.setIsDeleted(1);
@@ -139,6 +139,9 @@ public class RawService {
     // 供应商主动上传原料信息（暂不匹配批次号）
     public int proactiveUpload(RawDetail detail, RawPending pending) {
         String now = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        // 生成临时批次号（batch_no 为 NOT NULL，匹配后替换为真实批次号）
+        String tempBatchNo = "TMP" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+        detail.setBatchNo(tempBatchNo);
         detail.setUploadTime(now);
         detail.setCreateTime(now);
         detail.setUpdateTime(now);
@@ -148,6 +151,7 @@ public class RawService {
             pending.setPendingCode(generatePendingCode());
         }
         pending.setRawDetailId(String.valueOf(detail.getRawDetailId()));
+        pending.setMatchedBatchNo("");   // 待匹配时为空，匹配后更新
         pending.setPendingStatus(1);
         pending.setUploadTime(now);
         pending.setCreateTime(now);
