@@ -6,6 +6,7 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.foodtraceability.enterprise.entity.Raw;
@@ -84,10 +85,18 @@ public class RawService {
         if (raw.getBatchNo() == null || raw.getBatchNo().isBlank()) {
             raw.setBatchNo(generateBatchNo());
         }
-        if (raw.getCheckResult() == 0) raw.setCheckResult(2);
-        if (raw.getBatchStatus() == 0) raw.setBatchStatus(1);
-        raw.setCreateTime(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
-        raw.setUpdateTime(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+        if (raw.getCheckResult() == null) raw.setCheckResult(2);
+        if (raw.getBatchStatus() == null) raw.setBatchStatus(1);
+        String now = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        if (raw.getShelfLife() == null || raw.getShelfLife().isBlank()) raw.setShelfLife("2099-12-31");
+        if (raw.getPurchaseDate() == null || raw.getPurchaseDate().isBlank()) raw.setPurchaseDate(now.substring(0, 10));
+        if (raw.getDetailId() == null || raw.getDetailId().isBlank()) raw.setDetailId("0");
+        if (raw.getDetailStatus() == null) raw.setDetailStatus(0);
+        if (raw.getDataHash() == null) raw.setDataHash("");
+        raw.setCreateTime(now);
+        raw.setUpdateTime(now);
+        raw.setCreateBy(raw.getCreateBy() != null ? raw.getCreateBy() : "SYSTEM");
+        raw.setUpdateBy(raw.getUpdateBy() != null ? raw.getUpdateBy() : "SYSTEM");
         return rawMapper.insert(raw);
     }
 
@@ -118,12 +127,15 @@ public class RawService {
     }
 
     // 供应商上传溯源详细信息（自动匹配批次号）
+    @Transactional
     public int uploadDetail(String batchNo, RawDetail detail) {
         String now = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         detail.setBatchNo(batchNo);
         detail.setUploadTime(now);
         detail.setCreateTime(now);
         detail.setUpdateTime(now);
+        detail.setCreateBy(detail.getCreateBy() != null ? detail.getCreateBy() : "SYSTEM");
+        detail.setUpdateBy(detail.getUpdateBy() != null ? detail.getUpdateBy() : "SYSTEM");
         int num = rawDetailMapper.insert(detail);
 
         // 回写原料批次表
@@ -137,14 +149,18 @@ public class RawService {
     }
 
     // 供应商主动上传原料信息（暂不匹配批次号）
+    @Transactional
     public int proactiveUpload(RawDetail detail, RawPending pending) {
         String now = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         // 生成临时批次号（batch_no 为 NOT NULL，匹配后替换为真实批次号）
         String tempBatchNo = "TMP" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+        String operator = detail.getUploader() != null ? detail.getUploader() : "SYSTEM";
         detail.setBatchNo(tempBatchNo);
         detail.setUploadTime(now);
         detail.setCreateTime(now);
         detail.setUpdateTime(now);
+        detail.setCreateBy(operator);
+        detail.setUpdateBy(operator);
         rawDetailMapper.insert(detail);
 
         if (pending.getPendingCode() == null || pending.getPendingCode().isBlank()) {
@@ -156,10 +172,13 @@ public class RawService {
         pending.setUploadTime(now);
         pending.setCreateTime(now);
         pending.setUpdateTime(now);
+        pending.setCreateBy(operator);
+        pending.setUpdateBy(operator);
         return rawPendingMapper.insert(pending);
     }
 
     // 供应商匹配批次号
+    @Transactional
     public void matchBatch(String pendingCode, String targetBatchNo) {
         QueryWrapper<RawPending> qw = new QueryWrapper<>();
         qw.eq("pending_code", pendingCode);
@@ -174,10 +193,16 @@ public class RawService {
         pending.setMatchTime(now);
         rawPendingMapper.updateById(pending);
 
-        RawDetail detail = rawDetailMapper.selectById(Integer.parseInt(pending.getRawDetailId()));
-        if (detail != null) {
-            detail.setBatchNo(targetBatchNo);
-            rawDetailMapper.updateById(detail);
+        // 安全解析 rawDetailId：RawPending.rawDetailId 为 String 类型
+        try {
+            int detailId = Integer.parseInt(pending.getRawDetailId());
+            RawDetail detail = rawDetailMapper.selectById(detailId);
+            if (detail != null) {
+                detail.setBatchNo(targetBatchNo);
+                rawDetailMapper.updateById(detail);
+            }
+        } catch (NumberFormatException e) {
+            throw new RuntimeException("待匹配记录的详情ID格式异常: " + pending.getRawDetailId(), e);
         }
 
         Raw raw = getByBatchNo(targetBatchNo);

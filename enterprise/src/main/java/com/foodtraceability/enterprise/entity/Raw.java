@@ -21,10 +21,10 @@ public class Raw {
     private int storageMethod;
     private String shelfLife;
     private String purchaseDate;
-    private int checkResult;
-    private int batchStatus;
+    private Integer checkResult;
+    private Integer batchStatus;
     private String detailId;
-    private int detailStatus;
+    private Integer detailStatus;
     private String dataHash;
     private String remark;
     private String createBy;
@@ -69,17 +69,17 @@ public class Raw {
     public String getPurchaseDate() { return purchaseDate; }
     public void setPurchaseDate(String purchaseDate) { this.purchaseDate = purchaseDate; }
 
-    public int getCheckResult() { return checkResult; }
-    public void setCheckResult(int checkResult) { this.checkResult = checkResult; }
+    public Integer getCheckResult() { return checkResult; }
+    public void setCheckResult(Integer checkResult) { this.checkResult = checkResult; }
 
-    public int getBatchStatus() { return batchStatus; }
-    public void setBatchStatus(int batchStatus) { this.batchStatus = batchStatus; }
+    public Integer getBatchStatus() { return batchStatus; }
+    public void setBatchStatus(Integer batchStatus) { this.batchStatus = batchStatus; }
 
     public String getDetailId() { return detailId; }
     public void setDetailId(String detailId) { this.detailId = detailId; }
 
-    public int getDetailStatus() { return detailStatus; }
-    public void setDetailStatus(int detailStatus) { this.detailStatus = detailStatus; }
+    public Integer getDetailStatus() { return detailStatus; }
+    public void setDetailStatus(Integer detailStatus) { this.detailStatus = detailStatus; }
 
     public String getDataHash() { return dataHash; }
     public void setDataHash(String dataHash) { this.dataHash = dataHash; }

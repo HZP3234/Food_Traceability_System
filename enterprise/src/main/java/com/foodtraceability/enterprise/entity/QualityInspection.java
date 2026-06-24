@@ -12,7 +12,7 @@ public class QualityInspection {
     private int bizType;
     private String bizBatchNo;
     private int inspectionType;
-    private int inspectionResult;
+    private Integer inspectionResult;
     private String inspector;
     private String standard;
     private String inspectionDate;
@@ -42,8 +42,8 @@ public class QualityInspection {
     public int getInspectionType() { return inspectionType; }
     public void setInspectionType(int inspectionType) { this.inspectionType = inspectionType; }
 
-    public int getInspectionResult() { return inspectionResult; }
-    public void setInspectionResult(int inspectionResult) { this.inspectionResult = inspectionResult; }
+    public Integer getInspectionResult() { return inspectionResult; }
+    public void setInspectionResult(Integer inspectionResult) { this.inspectionResult = inspectionResult; }
 
     public String getInspector() { return inspector; }
     public void setInspector(String inspector) { this.inspector = inspector; }

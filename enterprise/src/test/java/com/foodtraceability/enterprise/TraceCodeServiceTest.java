@@ -403,11 +403,15 @@ public class TraceCodeServiceTest {
             {"SALES_TERMINAL", "TERM_001", "ST20260623100"},
         };
 
-        UnsupportedOperationException exception = assertThrows(UnsupportedOperationException.class, () ->
-            traceCodeService.bindBusinessData(code, bizData[0][0], bizData[0][1], bizData[0][2], "admin"));
-        assertTrue(exception.getMessage().contains("t_trace_code_bind"));
+        // 绑定所有6种业务数据
+        for (String[] biz : bizData) {
+            traceCodeService.bindBusinessData(code, biz[0], biz[1], biz[2], "admin");
+        }
 
-        System.out.println("========== 多类型业务数据绑定测试通过 ==========");
+        // 验证绑定关系
+        List<TraceCodeBind> binds = traceCodeService.listBindsByCode(code);
+        assertEquals(6, binds.size(), "应绑定6条业务数据");
+        System.out.println("========== 多类型业务数据绑定测试通过，绑定了 " + binds.size() + " 条 ==========");
     }
 
     // ==================== 13. 导出测试 ====================

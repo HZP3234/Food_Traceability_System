@@ -340,7 +340,7 @@ public class ColdChainController {
 
     // 根据运输订单号追溯冷链全链路
     @RequestMapping("/traceColdChain")
-    public CcTransport traceColdChain(String orderNo) {
+    public ColdChainService.ColdChainTraceVO traceColdChain(String orderNo) {
         return coldChainService.traceColdChain(orderNo);
     }
 

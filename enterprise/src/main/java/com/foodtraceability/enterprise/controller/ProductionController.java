@@ -356,9 +356,9 @@ public class ProductionController {
 
     // ==================== 生产全链路追溯 ====================
 
-    // 根据生产批次号追溯上游加工批次
+    // 根据生产批次号追溯全链路：生产批次 → 加工批次 → 原料批次
     @RequestMapping("/traceProcessChain")
-    public ProcessBatch traceProcessChain(String prodBatchNo) {
+    public ProductionService.ProductionChainTraceVO traceProcessChain(String prodBatchNo) {
         return productionService.traceProcessChain(prodBatchNo);
     }
 }

@@ -15,9 +15,9 @@ public class ProdBatch {
     private int plannedAmount;
     private int actualAmount;
     private String productionDate;
-    private int checkResult;
-    private int codeStatus;
-    private int batchStatus;
+    private Integer checkResult;
+    private Integer codeStatus;
+    private Integer batchStatus;
     private String dataHash;
     private String chainHash;
     private String remark;
@@ -51,14 +51,14 @@ public class ProdBatch {
     public String getProductionDate() { return productionDate; }
     public void setProductionDate(String productionDate) { this.productionDate = productionDate; }
 
-    public int getCheckResult() { return checkResult; }
-    public void setCheckResult(int checkResult) { this.checkResult = checkResult; }
+    public Integer getCheckResult() { return checkResult; }
+    public void setCheckResult(Integer checkResult) { this.checkResult = checkResult; }
 
-    public int getCodeStatus() { return codeStatus; }
-    public void setCodeStatus(int codeStatus) { this.codeStatus = codeStatus; }
+    public Integer getCodeStatus() { return codeStatus; }
+    public void setCodeStatus(Integer codeStatus) { this.codeStatus = codeStatus; }
 
-    public int getBatchStatus() { return batchStatus; }
-    public void setBatchStatus(int batchStatus) { this.batchStatus = batchStatus; }
+    public Integer getBatchStatus() { return batchStatus; }
+    public void setBatchStatus(Integer batchStatus) { this.batchStatus = batchStatus; }
 
     public String getDataHash() { return dataHash; }
     public void setDataHash(String dataHash) { this.dataHash = dataHash; }

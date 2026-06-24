@@ -646,21 +646,40 @@ public class ProductionServiceSimpleTest {
     @Order(24)
     public void testTraceProcessChain() {
         try {
-            ProcessBatch processBatch = productionService.traceProcessChain(prodBatchNo);
+            ProductionService.ProductionChainTraceVO traceVO = productionService.traceProcessChain(prodBatchNo);
 
             System.out.println("=== 生产全链路追溯 ===");
             System.out.println("生产批次号: " + prodBatchNo);
-            if (processBatch != null) {
-                System.out.println("  → 加工批次号: " + processBatch.getBatchNo());
-                System.out.println("  → 加工产品: " + processBatch.getProductName());
-                System.out.println("  → 原料批次号: " + processBatch.getRawBatchNo());
-                System.out.println("  → 生产线: " + processBatch.getProductionLine());
+            if (traceVO != null) {
+                if (traceVO.getProdBatch() != null) {
+                    System.out.println("  → 生产批次号: " + traceVO.getProdBatch().getBatchNo());
+                    System.out.println("  → 产品名称: " + traceVO.getProdBatch().getProductName());
+                }
+                if (traceVO.getProcessBatch() != null) {
+                    System.out.println("  → 加工批次号: " + traceVO.getProcessBatch().getBatchNo());
+                    System.out.println("  → 加工产品: " + traceVO.getProcessBatch().getProductName());
+                    System.out.println("  → 原料批次号: " + traceVO.getProcessBatch().getRawBatchNo());
+                    System.out.println("  → 生产线: " + traceVO.getProcessBatch().getProductionLine());
+                }
+                if (traceVO.getRawBatch() != null) {
+                    System.out.println("  → 原料批次号: " + traceVO.getRawBatch().getBatchNo());
+                    System.out.println("  → 原料名称: " + traceVO.getRawBatch().getProductName());
+                    System.out.println("  → 供应商: " + traceVO.getRawBatch().getSupplierName());
+                }
+                if (traceVO.getMaterialInputs() != null) {
+                    System.out.println("  → 投料记录数: " + traceVO.getMaterialInputs().size());
+                }
+                if (traceVO.getEnvRecords() != null) {
+                    System.out.println("  → 环境记录数: " + traceVO.getEnvRecords().size());
+                }
             } else {
                 System.out.println("  → 未找到上游加工批次");
             }
 
-            assert processBatch != null : "追溯全链路失败";
-            System.out.println("[PASS] testTraceProcessChain - 追溯成功, 生产→加工→原料: " + processBatch.getRawBatchNo());
+            assert traceVO != null : "追溯全链路失败";
+            assert traceVO.getProdBatch() != null : "追溯生产批次为空";
+            System.out.println("[PASS] testTraceProcessChain - 追溯成功, 生产→加工→原料: "
+                + (traceVO.getProcessBatch() != null ? traceVO.getProcessBatch().getRawBatchNo() : "无"));
         } catch (Throwable e) {
             System.out.println("[FAIL] testTraceProcessChain - " + e.getMessage());
             throw e;

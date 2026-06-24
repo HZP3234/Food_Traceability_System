@@ -15,7 +15,7 @@ public class SalesTerminal {
     private String address;
     private String operatorId;
     private String operatorName;
-    private int terminalStatus;
+    private Integer terminalStatus;
     private String remark;
     private String createBy;
     private String createTime;
@@ -47,8 +47,8 @@ public class SalesTerminal {
     public String getOperatorName() { return operatorName; }
     public void setOperatorName(String operatorName) { this.operatorName = operatorName; }
 
-    public int getTerminalStatus() { return terminalStatus; }
-    public void setTerminalStatus(int terminalStatus) { this.terminalStatus = terminalStatus; }
+    public Integer getTerminalStatus() { return terminalStatus; }
+    public void setTerminalStatus(Integer terminalStatus) { this.terminalStatus = terminalStatus; }
 
     public String getRemark() { return remark; }
     public void setRemark(String remark) { this.remark = remark; }

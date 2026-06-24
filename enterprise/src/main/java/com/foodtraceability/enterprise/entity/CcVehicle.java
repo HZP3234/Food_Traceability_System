@@ -16,7 +16,7 @@ public class CcVehicle {
     private String ownerName;
     private String coldType;
     private String tempRange;
-    private int vehicleStatus;
+    private Integer vehicleStatus;
     private String remark;
     private String createBy;
     private String createTime;
@@ -51,8 +51,8 @@ public class CcVehicle {
     public String getTempRange() { return tempRange; }
     public void setTempRange(String tempRange) { this.tempRange = tempRange; }
 
-    public int getVehicleStatus() { return vehicleStatus; }
-    public void setVehicleStatus(int vehicleStatus) { this.vehicleStatus = vehicleStatus; }
+    public Integer getVehicleStatus() { return vehicleStatus; }
+    public void setVehicleStatus(Integer vehicleStatus) { this.vehicleStatus = vehicleStatus; }
 
     public String getRemark() { return remark; }
     public void setRemark(String remark) { this.remark = remark; }

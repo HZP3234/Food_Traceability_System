@@ -8,6 +8,7 @@ import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.foodtraceability.enterprise.entity.Warehouse;
@@ -89,6 +90,8 @@ public class ColdChainService {
         String now = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         warehouse.setCreateTime(now);
         warehouse.setUpdateTime(now);
+        warehouse.setCreateBy("SYSTEM");
+        warehouse.setUpdateBy("SYSTEM");
         return warehouseMapper.insert(warehouse);
     }
 
@@ -143,10 +146,12 @@ public class ColdChainService {
 
     // 注册冷链车辆
     public int createVehicle(CcVehicle vehicle) {
-        if (vehicle.getVehicleStatus() == 0) vehicle.setVehicleStatus(0);
+        if (vehicle.getVehicleStatus() == null) vehicle.setVehicleStatus(1); // 默认空闲
         String now = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         vehicle.setCreateTime(now);
         vehicle.setUpdateTime(now);
+        vehicle.setCreateBy("SYSTEM");
+        vehicle.setUpdateBy("SYSTEM");
         return ccVehicleMapper.insert(vehicle);
     }
 
@@ -157,7 +162,7 @@ public class ColdChainService {
     }
 
     // 更新车辆状态
-    public int updateVehicleStatus(Integer vehicleId, int vehicleStatus) {
+    public int updateVehicleStatus(Integer vehicleId, Integer vehicleStatus) {
         CcVehicle vehicle = ccVehicleMapper.selectById(vehicleId);
         if (vehicle != null) {
             vehicle.setVehicleStatus(vehicleStatus);
@@ -231,6 +236,8 @@ public class ColdChainService {
         String now = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         transport.setCreateTime(now);
         transport.setUpdateTime(now);
+        transport.setCreateBy("SYSTEM");
+        transport.setUpdateBy("SYSTEM");
         return ccTransportMapper.insert(transport);
     }
 
@@ -241,6 +248,7 @@ public class ColdChainService {
     }
 
     // 发运：更新车辆状态为运输中，运输订单状态为运输中
+    @Transactional
     public int departTransport(Integer transportId) {
         CcTransport transport = ccTransportMapper.selectById(transportId);
         if (transport == null) return 0;
@@ -266,12 +274,15 @@ public class ColdChainService {
         node.setNodeStatus(1);
         node.setCreateTime(now);
         node.setUpdateTime(now);
+        node.setCreateBy(node.getOperator() != null ? node.getOperator() : "SYSTEM");
+        node.setUpdateBy(node.getOperator() != null ? node.getOperator() : "SYSTEM");
         ccTransportNodeMapper.insert(node);
 
         return num;
     }
 
     // 抵达签收
+    @Transactional
     public int arriveTransport(Integer transportId) {
         CcTransport transport = ccTransportMapper.selectById(transportId);
         if (transport == null) return 0;
@@ -297,6 +308,8 @@ public class ColdChainService {
         node.setNodeStatus(1);
         node.setCreateTime(now);
         node.setUpdateTime(now);
+        node.setCreateBy(node.getOperator() != null ? node.getOperator() : "SYSTEM");
+        node.setUpdateBy(node.getOperator() != null ? node.getOperator() : "SYSTEM");
         ccTransportNodeMapper.insert(node);
 
         return num;
@@ -312,6 +325,7 @@ public class ColdChainService {
     }
 
     // 异常关闭
+    @Transactional
     public int closeTransport(Integer transportId) {
         CcTransport transport = ccTransportMapper.selectById(transportId);
         if (transport == null) return 0;
@@ -359,11 +373,14 @@ public class ColdChainService {
     }
 
     // 记录温湿度（自动检测异常）
+    @Transactional
     public int recordTempHumidity(CcTempHumidity record) {
         String now = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         record.setRecordTime(now);
         record.setCreateTime(now);
         record.setUpdateTime(now);
+        record.setCreateBy("SYSTEM");
+        record.setUpdateBy("SYSTEM");
 
         // 自动检测温湿度是否超标
         if (record.getOrderNo() != null) {
@@ -436,6 +453,8 @@ public class ColdChainService {
         if (node.getNodeStatus() == 0) node.setNodeStatus(1);
         node.setCreateTime(now);
         node.setUpdateTime(now);
+        node.setCreateBy(node.getCreateBy() != null ? node.getCreateBy() : "SYSTEM");
+        node.setUpdateBy(node.getUpdateBy() != null ? node.getUpdateBy() : "SYSTEM");
         return ccTransportNodeMapper.insert(node);
     }
 
@@ -456,11 +475,14 @@ public class ColdChainService {
     }
 
     // 签收确认
+    @Transactional
     public int signReceipt(CcReceipt receipt) {
         String now = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         receipt.setSignTime(now);
         receipt.setCreateTime(now);
         receipt.setUpdateTime(now);
+        receipt.setCreateBy("SYSTEM");
+        receipt.setUpdateBy("SYSTEM");
 
         if (receipt.getIsPackageIntact() == 0) receipt.setIsPackageIntact(1);
         if (receipt.getQtyMatch() == 0) receipt.setQtyMatch(1);
@@ -486,9 +508,40 @@ public class ColdChainService {
 
     // ==================== 冷链全链路追溯 ====================
 
-    // 根据运输订单号追溯全链路：车辆信息 -> 温湿度记录 -> 运输节点 -> 签收单
-    public CcTransport traceColdChain(String orderNo) {
-        return getByOrderNo(orderNo);
+    /**
+     * 冷链全链路追溯结果 — 包含运输订单、车辆、温湿度、节点、签收单完整信息
+     */
+    public static class ColdChainTraceVO {
+        private CcTransport transport;
+        private CcVehicle vehicle;
+        private List<CcTempHumidity> tempHumidityRecords;
+        private List<CcTransportNode> nodes;
+        private CcReceipt receipt;
+        // ======== Getter / Setter ========
+        public CcTransport getTransport() { return transport; }
+        public void setTransport(CcTransport transport) { this.transport = transport; }
+        public CcVehicle getVehicle() { return vehicle; }
+        public void setVehicle(CcVehicle vehicle) { this.vehicle = vehicle; }
+        public List<CcTempHumidity> getTempHumidityRecords() { return tempHumidityRecords; }
+        public void setTempHumidityRecords(List<CcTempHumidity> records) { this.tempHumidityRecords = records; }
+        public List<CcTransportNode> getNodes() { return nodes; }
+        public void setNodes(List<CcTransportNode> nodes) { this.nodes = nodes; }
+        public CcReceipt getReceipt() { return receipt; }
+        public void setReceipt(CcReceipt receipt) { this.receipt = receipt; }
+    }
+
+    // 根据运输订单号追溯全链路：运输订单 -> 车辆信息 -> 温湿度记录 -> 运输节点 -> 签收单
+    public ColdChainTraceVO traceColdChain(String orderNo) {
+        CcTransport transport = getByOrderNo(orderNo);
+        if (transport == null) return null;
+
+        ColdChainTraceVO vo = new ColdChainTraceVO();
+        vo.setTransport(transport);
+        vo.setVehicle(getByPlateNo(transport.getPlateNo()));
+        vo.setTempHumidityRecords(listTempHumidityByOrderNo(orderNo));
+        vo.setNodes(listNodeByOrderNo(orderNo));
+        vo.setReceipt(getReceiptByOrderNo(orderNo));
+        return vo;
     }
 
     // 根据生产批次号追溯冷链运输链路

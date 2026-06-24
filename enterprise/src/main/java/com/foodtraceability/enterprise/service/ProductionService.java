@@ -6,6 +6,7 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.foodtraceability.enterprise.entity.TechTemplate;
@@ -14,12 +15,14 @@ import com.foodtraceability.enterprise.entity.ProdBatch;
 import com.foodtraceability.enterprise.entity.ProdMaterialInput;
 import com.foodtraceability.enterprise.entity.ProdEnvRecord;
 import com.foodtraceability.enterprise.entity.QualityInspection;
+import com.foodtraceability.enterprise.entity.Raw;
 import com.foodtraceability.enterprise.mapper.TechTemplateMapper;
 import com.foodtraceability.enterprise.mapper.ProcessBatchMapper;
 import com.foodtraceability.enterprise.mapper.ProdBatchMapper;
 import com.foodtraceability.enterprise.mapper.ProdMaterialInputMapper;
 import com.foodtraceability.enterprise.mapper.ProdEnvRecordMapper;
 import com.foodtraceability.enterprise.mapper.QualityInspectionMapper;
+import com.foodtraceability.enterprise.mapper.RawMapper;
 //
 @Service
 public class ProductionService {
@@ -35,6 +38,8 @@ public class ProductionService {
     private ProdEnvRecordMapper prodEnvRecordMapper;
     @Autowired
     private QualityInspectionMapper qualityInspectionMapper;
+    @Autowired
+    private RawMapper rawMapper;
 
     // 生成加工批次号 PBJ + yyyyMMdd + 4位序号
     public String generateProcessBatchNo() {
@@ -98,6 +103,15 @@ public class ProductionService {
         String now = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         template.setCreateTime(now);
         template.setUpdateTime(now);
+        template.setCreateBy(template.getCreateBy() != null ? template.getCreateBy() : "SYSTEM");
+        template.setUpdateBy(template.getUpdateBy() != null ? template.getUpdateBy() : "SYSTEM");
+        // NOT NULL 默认值
+        if (template.getPressure() == null) template.setPressure("");
+        if (template.getCoolTemp() == null) template.setCoolTemp("");
+        if (template.getFillTemp() == null) template.setFillTemp("");
+        if (template.getStirSpeed() == null) template.setStirSpeed("");
+        if (template.getPhValue() == null) template.setPhValue("");
+        if (template.getViscosity() == null) template.setViscosity("");
         return techTemplateMapper.insert(template);
     }
 
@@ -162,6 +176,23 @@ public class ProductionService {
         String now = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         processBatch.setCreateTime(now);
         processBatch.setUpdateTime(now);
+        processBatch.setCreateBy("SYSTEM");
+        processBatch.setUpdateBy("SYSTEM");
+        if (processBatch.getDataHash() == null) processBatch.setDataHash("");
+        if (processBatch.getChainHash() == null) processBatch.setChainHash("");
+        if (processBatch.getProcessDate() == null || processBatch.getProcessDate().isBlank()) {
+            processBatch.setProcessDate(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+        }
+        // 数据库 NOT NULL 字段，无默认值，设空串兜底
+        if (processBatch.getOperator() == null) processBatch.setOperator("");
+        if (processBatch.getActualTemp() == null) processBatch.setActualTemp("");
+        if (processBatch.getActualDuration() == null) processBatch.setActualDuration("");
+        if (processBatch.getActualPressure() == null) processBatch.setActualPressure("");
+        if (processBatch.getActualCoolTemp() == null) processBatch.setActualCoolTemp("");
+        if (processBatch.getActualFillTemp() == null) processBatch.setActualFillTemp("");
+        if (processBatch.getActualPh() == null) processBatch.setActualPh("");
+        if (processBatch.getActualViscosity() == null) processBatch.setActualViscosity("");
+        if (processBatch.getRemark() == null) processBatch.setRemark("");
         return processBatchMapper.insert(processBatch);
     }
 
@@ -236,11 +267,15 @@ public class ProductionService {
         if (prodBatch.getBatchNo() == null || prodBatch.getBatchNo().isBlank()) {
             prodBatch.setBatchNo(generateProdBatchNo());
         }
-        if (prodBatch.getCheckResult() == 0) prodBatch.setCheckResult(2);
-        if (prodBatch.getBatchStatus() == 0) prodBatch.setBatchStatus(1);
+        if (prodBatch.getCheckResult() == null) prodBatch.setCheckResult(2);
+        if (prodBatch.getBatchStatus() == null) prodBatch.setBatchStatus(1);
         String now = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         prodBatch.setCreateTime(now);
         prodBatch.setUpdateTime(now);
+        prodBatch.setCreateBy("SYSTEM");
+        prodBatch.setUpdateBy("SYSTEM");
+        if (prodBatch.getDataHash() == null) prodBatch.setDataHash("");
+        if (prodBatch.getChainHash() == null) prodBatch.setChainHash("");
         return prodBatchMapper.insert(prodBatch);
     }
 
@@ -308,6 +343,8 @@ public class ProductionService {
         String now = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         input.setCreateTime(now);
         input.setUpdateTime(now);
+        input.setCreateBy("SYSTEM");
+        input.setUpdateBy("SYSTEM");
         return prodMaterialInputMapper.insert(input);
     }
 
@@ -343,6 +380,13 @@ public class ProductionService {
         envRecord.setCollectTime(now);
         envRecord.setCreateTime(now);
         envRecord.setUpdateTime(now);
+        envRecord.setCreateBy("SYSTEM");
+        envRecord.setUpdateBy("SYSTEM");
+        if (envRecord.getCollector() == null) envRecord.setCollector("");
+        if (envRecord.getPressureDiff() == null) envRecord.setPressureDiff("");
+        if (envRecord.getParticles() == null) envRecord.setParticles("");
+        if (envRecord.getBacteria() == null) envRecord.setBacteria("");
+        if (envRecord.getRemark() == null) envRecord.setRemark("");
         return prodEnvRecordMapper.insert(envRecord);
     }
 
@@ -403,10 +447,14 @@ public class ProductionService {
         if (inspection.getInspectionNo() == null || inspection.getInspectionNo().isBlank()) {
             inspection.setInspectionNo(generateInspectionNo());
         }
-        if (inspection.getInspectionResult() == 0) inspection.setInspectionResult(3);
+        if (inspection.getInspectionResult() == null) inspection.setInspectionResult(3);
         String now = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         inspection.setCreateTime(now);
         inspection.setUpdateTime(now);
+        inspection.setCreateBy("SYSTEM");
+        inspection.setUpdateBy("SYSTEM");
+        if (inspection.getInspector() == null) inspection.setInspector("");
+        if (inspection.getRemark() == null) inspection.setRemark("");
         return qualityInspectionMapper.insert(inspection);
     }
 
@@ -443,12 +491,63 @@ public class ProductionService {
 
     // ==================== 生产全链路追溯 ====================
 
-    // 根据生产批次号追溯上游加工批次
-    public ProcessBatch traceProcessChain(String prodBatchNo) {
+    /**
+     * 生产全链路追溯结果 VO — 从生产批次 → 加工批次 → 原料批次
+     */
+    public static class ProductionChainTraceVO {
+        private ProdBatch prodBatch;
+        private ProcessBatch processBatch;
+        private Raw rawBatch;
+        private List<ProdMaterialInput> materialInputs;
+        private List<ProdEnvRecord> envRecords;
+        // ======== Getter / Setter ========
+        public ProdBatch getProdBatch() { return prodBatch; }
+        public void setProdBatch(ProdBatch prodBatch) { this.prodBatch = prodBatch; }
+        public ProcessBatch getProcessBatch() { return processBatch; }
+        public void setProcessBatch(ProcessBatch processBatch) { this.processBatch = processBatch; }
+        public Raw getRawBatch() { return rawBatch; }
+        public void setRawBatch(Raw rawBatch) { this.rawBatch = rawBatch; }
+        public List<ProdMaterialInput> getMaterialInputs() { return materialInputs; }
+        public void setMaterialInputs(List<ProdMaterialInput> materialInputs) { this.materialInputs = materialInputs; }
+        public List<ProdEnvRecord> getEnvRecords() { return envRecords; }
+        public void setEnvRecords(List<ProdEnvRecord> envRecords) { this.envRecords = envRecords; }
+    }
+
+    /**
+     * 根据生产批次号追溯全链路：生产批次 → 加工批次 → 原料批次
+     */
+    public ProductionChainTraceVO traceProcessChain(String prodBatchNo) {
         ProdBatch prodBatch = getByProdBatchNo(prodBatchNo);
-        if (prodBatch == null || prodBatch.getProcessBatchNo() == null) {
-            return null;
+        if (prodBatch == null) return null;
+
+        ProductionChainTraceVO vo = new ProductionChainTraceVO();
+        vo.setProdBatch(prodBatch);
+
+        // 追溯到加工批次
+        if (prodBatch.getProcessBatchNo() != null) {
+            ProcessBatch processBatch = getByProcessBatchNo(prodBatch.getProcessBatchNo());
+            vo.setProcessBatch(processBatch);
+
+            // 继续追溯到原料批次
+            if (processBatch != null && processBatch.getRawBatchNo() != null) {
+                QueryWrapper<Raw> qw = new QueryWrapper<>();
+                qw.eq("batch_no", processBatch.getRawBatchNo());
+                qw.eq("is_deleted", 0);
+                Raw raw = rawMapper.selectOne(qw);
+                vo.setRawBatch(raw);
+            }
+
+            // 查询投料记录
+            if (processBatch != null) {
+                List<ProdMaterialInput> inputs = listMaterialInput(prodBatch.getProductName());
+                vo.setMaterialInputs(inputs);
+            }
         }
-        return getByProcessBatchNo(prodBatch.getProcessBatchNo());
+
+        // 查询环境记录
+        List<ProdEnvRecord> envRecords = listEnvRecordByLine(prodBatch.getProductionLine());
+        vo.setEnvRecords(envRecords);
+
+        return vo;
     }
 }

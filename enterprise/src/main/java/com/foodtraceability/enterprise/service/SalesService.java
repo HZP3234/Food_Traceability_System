@@ -6,6 +6,7 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.foodtraceability.enterprise.entity.SalesTerminal;
@@ -84,10 +85,12 @@ public class SalesService {
         if (terminal.getTerminalCode() == null || terminal.getTerminalCode().isBlank()) {
             terminal.setTerminalCode(generateTerminalCode());
         }
-        if (terminal.getTerminalStatus() == 0) terminal.setTerminalStatus(1);
+        if (terminal.getTerminalStatus() == null) terminal.setTerminalStatus(1);
         String now = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         terminal.setCreateTime(now);
         terminal.setUpdateTime(now);
+        terminal.setCreateBy(terminal.getCreateBy() != null ? terminal.getCreateBy() : "SYSTEM");
+        terminal.setUpdateBy(terminal.getUpdateBy() != null ? terminal.getUpdateBy() : "SYSTEM");
         return salesTerminalMapper.insert(terminal);
     }
 
@@ -136,6 +139,8 @@ public class SalesService {
         stock.setReceivedTime(now);
         stock.setCreateTime(now);
         stock.setUpdateTime(now);
+        stock.setCreateBy(stock.getCreateBy() != null ? stock.getCreateBy() : "SYSTEM");
+        stock.setUpdateBy(stock.getUpdateBy() != null ? stock.getUpdateBy() : "SYSTEM");
 
         // 自动填充储存环境
         autoFillStorage(stock.getTerminalId(), stock.getProductName());
@@ -162,11 +167,17 @@ public class SalesService {
     }
 
     // 自动填充储存环境（根据终端类型和产品类型）
-    public void autoFillStorage(String terminalId, String productName) {
-        // 查找终端信息
-        QueryWrapper<SalesTerminal> qw = new QueryWrapper<>();
-        qw.eq("terminal_id", terminalId);
-        SalesTerminal terminal = salesTerminalMapper.selectOne(qw);
+    public void autoFillStorage(String terminalIdOrCode, String productName) {
+        // 尝试按 terminal_code 查询（统一使用业务编码）
+        SalesTerminal terminal = getByTerminalCode(terminalIdOrCode);
+        // 如果按编码查不到，尝试按主键ID查询（兼容旧数据）
+        if (terminal == null) {
+            try {
+                terminal = salesTerminalMapper.selectById(Integer.parseInt(terminalIdOrCode));
+            } catch (NumberFormatException ignored) {
+                return;
+            }
+        }
         if (terminal == null) return;
 
         // 查找是否已有储存环境记录
@@ -248,6 +259,8 @@ public class SalesService {
         supplement.setSupplementStatus(1);
         supplement.setCreateTime(now);
         supplement.setUpdateTime(now);
+        supplement.setCreateBy(supplement.getCreateBy() != null ? supplement.getCreateBy() : "SYSTEM");
+        supplement.setUpdateBy(supplement.getUpdateBy() != null ? supplement.getUpdateBy() : "SYSTEM");
         return salesSupplementMapper.insert(supplement);
     }
 
@@ -259,7 +272,8 @@ public class SalesService {
 
     // ==================== 防窜货核验 ====================
 
-    // 按区域核验：检查终端所属区域是否与生产批次销售区域一致
+    // 按区域核验：查找指定区域中存在窜货嫌疑的终端
+    // 逻辑：同一生产批次的产品出现在不同区域的终端，则标记为窜货异常
     public List<SalesTerminal> checkAntiFraud(String area) {
         QueryWrapper<SalesTerminal> qw = new QueryWrapper<>();
         qw.eq("is_deleted", 0);
@@ -270,21 +284,68 @@ public class SalesService {
         return salesTerminalMapper.selectList(qw);
     }
 
-    // 全量防窜货核验
+    // 全量防窜货核验：检测同一生产批次是否跨区域销售
     public void runAntiFraudCheck() {
+        // 1. 获取所有有效终端
         List<SalesTerminal> terminals = salesTerminalMapper.selectList(
                 new QueryWrapper<SalesTerminal>().eq("is_deleted", 0));
-        for (SalesTerminal terminal : terminals) {
-            List<SalesStock> stocks = listStockByTerminalId(String.valueOf(terminal.getTerminalId()));
-            for (SalesStock stock : stocks) {
-                List<SalesSupplement> supplements = listSupplementByTraceBatchNo(stock.getProdBatchNo());
-                for (SalesSupplement supplement : supplements) {
-                    // 如果补充记录的终端编码与库存的终端不一致，标记异常
-                    if (!supplement.getTerminalCode().equals(terminal.getTerminalCode())) {
-                        terminal.setTerminalStatus(2); // 区域异常
-                        updateTerminal(terminal);
+        if (terminals.isEmpty()) return;
+
+        // 2. 获取所有库存记录
+        List<SalesStock> allStocks = salesStockMapper.selectList(
+                new QueryWrapper<SalesStock>().eq("is_deleted", 0));
+
+        // 3. 按生产批次号分组，检查每个批次是否出现在多个不同区域
+        java.util.Map<String, java.util.Set<String>> batchAreas = new java.util.HashMap<>();
+        java.util.Map<String, String> stockTerminalAreaMap = new java.util.HashMap<>(); // stockId -> terminal area
+
+        // 构建 terminalId -> area 映射
+        java.util.Map<String, String> terminalAreaMap = new java.util.HashMap<>();
+        for (SalesTerminal t : terminals) {
+            terminalAreaMap.put(String.valueOf(t.getTerminalId()), t.getArea());
+            terminalAreaMap.put(t.getTerminalCode(), t.getArea()); // 同时支持编码查找
+        }
+
+        // 4. 遍历库存，找出同一批次出现在多个区域的记录
+        for (SalesStock stock : allStocks) {
+            String batchNo = stock.getProdBatchNo();
+            String area = terminalAreaMap.get(stock.getTerminalId());
+            if (batchNo == null || area == null) continue;
+
+            batchAreas.computeIfAbsent(batchNo, k -> new java.util.HashSet<>()).add(area);
+        }
+
+        // 5. 标记跨区域的批次关联的终端为异常
+        java.util.Set<String> fraudBatchNos = new java.util.HashSet<>();
+        for (java.util.Map.Entry<String, java.util.Set<String>> entry : batchAreas.entrySet()) {
+            if (entry.getValue().size() > 1) {
+                fraudBatchNos.add(entry.getKey()); // 该批次出现在多个区域
+            }
+        }
+
+        if (fraudBatchNos.isEmpty()) return;
+
+        // 6. 标记涉及窜货批次的终端
+        java.util.Set<Integer> fraudTerminalIds = new java.util.HashSet<>();
+        for (SalesStock stock : allStocks) {
+            if (fraudBatchNos.contains(stock.getProdBatchNo())) {
+                // 查找该库存对应的终端
+                for (SalesTerminal terminal : terminals) {
+                    if (String.valueOf(terminal.getTerminalId()).equals(stock.getTerminalId())
+                            || terminal.getTerminalCode().equals(stock.getTerminalId())) {
+                        fraudTerminalIds.add(terminal.getTerminalId());
+                        break;
                     }
                 }
+            }
+        }
+
+        // 7. 更新终端状态
+        for (Integer terminalId : fraudTerminalIds) {
+            SalesTerminal terminal = salesTerminalMapper.selectById(terminalId);
+            if (terminal != null && terminal.getTerminalStatus() != 2) {
+                terminal.setTerminalStatus(2); // 区域异常
+                updateTerminal(terminal);
             }
         }
     }

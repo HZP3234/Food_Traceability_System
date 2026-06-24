@@ -681,11 +681,12 @@ public class ColdChainServiceSimpleTest {
     @Order(24)
     public void testTraceColdChain() {
         try {
-            CcTransport transport = coldChainService.traceColdChain(orderNo);
+            ColdChainService.ColdChainTraceVO traceVO = coldChainService.traceColdChain(orderNo);
 
             System.out.println("=== 冷链全链路追溯 ===");
             System.out.println("运输订单号: " + orderNo);
-            if (transport != null) {
+            if (traceVO != null && traceVO.getTransport() != null) {
+                CcTransport transport = traceVO.getTransport();
                 System.out.println("  产品名称: " + transport.getProductName());
                 System.out.println("  生产批次号: " + transport.getProdBatchNo());
                 System.out.println("  车牌号: " + transport.getPlateNo());
@@ -698,6 +699,10 @@ public class ColdChainServiceSimpleTest {
                 System.out.println("  运输状态: " + transport.getTransportStatus());
                 System.out.println("  温度范围: " + transport.getTempLower() + "℃ ~ " + transport.getTempUpper() + "℃");
                 System.out.println("  湿度范围: " + transport.getHumidLower() + "% ~ " + transport.getHumidUpper() + "%");
+                System.out.println("  车辆信息: " + (traceVO.getVehicle() != null ? traceVO.getVehicle().getPlateNo() : "无"));
+                System.out.println("  温湿度记录数: " + (traceVO.getTempHumidityRecords() != null ? traceVO.getTempHumidityRecords().size() : 0));
+                System.out.println("  运输节点数: " + (traceVO.getNodes() != null ? traceVO.getNodes().size() : 0));
+                System.out.println("  签收单: " + (traceVO.getReceipt() != null ? "已签收" : "未签收"));
             } else {
                 System.out.println("  未找到运输订单");
             }
@@ -710,7 +715,8 @@ public class ColdChainServiceSimpleTest {
             List<CcTransportNode> nodeList = coldChainService.listNodeByOrderNo(orderNo);
             System.out.println("  运输节点数: " + nodeList.size());
 
-            assert transport != null : "冷链追溯失败";
+            assert traceVO != null : "冷链追溯失败";
+            assert traceVO.getTransport() != null : "冷链追溯运输订单为空";
             System.out.println("[PASS] testTraceColdChain - 冷链追溯成功, 温湿度记录=" + tempList.size() + ", 节点=" + nodeList.size());
         } catch (Throwable e) {
             System.out.println("[FAIL] testTraceColdChain - " + e.getMessage());

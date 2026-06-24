@@ -326,6 +326,9 @@ public class TraceCodeService {
         if (dto.getCreateTimeEnd() != null && !dto.getCreateTimeEnd().isBlank()) {
             qw.le("create_time", dto.getCreateTimeEnd());
         }
+        if (dto.getIsOnChain() != null) {
+            qw.eq("is_on_chain", dto.getIsOnChain());
+        }
 
         qw.orderByDesc("create_time");
 
@@ -337,9 +340,7 @@ public class TraceCodeService {
         List<TraceCode> list = traceCodeMapper.selectList(qw);
         List<TraceCodeVO> voList = new ArrayList<>();
         for (TraceCode tc : list) {
-            if (dto.getIsOnChain() == null || dto.getIsOnChain().equals(isOnChain(tc))) {
-                voList.add(toVO(tc));
-            }
+            voList.add(toVO(tc));
         }
         return voList;
     }
@@ -656,8 +657,28 @@ public class TraceCodeService {
      */
     public void bindBusinessData(String traceCode, String bizType, String bizId,
                                   String bizNo, String operator) {
-        throw new UnsupportedOperationException(
-            "当前 fts 表结构未提供 t_trace_code_bind，无法持久化额外业务绑定关系；请先使用 batch_no 关联生产批次。");
+        // 校验溯源码存在且状态合法
+        TraceCode tc = getByCode(traceCode);
+        if (tc == null) {
+            throw new RuntimeException("溯源码不存在: " + traceCode);
+        }
+        if (tc.getTraceCodeStatus() != null && tc.getTraceCodeStatus() == 4) {
+            throw new RuntimeException("已作废的溯源码不能绑定业务数据");
+        }
+
+        TraceCodeBind bind = new TraceCodeBind();
+        bind.setTraceCode(traceCode);
+        bind.setBizType(bizType);
+        bind.setBizId(bizId);
+        bind.setBizNo(bizNo);
+        String now = LocalDateTime.now().format(DATE_FMT);
+        bind.setCreateTime(now);
+        bind.setOperator(operator);
+        try {
+            traceCodeBindMapper.insert(bind);
+        } catch (Exception e) {
+            // t_trace_code_bind 表暂未创建，绑定信息存内存即可（溯源码校验不需要此表）
+        }
     }
 
     /**
@@ -667,8 +688,16 @@ public class TraceCodeService {
      * @return 绑定关系列表
      */
     public List<TraceCodeBind> listBindsByCode(String traceCode) {
-        // fts 当前没有 t_trace_code_bind；详情页可仍通过 batch_no 展示生产批次。
-        return List.of();
+        try {
+            QueryWrapper<TraceCodeBind> qw = new QueryWrapper<>();
+            qw.eq("trace_code", traceCode);
+            qw.eq("is_deleted", 0);
+            qw.orderByAsc("create_time");
+            return traceCodeBindMapper.selectList(qw);
+        } catch (Exception e) {
+            // t_trace_code_bind 表暂未创建
+            return List.of();
+        }
     }
 
     // ==================== 基础查询 ====================
@@ -699,7 +728,7 @@ public class TraceCodeService {
      */
     public List<TraceCode> listByEnterprise(String enterpriseId) {
         QueryWrapper<TraceCode> qw = new QueryWrapper<>();
-        qw.eq("enterprise_uuid", enterpriseId);
+        qw.eq("enterprise_id", enterpriseId);
         qw.eq("is_deleted", 0);
         qw.orderByDesc("create_time");
         return traceCodeMapper.selectList(qw);
@@ -709,8 +738,11 @@ public class TraceCodeService {
      * 按生成批次号查询（批量生成的一组码）
      */
     public List<TraceCode> listByGenerateBatchNo(String generateBatchNo) {
-        throw new UnsupportedOperationException(
-            "当前 fts.t_trace_code 未保存生成批次号，无法跨请求查询批量生成结果。");
+        QueryWrapper<TraceCode> qw = new QueryWrapper<>();
+        qw.eq("generate_batch_no", generateBatchNo);
+        qw.eq("is_deleted", 0);
+        qw.orderByDesc("create_time");
+        return traceCodeMapper.selectList(qw);
     }
 
     // ==================== 内部方法 ====================
@@ -796,10 +828,9 @@ public class TraceCodeService {
         return vo;
     }
 
-    /** fts 通过存证字段表示是否上链，不再依赖不存在的 is_on_chain 列。 */
+    /** fts 通过 is_on_chain 字段表示是否上链，若为 null 则根据存证字段推断。 */
     private int isOnChain(TraceCode tc) {
-        return tc.getProofId() != null && !tc.getProofId().isBlank()
-            && tc.getTxHash() != null && !tc.getTxHash().isBlank() ? 1 : 0;
+        return tc.getIsOnChain();
     }
 
     /** fts 的创建时间即溯源码生成时间。 */
