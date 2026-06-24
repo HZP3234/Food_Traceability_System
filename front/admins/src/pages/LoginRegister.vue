@@ -18,11 +18,6 @@ const roleOptions = [
   { value: 'regulator', label: '监管人员' },
 ]
 
-const roleLabel: Record<string, string> = {
-  enterprise: '企业用户',
-  regulator: '监管人员',
-}
-
 const canSubmit = computed(() => {
   if (!username.value.trim() || !password.value.trim()) return false
   if (mode.value === 'register') {

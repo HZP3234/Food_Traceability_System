@@ -14,5 +14,5 @@ import org.apache.ibatis.annotations.Mapper;
  * @since 2026-06-23
  */
 @Mapper
-public interface TraceCodeMapper extends BaseMapper<TraceCode> {
+public interface EnterpriseTraceCodeMapper extends BaseMapper<TraceCode> {
 }

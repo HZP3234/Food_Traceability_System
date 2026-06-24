@@ -22,7 +22,6 @@ const stats = ref({
   coldChainAlerts: 0,
 })
 
-function flash(type: string, msg: string) { toast.value = { type, msg }; setTimeout(() => (toast.value = null), 2600) }
 
 async function loadStats() {
   loading.value = true

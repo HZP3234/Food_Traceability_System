@@ -3,7 +3,6 @@
  * 后端使用 @RequestMapping（同时接受 GET/POST），参数为 form 风格。
  */
 // 开发环境走 Vite 代理，生产环境同域部署，都使用相对路径
-const BASE = ''
 
 /** 检查后端业务异常：GlobalExceptionHandler 返回 success=false 但 HTTP 200 */
 function checkBizError(json: any) {

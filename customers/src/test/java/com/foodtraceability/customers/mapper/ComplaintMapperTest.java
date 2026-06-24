@@ -61,7 +61,7 @@ class ComplaintMapperTest {
         // 建表
         try (SqlSession session = sqlSessionFactory.openSession()) {
             session.getConnection().createStatement().execute(
-                    "CREATE TABLE complaint (" +
+                    "CREATE TABLE t_complaint_record (" +
                     "  id BIGINT AUTO_INCREMENT PRIMARY KEY," +
                     "  complaint_no VARCHAR(32) NOT NULL," +
                     "  product_batch_no VARCHAR(64)," +

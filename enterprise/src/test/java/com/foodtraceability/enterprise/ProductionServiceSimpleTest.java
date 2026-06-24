@@ -24,11 +24,11 @@ public class ProductionServiceSimpleTest {
     private ProductionService productionService;
 
     // 用于跨测试方法共享数据
-    private static Integer templateId;
+    private static Long templateId;
     private static String templateName = "巴氏杀菌模板-测试";
-    private static Integer processBatchId;
+    private static Long processBatchId;
     private static String processBatchNo;
-    private static Integer prodBatchId;
+    private static Long prodBatchId;
     private static String prodBatchNo;
 
     // ==================== t_tech_template ====================

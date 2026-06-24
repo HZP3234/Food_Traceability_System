@@ -88,15 +88,12 @@ public class TraceCode {
     private String generateBatchNo;
 
     /** 禁用原因（仅在状态变更为"已禁用"时填写） */
-    @TableField(exist = false)
     private String disableReason;
 
     /** 作废原因（仅在状态变更为"已作废"时填写） */
-    @TableField(exist = false)
     private String voidReason;
 
     /** 有效期截止时间，过期后消费者扫码提示码已过期 */
-    @TableField(exist = false)
     private String expireTime;
 
     /** 质检结果：1-合格 2-不合格 3-待检 */

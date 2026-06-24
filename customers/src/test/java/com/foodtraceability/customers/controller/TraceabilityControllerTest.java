@@ -1,6 +1,6 @@
 package com.foodtraceability.customers.controller;
 
-import com.foodtraceability.customers.config.GlobalExceptionHandler;
+import com.foodtraceability.customers.config.CustomersGlobalExceptionHandler;
 import com.foodtraceability.customers.dto.ScanRecordDTO;
 import com.foodtraceability.customers.dto.TraceabilityQueryDTO;
 import com.foodtraceability.customers.dto.TraceabilityVO;
@@ -53,7 +53,7 @@ class TraceabilityControllerTest {
 
         mockMvc = MockMvcBuilders
                 .standaloneSetup(traceabilityController)
-                .setControllerAdvice(new GlobalExceptionHandler())
+                .setControllerAdvice(new CustomersGlobalExceptionHandler())
                 .build();
 
         TraceabilityNode node1 = new TraceabilityNode();

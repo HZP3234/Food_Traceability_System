@@ -38,10 +38,6 @@ async function loadAlerts() {
   }
 }
 
-function tagClass(status: number) {
-  return status === 4 ? 'tag-danger' : 'tag-warn'
-}
-
 onMounted(loadAlerts)
 </script>
 

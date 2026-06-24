@@ -18,7 +18,6 @@ import Warnings from './pages/Warnings.vue'
 const currentRole = ref<RoleKey>('manufacturer')
 const activePage = ref('dashboard')
 const screen = ref<'landing' | 'login' | 'admin'>('landing')
-const loginRef = ref<InstanceType<typeof LoginRegister> | null>(null)
 const showPageInfo = ref(false)
 const showLogoutConfirm = ref(false)
 
@@ -83,7 +82,7 @@ function confirmLogout() {
 
 <template>
   <LandingPage v-if="screen === 'landing'" @enter-admin="screen = 'login'" />
-  <LoginRegister ref="loginRef" v-else-if="screen === 'login'" @login="handleLogin" />
+  <LoginRegister v-else-if="screen === 'login'" @login="handleLogin" />
   <main v-else class="admin-shell">
     <aside class="sidebar">
       <div class="brand">

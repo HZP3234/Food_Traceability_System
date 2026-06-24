@@ -424,7 +424,7 @@ public class TraceCodeServiceTest {
 
         TraceCodeExportDTO dto = new TraceCodeExportDTO();
         dto.setTraceCodeList(Arrays.asList(testTraceCode));
-        dto.setTemplateId(1);
+        dto.setTemplateId(1L);
         dto.setExportFormat("PDF");
         dto.setOperator("admin");
 

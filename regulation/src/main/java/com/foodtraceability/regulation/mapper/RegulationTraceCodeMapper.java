@@ -8,5 +8,5 @@ import org.apache.ibatis.annotations.Mapper;
  * 溯源码 Mapper — t_trace_code
  */
 @Mapper
-public interface TraceCodeMapper extends BaseMapper<TraceCode> {
+public interface RegulationTraceCodeMapper extends BaseMapper<TraceCode> {
 }

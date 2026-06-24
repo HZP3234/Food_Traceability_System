@@ -13,10 +13,10 @@ import java.util.Map;
 /**
  * 全局异常处理器
  */
-@RestControllerAdvice
-public class GlobalExceptionHandler {
+@RestControllerAdvice(basePackages = "com.foodtraceability.enterprise.controller")
+public class EnterpriseGlobalExceptionHandler {
 
-    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+    private static final Logger log = LoggerFactory.getLogger(EnterpriseGlobalExceptionHandler.class);
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @ExceptionHandler(RuntimeException.class)

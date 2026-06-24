@@ -6,7 +6,7 @@ import com.foodtraceability.enterprise.dto.*;
 import com.foodtraceability.enterprise.entity.TraceCode;
 import com.foodtraceability.enterprise.entity.TraceCodeBind;
 import com.foodtraceability.enterprise.mapper.TraceCodeBindMapper;
-import com.foodtraceability.enterprise.mapper.TraceCodeMapper;
+import com.foodtraceability.enterprise.mapper.EnterpriseTraceCodeMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -37,7 +37,7 @@ public class TraceCodeService {
     private static final DateTimeFormatter DATE_COMPACT = DateTimeFormatter.ofPattern("yyyyMMdd");
 
     @Autowired
-    private TraceCodeMapper traceCodeMapper;
+    private EnterpriseTraceCodeMapper traceCodeMapper;
 
     @Autowired
     private TraceCodeBindMapper traceCodeBindMapper;

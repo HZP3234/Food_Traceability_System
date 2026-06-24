@@ -1,7 +1,7 @@
 package com.foodtraceability.customers.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.foodtraceability.customers.config.GlobalExceptionHandler;
+import com.foodtraceability.customers.config.CustomersGlobalExceptionHandler;
 import com.foodtraceability.customers.dto.ComplaintFeedbackDTO;
 import com.foodtraceability.customers.dto.ComplaintQueryDTO;
 import com.foodtraceability.customers.dto.ComplaintSubmitDTO;
@@ -50,7 +50,7 @@ class ComplaintControllerTest {
 
         mockMvc = MockMvcBuilders
                 .standaloneSetup(complaintController)
-                .setControllerAdvice(new GlobalExceptionHandler())
+                .setControllerAdvice(new CustomersGlobalExceptionHandler())
                 .build();
 
         mockComplaint = new Complaint();

@@ -8,8 +8,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
  * 全局异常处理器
  */
 @Slf4j
-@RestControllerAdvice
-public class GlobalExceptionHandler {
+@RestControllerAdvice(basePackages = "com.foodtraceability.regulation.controller")
+public class RegulationGlobalExceptionHandler {
 
     @ExceptionHandler(BusinessException.class)
     public Result<Void> handleBusinessException(BusinessException e) {

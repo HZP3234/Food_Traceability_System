@@ -1,0 +1,65 @@
+# ==========================================
+# 食品追溯系统 — 统一配置 (聚合三个模块)
+# ==========================================
+
+spring:
+  application:
+    name: food-traceability
+
+  # ---- 数据源（三个模块共用同一 MySQL） ----
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/fts?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
+    username: root
+    password: 123456
+
+  # ---- 文件上传 ----
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 40MB
+
+# ---- 服务器 ----
+server:
+  port: 8080
+
+# ---- MyBatis-Plus（三个模块共用） ----
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/**/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      id-type: auto
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+
+# ---- JWT（regulation 模块） ----
+jwt:
+  secret: food-traceability-system-2024-secret-key-jyz
+  expiration: 7200000
+
+# ---- Swagger / SpringDoc ----
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+# ---- 溯源码配置（enterprise 模块） ----
+trace-code:
+  single-prefix: TC
+  batch-prefix: BT
+  box-prefix: BX
+  pallet-prefix: PL
+  hash-algorithm: SHA-256
+  date-pattern: yyyyMMdd
+  batch-max-limit: 10000
+  blockchain-enabled: true
+
+# ---- 文件上传目录（customers 模块） ----
+app:
+  upload:
+    dir: ./uploads

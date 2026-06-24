@@ -25,12 +25,12 @@ public class ColdChainServiceSimpleTest {
     private ColdChainService coldChainService;
 
     // 用于跨测试方法共享数据
-    private static Integer warehouseId;
+    private static Long warehouseId;
     private static String warehouseUuid;
     private static String warehouseName = "测试冷库A";
-    private static Integer vehicleId;
+    private static Long vehicleId;
     private static String plateNo = "测A·TEST01";
-    private static Integer transportId;
+    private static Long transportId;
     private static String orderNo;
 
     // ==================== t_warehouse ====================

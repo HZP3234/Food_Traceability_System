@@ -37,6 +37,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * @since 2026-06-24
  */
 @SpringBootTest
+@Disabled("Requires an explicitly prepared local MySQL fts database; excluded from the isolated default test suite.")
 @TestPropertySource(properties = {
     "spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver",
     "spring.datasource.url=jdbc:mysql://localhost:3306/fts?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai",
@@ -59,17 +60,17 @@ public class EndToEndTraceabilityTest {
     // ==================== 测试数据（共享状态） ====================
 
     private static String rawBatchNo;        // 原料批次号
-    private static Integer rawBatchId;       // 原料批次ID
+    private static Long rawBatchId;       // 原料批次ID
     private static String processBatchNo;    // 加工批次号
-    private static Integer processBatchId;   // 加工批次ID
+    private static Long processBatchId;   // 加工批次ID
     private static String prodBatchNo;       // 生产批次号
-    private static Integer prodBatchId;      // 生产批次ID
+    private static Long prodBatchId;      // 生产批次ID
     private static String traceCode;         // 溯源码值
     private static String generateBatchNo;   // 批量生成批次号
     private static String transportOrderNo;  // 冷链运输订单号
-    private static Integer transportId;      // 运输订单ID
-    private static Integer vehicleId;        // 车辆ID
-    private static Integer terminalId;       // 销售终端ID
+    private static Long transportId;      // 运输订单ID
+    private static Long vehicleId;        // 车辆ID
+    private static Long terminalId;       // 销售终端ID
     private static String terminalCode;      // 终端编码
 
     /** 时间戳后缀 — 每次 JVM 启动重新生成，保证数据不冲突 */

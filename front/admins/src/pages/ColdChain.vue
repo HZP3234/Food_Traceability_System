@@ -11,7 +11,6 @@ const tFilters = ref({ transportStatus: '', prodBatchNo: '', plateNo: '', transp
 const showTModal = ref(false); const editingT = ref<any>(null); const showTConfirm = ref(false); const deletingTId = ref<number | null>(null)
 const tForm = ref({ orderNo: '', plateNo: '', driverName: '', driverPhone: '', productName: '', prodBatchNo: '', departureName: '', destinationName: '', loadingTemp: '', departTime: '', estimatedArrival: '', transportMethod: 0, collectInterval: '', tempUpper: '', tempLower: '', humidUpper: '', humidLower: '', alertMethod: '', remark: '' })
 const transportStatusLabels = ['', '待发运', '运输中', '已签收', '温度预警', '异常关闭']
-const transportMethodLabels = ['', '公路', '铁路', '航空', '海运']
 
 // Vehicle
 const loadingV = ref(false); const vehicles = ref<any[]>([])

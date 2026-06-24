@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.foodtraceability.regulation.entity.TraceCode;
-import com.foodtraceability.regulation.mapper.TraceCodeMapper;
+import com.foodtraceability.regulation.mapper.RegulationTraceCodeMapper;
 import com.foodtraceability.regulation.service.TraceCodeService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -19,7 +19,7 @@ import java.util.List;
  */
 @Slf4j
 @Service
-public class TraceCodeServiceImpl extends ServiceImpl<TraceCodeMapper, TraceCode> implements TraceCodeService {
+public class TraceCodeServiceImpl extends ServiceImpl<RegulationTraceCodeMapper, TraceCode> implements TraceCodeService {
 
     @Override
     public TraceCode getByTraceCode(String traceCode) {
