@@ -41,8 +41,7 @@ export const navigation: NavigationGroup[] = [
     items: [
       { id: 'raw-batch', label: '原料批次管理', icon: '原', roles: ['super-admin', 'manufacturer', 'regulator'], desc: '创建原料批次、录入质检、查看供应商匹配状态' },
       { id: 'supplier-raw', label: '原料信息上传', icon: '源', roles: ['super-admin', 'supplier'], desc: '上传源头详情、主动上传、批次匹配' },
-      { id: 'process-batch', label: '加工批次管理', icon: '工', roles: ['super-admin', 'manufacturer', 'regulator'], desc: '关联原料批次，记录工艺参数' },
-      { id: 'production-batch', label: '生产批次管理', icon: '产', roles: ['super-admin', 'manufacturer', 'regulator'], desc: '创建生产批次，质检，生成溯源码' },
+      { id: 'production-batch', label: '生产批次管理', icon: '产', roles: ['super-admin', 'manufacturer', 'regulator'], desc: '管理加工批次、生产批次、工艺模板、投料、环境与质检' },
     ],
   },
   {

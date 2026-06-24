@@ -3,8 +3,7 @@ import { computed, ref, markRaw, provide, type Component } from 'vue'
 import { navigation, roles, type RoleKey } from './config/navigation'
 import RawMaterials from './pages/RawMaterials.vue'
 import SupplierRawMaterials from './pages/SupplierRawMaterials.vue'
-import Production from './pages/Production.vue'
-import Processing from './pages/Processing.vue'
+import ProductionBatchManagement from './pages/ProductionBatchManagement.vue'
 import ColdChain from './pages/ColdChain.vue'
 import Sales from './pages/Sales.vue'
 import TraceCode from './pages/TraceCode.vue'
@@ -24,8 +23,8 @@ provide('currentRole', currentRole)
 const pageComponents: Record<string, Component> = {
   'raw-batch': markRaw(RawMaterials),
   'supplier-raw': markRaw(SupplierRawMaterials),
-  'production-batch': markRaw(Production),
-  'process-batch': markRaw(Processing),
+  'production-batch': markRaw(ProductionBatchManagement),
+  'process-batch': markRaw(ProductionBatchManagement),
   'cold-chain': markRaw(ColdChain),
   'sales-terminal': markRaw(Sales),
   'trace-code': markRaw(TraceCode),
