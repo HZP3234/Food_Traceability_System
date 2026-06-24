@@ -206,6 +206,8 @@ public class SalesService {
 
         storage.setProductType(productName);
         storage.setIsAutoFilled(1);
+        storage.setCreateBy("system");
+        storage.setUpdateBy("system");
         storage.setCreateTime(now);
         storage.setUpdateTime(now);
         salesStorageMapper.insert(storage);
