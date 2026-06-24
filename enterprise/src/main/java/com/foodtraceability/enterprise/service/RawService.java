@@ -107,7 +107,7 @@ public class RawService {
     }
 
     // 软删除
-    public int deleteRaw(Integer rawBatchId) {
+    public int deleteRaw(Long rawBatchId) {
         Raw raw = rawMapper.selectById(rawBatchId);
         if (raw != null) {
             raw.setIsDeleted(1);
@@ -195,7 +195,7 @@ public class RawService {
 
         // 安全解析 rawDetailId：RawPending.rawDetailId 为 String 类型
         try {
-            int detailId = Integer.parseInt(pending.getRawDetailId());
+            long detailId = Long.parseLong(pending.getRawDetailId());
             RawDetail detail = rawDetailMapper.selectById(detailId);
             if (detail != null) {
                 detail.setBatchNo(targetBatchNo);

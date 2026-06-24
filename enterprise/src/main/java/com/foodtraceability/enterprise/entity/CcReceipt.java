@@ -7,7 +7,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 @TableName("t_cc_receipt")
 public class CcReceipt {
     @TableId(type = IdType.AUTO)
-    private Integer receiptId;
+    private Long receiptId;
     private String orderNo;
     private String signer;
     private String signTime;
@@ -22,8 +22,8 @@ public class CcReceipt {
     private String updateTime;
     private int isDeleted;
 
-    public Integer getReceiptId() { return receiptId; }
-    public void setReceiptId(Integer receiptId) { this.receiptId = receiptId; }
+    public Long getReceiptId() { return receiptId; }
+    public void setReceiptId(Long receiptId) { this.receiptId = receiptId; }
 
     public String getOrderNo() { return orderNo; }
     public void setOrderNo(String orderNo) { this.orderNo = orderNo; }

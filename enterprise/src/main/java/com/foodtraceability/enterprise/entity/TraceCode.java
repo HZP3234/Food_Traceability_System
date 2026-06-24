@@ -19,7 +19,7 @@ public class TraceCode {
 
     /** 主键ID，自增 */
     @TableId(type = IdType.AUTO)
-    private Integer traceCodeId;
+    private Long traceCodeId;
 
     /** 与现有 fts 表一致的业务唯一标识。 */
     private String traceCodeUuid;
@@ -140,8 +140,8 @@ public class TraceCode {
 
     // ==================== Getter / Setter ====================
 
-    public Integer getTraceCodeId() { return traceCodeId; }
-    public void setTraceCodeId(Integer traceCodeId) { this.traceCodeId = traceCodeId; }
+    public Long getTraceCodeId() { return traceCodeId; }
+    public void setTraceCodeId(Long traceCodeId) { this.traceCodeId = traceCodeId; }
 
     public String getTraceCodeUuid() { return traceCodeUuid; }
     public void setTraceCodeUuid(String traceCodeUuid) { this.traceCodeUuid = traceCodeUuid; }

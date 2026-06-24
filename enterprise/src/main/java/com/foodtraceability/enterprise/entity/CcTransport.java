@@ -9,7 +9,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 @TableName("t_cc_transport")
 public class CcTransport {
     @TableId(type = IdType.AUTO)
-    private Integer transportId;
+    private Long transportId;
     private String orderNo;
     private String plateNo;
     private String driverName;
@@ -41,8 +41,8 @@ public class CcTransport {
     private String updateTime;
     private int isDeleted;
 
-    public Integer getTransportId() { return transportId; }
-    public void setTransportId(Integer transportId) { this.transportId = transportId; }
+    public Long getTransportId() { return transportId; }
+    public void setTransportId(Long transportId) { this.transportId = transportId; }
 
     public String getOrderNo() { return orderNo; }
     public void setOrderNo(String orderNo) { this.orderNo = orderNo; }

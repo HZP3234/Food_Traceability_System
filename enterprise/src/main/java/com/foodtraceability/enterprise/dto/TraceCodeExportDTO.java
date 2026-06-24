@@ -16,7 +16,7 @@ public class TraceCodeExportDTO {
     private List<String> traceCodeList;
 
     /** 标签模板ID：1-标准标签 2-简化标签 */
-    private Integer templateId;
+    private Long templateId;
 
     /**
      * 导出格式：
@@ -34,8 +34,8 @@ public class TraceCodeExportDTO {
     public List<String> getTraceCodeList() { return traceCodeList; }
     public void setTraceCodeList(List<String> traceCodeList) { this.traceCodeList = traceCodeList; }
 
-    public Integer getTemplateId() { return templateId; }
-    public void setTemplateId(Integer templateId) { this.templateId = templateId; }
+    public Long getTemplateId() { return templateId; }
+    public void setTemplateId(Long templateId) { this.templateId = templateId; }
 
     public String getExportFormat() { return exportFormat; }
     public void setExportFormat(String exportFormat) { this.exportFormat = exportFormat; }

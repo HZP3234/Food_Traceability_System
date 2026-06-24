@@ -7,7 +7,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 @TableName("t_prod_env_record")
 public class ProdEnvRecord {
     @TableId(type = IdType.AUTO)
-    private Integer envRecordId;
+    private Long envRecordId;
     private String productionLine;
     private String collectTime;
     private String collector;
@@ -25,8 +25,8 @@ public class ProdEnvRecord {
     private String updateTime;
     private int isDeleted;
 
-    public Integer getEnvRecordId() { return envRecordId; }
-    public void setEnvRecordId(Integer envRecordId) { this.envRecordId = envRecordId; }
+    public Long getEnvRecordId() { return envRecordId; }
+    public void setEnvRecordId(Long envRecordId) { this.envRecordId = envRecordId; }
 
     public String getProductionLine() { return productionLine; }
     public void setProductionLine(String productionLine) { this.productionLine = productionLine; }

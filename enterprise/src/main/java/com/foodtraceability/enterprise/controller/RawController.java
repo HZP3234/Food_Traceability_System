@@ -64,7 +64,7 @@ public class RawController {
 
     // 软删除原料批次
     @RequestMapping("/deleteRaw")
-    public String deleteRaw(Integer rawBatchId) {
+    public String deleteRaw(Long rawBatchId) {
         int num = rawService.deleteRaw(rawBatchId);
         if (num == 1) {
             return "原料批次删除成功";

@@ -7,7 +7,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 @TableName("t_cc_transport_node")
 public class CcTransportNode {
     @TableId(type = IdType.AUTO)
-    private Integer nodeId;
+    private Long nodeId;
     private String orderNo;
     private int nodeType;
     private String nodeTime;
@@ -21,8 +21,8 @@ public class CcTransportNode {
     private String updateTime;
     private int isDeleted;
 
-    public Integer getNodeId() { return nodeId; }
-    public void setNodeId(Integer nodeId) { this.nodeId = nodeId; }
+    public Long getNodeId() { return nodeId; }
+    public void setNodeId(Long nodeId) { this.nodeId = nodeId; }
 
     public String getOrderNo() { return orderNo; }
     public void setOrderNo(String orderNo) { this.orderNo = orderNo; }

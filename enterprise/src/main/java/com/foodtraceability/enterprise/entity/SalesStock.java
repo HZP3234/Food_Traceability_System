@@ -7,7 +7,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 @TableName("t_sales_stock")
 public class SalesStock {
     @TableId(type = IdType.AUTO)
-    private Integer stockId;
+    private Long stockId;
     private String stockCode;
     private String terminalId;
     private String terminalName;
@@ -25,8 +25,8 @@ public class SalesStock {
     private String updateTime;
     private int isDeleted;
 
-    public Integer getStockId() { return stockId; }
-    public void setStockId(Integer stockId) { this.stockId = stockId; }
+    public Long getStockId() { return stockId; }
+    public void setStockId(Long stockId) { this.stockId = stockId; }
 
     public String getStockCode() { return stockCode; }
     public void setStockCode(String stockCode) { this.stockCode = stockCode; }

@@ -7,7 +7,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 @TableName("t_raw_detail")
 public class RawDetail {
     @TableId(type = IdType.AUTO)
-    private Integer rawDetailId;
+    private Long rawDetailId;
     private String batchNo;
     private String origin;
     private String farmType;
@@ -30,8 +30,8 @@ public class RawDetail {
     private String updateTime;
     private int isDeleted;
 
-    public Integer getRawDetailId() { return rawDetailId; }
-    public void setRawDetailId(Integer rawDetailId) { this.rawDetailId = rawDetailId; }
+    public Long getRawDetailId() { return rawDetailId; }
+    public void setRawDetailId(Long rawDetailId) { this.rawDetailId = rawDetailId; }
 
     public String getBatchNo() { return batchNo; }
     public void setBatchNo(String batchNo) { this.batchNo = batchNo; }

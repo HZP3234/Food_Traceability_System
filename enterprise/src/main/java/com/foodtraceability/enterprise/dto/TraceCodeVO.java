@@ -11,7 +11,7 @@ package com.foodtraceability.enterprise.dto;
 public class TraceCodeVO {
 
     /** 主键ID */
-    private Integer traceCodeId;
+    private Long traceCodeId;
 
     /** 溯源码值 */
     private String traceCode;
@@ -66,8 +66,8 @@ public class TraceCodeVO {
 
     // ==================== Getter / Setter ====================
 
-    public Integer getTraceCodeId() { return traceCodeId; }
-    public void setTraceCodeId(Integer traceCodeId) { this.traceCodeId = traceCodeId; }
+    public Long getTraceCodeId() { return traceCodeId; }
+    public void setTraceCodeId(Long traceCodeId) { this.traceCodeId = traceCodeId; }
 
     public String getTraceCode() { return traceCode; }
     public void setTraceCode(String traceCode) { this.traceCode = traceCode; }

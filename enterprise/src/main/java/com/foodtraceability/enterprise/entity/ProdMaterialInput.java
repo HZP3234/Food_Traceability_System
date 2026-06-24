@@ -7,7 +7,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 @TableName("t_prod_material_input")
 public class ProdMaterialInput {
     @TableId(type = IdType.AUTO)
-    private Integer inputId;
+    private Long inputId;
     private String rawBatchNo;
     private String materialName;
     private int inputAmount;
@@ -18,8 +18,8 @@ public class ProdMaterialInput {
     private String updateTime;
     private int isDeleted;
 
-    public Integer getInputId() { return inputId; }
-    public void setInputId(Integer inputId) { this.inputId = inputId; }
+    public Long getInputId() { return inputId; }
+    public void setInputId(Long inputId) { this.inputId = inputId; }
 
     public String getRawBatchNo() { return rawBatchNo; }
     public void setRawBatchNo(String rawBatchNo) { this.rawBatchNo = rawBatchNo; }

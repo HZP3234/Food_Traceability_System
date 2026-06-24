@@ -7,7 +7,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 @TableName("t_process_batch")
 public class ProcessBatch {
     @TableId(type = IdType.AUTO)
-    private Integer processBatchId;
+    private Long processBatchId;
     private String batchNo;
     private String productName;
     private String templateName;
@@ -34,8 +34,8 @@ public class ProcessBatch {
     private String updateTime;
     private int isDeleted;
 
-    public Integer getProcessBatchId() { return processBatchId; }
-    public void setProcessBatchId(Integer processBatchId) { this.processBatchId = processBatchId; }
+    public Long getProcessBatchId() { return processBatchId; }
+    public void setProcessBatchId(Long processBatchId) { this.processBatchId = processBatchId; }
 
     public String getBatchNo() { return batchNo; }
     public void setBatchNo(String batchNo) { this.batchNo = batchNo; }

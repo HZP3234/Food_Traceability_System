@@ -64,7 +64,7 @@ public class ProductionController {
 
     // 软删除工艺模板
     @RequestMapping("/deleteTemplate")
-    public String deleteTemplate(Integer templateId) {
+    public String deleteTemplate(Long templateId) {
         int num = productionService.deleteTemplate(templateId);
         if (num == 1) {
             return "工艺模板删除成功";
@@ -118,7 +118,7 @@ public class ProductionController {
 
     // 完成加工批次
     @RequestMapping("/completeProcessBatch")
-    public String completeProcessBatch(Integer processBatchId) {
+    public String completeProcessBatch(Long processBatchId) {
         int num = productionService.completeProcessBatch(processBatchId);
         if (num == 1) {
             return "加工批次已完成";
@@ -129,7 +129,7 @@ public class ProductionController {
 
     // 软删除加工批次
     @RequestMapping("/deleteProcessBatch")
-    public String deleteProcessBatch(Integer processBatchId) {
+    public String deleteProcessBatch(Long processBatchId) {
         int num = productionService.deleteProcessBatch(processBatchId);
         if (num == 1) {
             return "加工批次删除成功";
@@ -185,7 +185,7 @@ public class ProductionController {
 
     // 完成生产批次
     @RequestMapping("/completeProdBatch")
-    public String completeProdBatch(Integer prodBatchId) {
+    public String completeProdBatch(Long prodBatchId) {
         int num = productionService.completeProdBatch(prodBatchId);
         if (num == 1) {
             return "生产批次已完成";
@@ -196,7 +196,7 @@ public class ProductionController {
 
     // 绑码完成
     @RequestMapping("/bindCode")
-    public String bindCode(Integer prodBatchId) {
+    public String bindCode(Long prodBatchId) {
         int num = productionService.bindCodeComplete(prodBatchId);
         if (num == 1) {
             return "溯源码绑定完成";
@@ -207,7 +207,7 @@ public class ProductionController {
 
     // 软删除生产批次
     @RequestMapping("/deleteProdBatch")
-    public String deleteProdBatch(Integer prodBatchId) {
+    public String deleteProdBatch(Long prodBatchId) {
         int num = productionService.deleteProdBatch(prodBatchId);
         if (num == 1) {
             return "生产批次删除成功";

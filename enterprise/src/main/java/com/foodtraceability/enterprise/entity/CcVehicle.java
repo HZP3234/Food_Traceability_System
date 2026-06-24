@@ -7,7 +7,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 @TableName("t_cc_vehicle")
 public class CcVehicle { 
     @TableId(type = IdType.AUTO)
-    private Integer vehicleId;
+    private Long vehicleId;
     private String plateNo;
     private String vehicleModel;
     private String driverName;
@@ -24,8 +24,8 @@ public class CcVehicle {
     private String updateTime;
     private int isDeleted;
 
-    public Integer getVehicleId() { return vehicleId; }
-    public void setVehicleId(Integer vehicleId) { this.vehicleId = vehicleId; }
+    public Long getVehicleId() { return vehicleId; }
+    public void setVehicleId(Long vehicleId) { this.vehicleId = vehicleId; }
 
     public String getPlateNo() { return plateNo; }
     public void setPlateNo(String plateNo) { this.plateNo = plateNo; }

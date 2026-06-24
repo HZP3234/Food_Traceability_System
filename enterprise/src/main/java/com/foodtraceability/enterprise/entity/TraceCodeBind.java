@@ -19,7 +19,7 @@ public class TraceCodeBind {
 
     /** 主键ID，自增 */
     @TableId(type = IdType.AUTO)
-    private Integer bindId;
+    private Long bindId;
 
     /** 溯源码值（外键关联 t_trace_code.trace_code） */
     private String traceCode;
@@ -52,8 +52,8 @@ public class TraceCodeBind {
 
     // ==================== Getter / Setter ====================
 
-    public Integer getBindId() { return bindId; }
-    public void setBindId(Integer bindId) { this.bindId = bindId; }
+    public Long getBindId() { return bindId; }
+    public void setBindId(Long bindId) { this.bindId = bindId; }
 
     public String getTraceCode() { return traceCode; }
     public void setTraceCode(String traceCode) { this.traceCode = traceCode; }

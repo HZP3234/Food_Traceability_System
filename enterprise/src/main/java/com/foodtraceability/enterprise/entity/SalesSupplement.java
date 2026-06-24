@@ -7,7 +7,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 @TableName("t_sales_supplement")
 public class SalesSupplement {
     @TableId(type = IdType.AUTO)
-    private Integer supplementId;
+    private Long supplementId;
     private String supplementCode;
     private String traceBatchId;
     private String traceBatchNo;
@@ -34,8 +34,8 @@ public class SalesSupplement {
     private String updateTime;
     private int isDeleted;
 
-    public Integer getSupplementId() { return supplementId; }
-    public void setSupplementId(Integer supplementId) { this.supplementId = supplementId; }
+    public Long getSupplementId() { return supplementId; }
+    public void setSupplementId(Long supplementId) { this.supplementId = supplementId; }
 
     public String getSupplementCode() { return supplementCode; }
     public void setSupplementCode(String supplementCode) { this.supplementCode = supplementCode; }

@@ -62,7 +62,7 @@ public class SalesController {
 
     // 软删除终端
     @RequestMapping("/deleteTerminal")
-    public String deleteTerminal(Integer terminalId) {
+    public String deleteTerminal(Long terminalId) {
         int num = salesService.deleteTerminal(terminalId);
         if (num == 1) {
             return "终端删除成功";

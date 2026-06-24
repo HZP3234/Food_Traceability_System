@@ -101,7 +101,7 @@ public class SalesService {
     }
 
     // 软删除终端
-    public int deleteTerminal(Integer terminalId) {
+    public int deleteTerminal(Long terminalId) {
         SalesTerminal terminal = salesTerminalMapper.selectById(terminalId);
         if (terminal != null) {
             terminal.setIsDeleted(1);
@@ -326,7 +326,7 @@ public class SalesService {
         if (fraudBatchNos.isEmpty()) return;
 
         // 6. 标记涉及窜货批次的终端
-        java.util.Set<Integer> fraudTerminalIds = new java.util.HashSet<>();
+        java.util.Set<Long> fraudTerminalIds = new java.util.HashSet<>();
         for (SalesStock stock : allStocks) {
             if (fraudBatchNos.contains(stock.getProdBatchNo())) {
                 // 查找该库存对应的终端
@@ -341,7 +341,7 @@ public class SalesService {
         }
 
         // 7. 更新终端状态
-        for (Integer terminalId : fraudTerminalIds) {
+        for (Long terminalId : fraudTerminalIds) {
             SalesTerminal terminal = salesTerminalMapper.selectById(terminalId);
             if (terminal != null && terminal.getTerminalStatus() != 2) {
                 terminal.setTerminalStatus(2); // 区域异常

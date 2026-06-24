@@ -7,7 +7,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 @TableName("t_quality_inspection")
 public class QualityInspection {
     @TableId(type = IdType.AUTO)
-    private Integer inspectionId;
+    private Long inspectionId;
     private String inspectionNo;
     private int bizType;
     private String bizBatchNo;
@@ -27,8 +27,8 @@ public class QualityInspection {
     private String updateTime;
     private int isDeleted;
 
-    public Integer getInspectionId() { return inspectionId; }
-    public void setInspectionId(Integer inspectionId) { this.inspectionId = inspectionId; }
+    public Long getInspectionId() { return inspectionId; }
+    public void setInspectionId(Long inspectionId) { this.inspectionId = inspectionId; }
 
     public String getInspectionNo() { return inspectionNo; }
     public void setInspectionNo(String inspectionNo) { this.inspectionNo = inspectionNo; }

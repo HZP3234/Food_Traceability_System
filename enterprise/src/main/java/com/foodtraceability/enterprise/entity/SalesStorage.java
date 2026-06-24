@@ -7,7 +7,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 @TableName("t_sales_storage")
 public class SalesStorage {
     @TableId(type = IdType.AUTO)
-    private Integer storageId;
+    private Long storageId;
     private String terminalCode;
     private String terminalType;
     private String productType;
@@ -26,8 +26,8 @@ public class SalesStorage {
     private String updateTime;
     private int isDeleted;
 
-    public Integer getStorageId() { return storageId; }
-    public void setStorageId(Integer storageId) { this.storageId = storageId; }
+    public Long getStorageId() { return storageId; }
+    public void setStorageId(Long storageId) { this.storageId = storageId; }
 
     public String getTerminalCode() { return terminalCode; }
     public void setTerminalCode(String terminalCode) { this.terminalCode = terminalCode; }

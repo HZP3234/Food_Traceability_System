@@ -9,7 +9,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 @TableName("t_raw_batch")
 public class Raw {
     @TableId(type = IdType.AUTO)
-    private Integer rawBatchId;
+    private Long rawBatchId;
     private String batchNo;
     private String productName;
     private String productCategory;
@@ -33,8 +33,8 @@ public class Raw {
     private String updateTime;
     private int isDeleted;
 
-    public Integer getRawBatchId() { return rawBatchId; }
-    public void setRawBatchId(Integer rawBatchId) { this.rawBatchId = rawBatchId; }
+    public Long getRawBatchId() { return rawBatchId; }
+    public void setRawBatchId(Long rawBatchId) { this.rawBatchId = rawBatchId; }
 
     public String getBatchNo() { return batchNo; }
     public void setBatchNo(String batchNo) { this.batchNo = batchNo; }

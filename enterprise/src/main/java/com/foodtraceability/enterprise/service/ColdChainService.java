@@ -102,7 +102,7 @@ public class ColdChainService {
     }
 
     // 软删除仓库
-    public int deleteWarehouse(Integer warehouseId) {
+    public int deleteWarehouse(Long warehouseId) {
         Warehouse warehouse = warehouseMapper.selectById(warehouseId);
         if (warehouse != null) {
             warehouse.setIsDeleted(1);
@@ -162,7 +162,7 @@ public class ColdChainService {
     }
 
     // 更新车辆状态
-    public int updateVehicleStatus(Integer vehicleId, Integer vehicleStatus) {
+    public int updateVehicleStatus(Long vehicleId, Integer vehicleStatus) {
         CcVehicle vehicle = ccVehicleMapper.selectById(vehicleId);
         if (vehicle != null) {
             vehicle.setVehicleStatus(vehicleStatus);
@@ -173,7 +173,7 @@ public class ColdChainService {
     }
 
     // 软删除车辆
-    public int deleteVehicle(Integer vehicleId) {
+    public int deleteVehicle(Long vehicleId) {
         CcVehicle vehicle = ccVehicleMapper.selectById(vehicleId);
         if (vehicle != null) {
             vehicle.setIsDeleted(1);
@@ -249,7 +249,7 @@ public class ColdChainService {
 
     // 发运：更新车辆状态为运输中，运输订单状态为运输中
     @Transactional
-    public int departTransport(Integer transportId) {
+    public int departTransport(Long transportId) {
         CcTransport transport = ccTransportMapper.selectById(transportId);
         if (transport == null) return 0;
         String now = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
@@ -283,7 +283,7 @@ public class ColdChainService {
 
     // 抵达签收
     @Transactional
-    public int arriveTransport(Integer transportId) {
+    public int arriveTransport(Long transportId) {
         CcTransport transport = ccTransportMapper.selectById(transportId);
         if (transport == null) return 0;
         String now = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
@@ -316,7 +316,7 @@ public class ColdChainService {
     }
 
     // 温度预警
-    public int alertTransport(Integer transportId) {
+    public int alertTransport(Long transportId) {
         CcTransport transport = ccTransportMapper.selectById(transportId);
         if (transport == null) return 0;
         transport.setTransportStatus(3);
@@ -326,7 +326,7 @@ public class ColdChainService {
 
     // 异常关闭
     @Transactional
-    public int closeTransport(Integer transportId) {
+    public int closeTransport(Long transportId) {
         CcTransport transport = ccTransportMapper.selectById(transportId);
         if (transport == null) return 0;
         transport.setTransportStatus(5);
@@ -343,7 +343,7 @@ public class ColdChainService {
     }
 
     // 软删除运输订单
-    public int deleteTransport(Integer transportId) {
+    public int deleteTransport(Long transportId) {
         CcTransport transport = ccTransportMapper.selectById(transportId);
         if (transport != null) {
             transport.setIsDeleted(1);

@@ -1,9 +1,22 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, markRaw, type Component } from 'vue'
 import { navigation, roles, type RoleKey } from './config/navigation'
+import RawMaterials from './pages/RawMaterials.vue'
+import Production from './pages/Production.vue'
+import Processing from './pages/Processing.vue'
+import ColdChain from './pages/ColdChain.vue'
+import Sales from './pages/Sales.vue'
 
 const currentRole = ref<RoleKey>('super-admin')
 const activePage = ref('dashboard')
+
+const pageComponents: Record<string, Component> = {
+  'raw-batch': markRaw(RawMaterials),
+  'production-batch': markRaw(Production),
+  'process-batch': markRaw(Processing),
+  'cold-chain': markRaw(ColdChain),
+  'sales': markRaw(Sales),
+}
 
 const visibleNavigation = computed(() =>
   navigation
@@ -14,6 +27,8 @@ const visibleNavigation = computed(() =>
 const activeItem = computed(() =>
   visibleNavigation.value.flatMap((group) => group.items).find((item) => item.id === activePage.value),
 )
+
+const currentComponent = computed(() => pageComponents[activePage.value] || null)
 
 function changeRole(event: Event) {
   currentRole.value = (event.target as HTMLSelectElement).value as RoleKey
@@ -75,7 +90,8 @@ function changeRole(event: Event) {
           <button type="button" class="ghost-button">页面说明</button>
         </div>
 
-        <article class="module-placeholder">
+        <component v-if="currentComponent" :is="currentComponent" />
+        <article v-else class="module-placeholder">
           <div class="placeholder-icon">{{ activeItem?.icon ?? '⌂' }}</div>
           <h2>{{ activeItem?.label ?? '系统首页' }} 模块内容区</h2>
           <p>这是统一后台框架预留的内容插槽。负责该模块的成员可在此接入自己的列表、表单、图表和接口逻辑。</p>

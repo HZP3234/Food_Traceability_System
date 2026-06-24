@@ -7,7 +7,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 @TableName("t_warehouse")
 public class Warehouse {
     @TableId(type = IdType.AUTO)
-    private Integer warehouseId;
+    private Long warehouseId;
     private String warehouseUuid;
     private String warehouseName;
     private int warehouseType;
@@ -24,8 +24,8 @@ public class Warehouse {
     private String updateTime;
     private int isDeleted;
 
-    public Integer getWarehouseId() { return warehouseId; }
-    public void setWarehouseId(Integer warehouseId) { this.warehouseId = warehouseId; }
+    public Long getWarehouseId() { return warehouseId; }
+    public void setWarehouseId(Long warehouseId) { this.warehouseId = warehouseId; }
 
     public String getWarehouseUuid() { return warehouseUuid; }
     public void setWarehouseUuid(String warehouseUuid) { this.warehouseUuid = warehouseUuid; }

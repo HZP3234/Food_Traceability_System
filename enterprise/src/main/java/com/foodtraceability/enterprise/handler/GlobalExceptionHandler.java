@@ -1,5 +1,7 @@
 package com.foodtraceability.enterprise.handler;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -10,34 +12,34 @@ import java.util.Map;
 
 /**
  * 全局异常处理器
- * <p>
- * 统一将 Service 层抛出的 RuntimeException 转换为结构化的 JSON 响应，
- * 避免客户端收到 Spring Boot 默认的 500 错误页面。
- *
- * @author generated
- * @since 2026-06-24
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @ExceptionHandler(RuntimeException.class)
     public Map<String, Object> handleRuntimeException(RuntimeException ex) {
+        log.error("业务异常: {}", ex.getClass().getName(), ex);
+        Throwable cause = ex.getCause();
+        String detail = ex.getMessage() != null ? ex.getMessage() : ex.getClass().getSimpleName();
+        if (cause != null) detail += " | cause: " + cause.getClass().getSimpleName() + " - " + (cause.getMessage() != null ? cause.getMessage() : "(无消息)");
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("success", false);
         result.put("errorCode", "BUSINESS_ERROR");
-        result.put("errorMessage", ex.getMessage());
+        result.put("errorMessage", detail);
         result.put("timestamp", LocalDateTime.now().format(DATE_FMT));
         return result;
     }
 
     @ExceptionHandler(Exception.class)
     public Map<String, Object> handleException(Exception ex) {
+        log.error("系统异常: {}", ex.getClass().getName(), ex);
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("success", false);
         result.put("errorCode", "SYSTEM_ERROR");
-        result.put("errorMessage", "系统内部错误: " + ex.getMessage());
+        result.put("errorMessage", ex.getMessage() != null ? ex.getMessage() : ex.getClass().getSimpleName());
         result.put("timestamp", LocalDateTime.now().format(DATE_FMT));
         return result;
     }

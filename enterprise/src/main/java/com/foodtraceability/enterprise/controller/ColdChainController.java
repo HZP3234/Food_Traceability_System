@@ -64,7 +64,7 @@ public class ColdChainController {
 
     // 软删除仓库
     @RequestMapping("/deleteWarehouse")
-    public String deleteWarehouse(Integer warehouseId) {
+    public String deleteWarehouse(Long warehouseId) {
         int num = coldChainService.deleteWarehouse(warehouseId);
         if (num == 1) {
             return "仓库删除成功";
@@ -117,7 +117,7 @@ public class ColdChainController {
 
     // 更新车辆状态
     @RequestMapping("/updateVehicleStatus")
-    public String updateVehicleStatus(Integer vehicleId, int vehicleStatus) {
+    public String updateVehicleStatus(Long vehicleId, int vehicleStatus) {
         int num = coldChainService.updateVehicleStatus(vehicleId, vehicleStatus);
         if (num == 1) {
             return "车辆状态更新成功";
@@ -128,7 +128,7 @@ public class ColdChainController {
 
     // 软删除车辆
     @RequestMapping("/deleteVehicle")
-    public String deleteVehicle(Integer vehicleId) {
+    public String deleteVehicle(Long vehicleId) {
         int num = coldChainService.deleteVehicle(vehicleId);
         if (num == 1) {
             return "车辆删除成功";
@@ -188,7 +188,7 @@ public class ColdChainController {
 
     // 发运
     @RequestMapping("/departTransport")
-    public String departTransport(Integer transportId) {
+    public String departTransport(Long transportId) {
         int num = coldChainService.departTransport(transportId);
         if (num == 1) {
             return "运输订单已发运，车辆状态已更新";
@@ -199,7 +199,7 @@ public class ColdChainController {
 
     // 抵达签收
     @RequestMapping("/arriveTransport")
-    public String arriveTransport(Integer transportId) {
+    public String arriveTransport(Long transportId) {
         int num = coldChainService.arriveTransport(transportId);
         if (num == 1) {
             return "运输订单已签收，车辆已释放";
@@ -210,7 +210,7 @@ public class ColdChainController {
 
     // 温度预警
     @RequestMapping("/alertTransport")
-    public String alertTransport(Integer transportId) {
+    public String alertTransport(Long transportId) {
         int num = coldChainService.alertTransport(transportId);
         if (num == 1) {
             return "运输订单已标记为温度预警";
@@ -221,7 +221,7 @@ public class ColdChainController {
 
     // 异常关闭
     @RequestMapping("/closeTransport")
-    public String closeTransport(Integer transportId) {
+    public String closeTransport(Long transportId) {
         int num = coldChainService.closeTransport(transportId);
         if (num == 1) {
             return "运输订单已异常关闭，车辆已释放";
@@ -232,7 +232,7 @@ public class ColdChainController {
 
     // 软删除运输订单
     @RequestMapping("/deleteTransport")
-    public String deleteTransport(Integer transportId) {
+    public String deleteTransport(Long transportId) {
         int num = coldChainService.deleteTransport(transportId);
         if (num == 1) {
             return "运输订单删除成功";

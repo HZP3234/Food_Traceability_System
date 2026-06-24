@@ -9,7 +9,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 @TableName("t_cc_temp_humidity")
 public class CcTempHumidity {
     @TableId(type = IdType.AUTO)
-    private Integer recordId;
+    private Long recordId;
     private String orderNo;
     private BigDecimal temperature;
     private BigDecimal humidity;
@@ -23,8 +23,8 @@ public class CcTempHumidity {
     private String updateTime;
     private int isDeleted;
 
-    public Integer getRecordId() { return recordId; }
-    public void setRecordId(Integer recordId) { this.recordId = recordId; }
+    public Long getRecordId() { return recordId; }
+    public void setRecordId(Long recordId) { this.recordId = recordId; }
 
     public String getOrderNo() { return orderNo; }
     public void setOrderNo(String orderNo) { this.orderNo = orderNo; }

@@ -7,7 +7,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 @TableName("t_prod_batch")
 public class ProdBatch {
     @TableId(type = IdType.AUTO)
-    private Integer prodBatchId;
+    private Long prodBatchId;
     private String batchNo;
     private String productName;
     private String processBatchNo;
@@ -27,8 +27,8 @@ public class ProdBatch {
     private String updateTime;
     private int isDeleted;
 
-    public Integer getProdBatchId() { return prodBatchId; }
-    public void setProdBatchId(Integer prodBatchId) { this.prodBatchId = prodBatchId; }
+    public Long getProdBatchId() { return prodBatchId; }
+    public void setProdBatchId(Long prodBatchId) { this.prodBatchId = prodBatchId; }
 
     public String getBatchNo() { return batchNo; }
     public void setBatchNo(String batchNo) { this.batchNo = batchNo; }

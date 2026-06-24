@@ -122,7 +122,7 @@ public class ProductionService {
     }
 
     // 软删除工艺模板
-    public int deleteTemplate(Integer templateId) {
+    public int deleteTemplate(Long templateId) {
         TechTemplate template = techTemplateMapper.selectById(templateId);
         if (template != null) {
             template.setIsDeleted(1);
@@ -203,7 +203,7 @@ public class ProductionService {
     }
 
     // 完成加工批次
-    public int completeProcessBatch(Integer processBatchId) {
+    public int completeProcessBatch(Long processBatchId) {
         ProcessBatch processBatch = processBatchMapper.selectById(processBatchId);
         if (processBatch != null) {
             processBatch.setBatchStatus(2);
@@ -214,7 +214,7 @@ public class ProductionService {
     }
 
     // 软删除加工批次
-    public int deleteProcessBatch(Integer processBatchId) {
+    public int deleteProcessBatch(Long processBatchId) {
         ProcessBatch processBatch = processBatchMapper.selectById(processBatchId);
         if (processBatch != null) {
             processBatch.setIsDeleted(1);
@@ -286,7 +286,7 @@ public class ProductionService {
     }
 
     // 完成生产批次
-    public int completeProdBatch(Integer prodBatchId) {
+    public int completeProdBatch(Long prodBatchId) {
         ProdBatch prodBatch = prodBatchMapper.selectById(prodBatchId);
         if (prodBatch != null) {
             prodBatch.setBatchStatus(2);
@@ -297,7 +297,7 @@ public class ProductionService {
     }
 
     // 绑码完成
-    public int bindCodeComplete(Integer prodBatchId) {
+    public int bindCodeComplete(Long prodBatchId) {
         ProdBatch prodBatch = prodBatchMapper.selectById(prodBatchId);
         if (prodBatch != null) {
             prodBatch.setCodeStatus(1);
@@ -309,7 +309,7 @@ public class ProductionService {
     }
 
     // 软删除生产批次
-    public int deleteProdBatch(Integer prodBatchId) {
+    public int deleteProdBatch(Long prodBatchId) {
         ProdBatch prodBatch = prodBatchMapper.selectById(prodBatchId);
         if (prodBatch != null) {
             prodBatch.setIsDeleted(1);
