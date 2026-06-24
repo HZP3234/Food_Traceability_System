@@ -8,7 +8,7 @@ import { ref, computed, onMounted, inject, type Ref } from 'vue'
 import { rawApi } from '../services/api'
 import type { RoleKey } from '../config/navigation'
 
-// 当前登录用户信息
+// 当前登录用户信息//
 const currentUser = sessionStorage.getItem('fts-admin-user') || ''
 const currentRole = inject<Ref<RoleKey>>('currentRole')
 

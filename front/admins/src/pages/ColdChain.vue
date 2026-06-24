@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { coldChainApi } from '../services/api'
 
-const tab = ref<'transport' | 'vehicle' | 'warehouse'>('transport')
+const tab = ref<'transport' | 'vehicle' | 'warehouse'>('transport')//
 const toast = ref<{ type: string; msg: string } | null>(null)
 
 // Transport
