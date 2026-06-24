@@ -25,13 +25,6 @@ export const navigation: NavigationGroup[] = [
     items: [{ id: 'dashboard', label: '系统首页', icon: '⌂', roles: ['super-admin', 'enterprise', 'regulator'] }],
   },
   {
-    label: '溯源查询',
-    items: [
-      { id: 'scan', label: '扫码查询', icon: '⌁', roles: ['super-admin', 'enterprise', 'regulator'] },
-      { id: 'complaint', label: '投诉反馈', icon: '讯', roles: ['super-admin', 'enterprise', 'regulator'] },
-    ],
-  },
-  {
     label: '批次管理',
     items: [
       { id: 'raw-batch', label: '原料批次管理', icon: '原', roles: ['super-admin', 'enterprise', 'regulator'] },

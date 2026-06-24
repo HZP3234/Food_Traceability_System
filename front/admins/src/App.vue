@@ -30,10 +30,6 @@ const activeItem = computed(() =>
 
 const currentComponent = computed(() => pageComponents[activePage.value] || null)
 
-function changeRole(event: Event) {
-  currentRole.value = (event.target as HTMLSelectElement).value as RoleKey
-  if (!activeItem.value) activePage.value = 'dashboard'
-}
 </script>
 
 <template>
@@ -43,13 +39,6 @@ function changeRole(event: Event) {
         <span class="brand-mark">溯</span>
         <span>食品溯源系统</span>
       </div>
-
-      <section class="role-card" aria-label="当前角色">
-        <label for="role">当前角色</label>
-        <select id="role" :value="currentRole" @change="changeRole">
-          <option v-for="(label, key) in roles" :key="key" :value="key">{{ label }}</option>
-        </select>
-      </section>
 
       <nav class="side-nav" aria-label="主导航">
         <section v-for="group in visibleNavigation" :key="group.label" class="nav-group">
