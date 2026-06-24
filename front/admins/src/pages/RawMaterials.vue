@@ -64,6 +64,12 @@ function openEdit(row: any) {
   showBatchModal.value = true
 }
 async function submitBatch() {
+  // 前端校验必填字段
+  if (!batchForm.value.productName.trim()) { flash('error', '请填写产品名称'); return }
+  if (!batchForm.value.productCategory.trim()) { flash('error', '请填写产品类别'); return }
+  if (!batchForm.value.supplierName.trim()) { flash('error', '请填写供应商名称'); return }
+  if (!batchForm.value.supplierId.trim()) { flash('error', '请填写供应商编码'); return }
+  if (!batchForm.value.warehouse.trim()) { flash('error', '请填写仓库'); return }
   try {
     const data: Record<string, any> = { ...batchForm.value }
     if (editing.value) { data.rawBatchId = editing.value.rawBatchId; await rawApi.update(data); flash('success', '批次更新成功') }
@@ -174,13 +180,13 @@ onMounted(loadList)
           💡 填写<strong>批次号、产品、供应商</strong>。创建后，原料供应商将在"原料信息上传"页面补充<strong>产地、认证、运输等源头详情</strong>。
         </div>
         <div class="form-section"><div class="form-section-title"><span class="ico">基</span>基本信息</div>
-          <div class="form-row"><div class="form-group"><label>批次号</label><input v-model="batchForm.batchNo" placeholder="留空自动生成" /></div><div class="form-group"><label>产品名称 *</label><input v-model="batchForm.productName" placeholder="如：生牛乳" /></div></div>
-          <div class="form-row"><div class="form-group"><label>产品类别</label><input v-model="batchForm.productCategory" placeholder="如：乳制品原料" /></div><div class="form-group"><label>供应商名称 *</label><input v-model="batchForm.supplierName" placeholder="哪家公司供货" /></div></div>
-          <div class="form-row"><div class="form-group"><label>数量</label><input v-model="batchForm.amount" type="number" /></div><div class="form-group"><label>单位</label><input v-model="batchForm.unit" placeholder="t / kg" /></div></div>
-          <div class="form-row"><div class="form-group"><label>仓库</label><input v-model="batchForm.warehouse" /></div><div class="form-group"><label>储存方式</label><select v-model.number="batchForm.storageMethod"><option v-for="(m,i) in storageMethods" :key="i" :value="i">{{ m }}</option></select></div></div>
-          <div class="form-row"><div class="form-group"><label>保质期</label><input v-model="batchForm.shelfLife" /></div><div class="form-group"><label>采购日期</label><input v-model="batchForm.purchaseDate" /></div></div>
+          <div class="form-row"><div class="form-group"><label>批次号</label><input v-model="batchForm.batchNo" placeholder="留空自动生成" /></div><div class="form-group"><label>产品名称 *</label><input v-model="batchForm.productName" placeholder="如：生牛乳" required /></div></div>
+          <div class="form-row"><div class="form-group"><label>产品类别 *</label><input v-model="batchForm.productCategory" placeholder="如：乳制品原料" required /></div><div class="form-group"><label>供应商名称 *</label><input v-model="batchForm.supplierName" placeholder="哪家公司供货" required /></div></div>
+          <div class="form-row"><div class="form-group"><label>数量</label><input v-model="batchForm.amount" type="number" min="0" step="0.01" placeholder="0.00" /></div><div class="form-group"><label>单位</label><input v-model="batchForm.unit" placeholder="kg / t" /></div></div>
+          <div class="form-row"><div class="form-group"><label>仓库 *</label><input v-model="batchForm.warehouse" placeholder="如：A1-03" required /></div><div class="form-group"><label>储存方式</label><select v-model.number="batchForm.storageMethod"><option v-for="(m,i) in storageMethods" :key="i" :value="i">{{ m }}</option></select></div></div>
+          <div class="form-row"><div class="form-group"><label>保质期</label><input v-model="batchForm.shelfLife" type="date" /></div><div class="form-group"><label>采购日期</label><input v-model="batchForm.purchaseDate" type="date" /></div></div>
         </div>
-        <div class="form-group"><label>供应商编码</label><input v-model="batchForm.supplierId" /></div>
+        <div class="form-group"><label>供应商编码 *</label><input v-model="batchForm.supplierId" placeholder="如：SUP2026001" required /></div>
         <div class="form-group"><label>备注</label><textarea v-model="batchForm.remark" /></div>
       </div>
       <div class="modal-footer"><button class="btn btn-outline" @click="showBatchModal = false">取消</button><button class="btn btn-primary" @click="submitBatch">{{ editing ? '保存' : '创建批次' }}</button></div>

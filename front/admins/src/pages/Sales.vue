@@ -18,6 +18,8 @@ const tForm = ref({ terminalCode: '', terminalName: '', terminalType: 0, area: '
 const terminalTypeLabels = ['', '超市', '便利店', '餐饮', '电商', '农贸', '其他']
 
 // Stock
+
+
 const loadingS = ref(false); const stocks = ref<any[]>([])
 const sFilters = ref({ terminalId: '', prodBatchNo: '' })
 const showSModal = ref(false); const editingS = ref<any>(null)

@@ -6,6 +6,7 @@ export default defineConfig({
   plugins: [vue()],
   server: {
     proxy: {
+      '/auth': 'http://localhost:8082',
       '/Raw': 'http://localhost:8082',
       '/Production': 'http://localhost:8082',
       '/ColdChain': 'http://localhost:8082',

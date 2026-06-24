@@ -93,6 +93,12 @@ public class RawService {
         if (raw.getDetailId() == null || raw.getDetailId().isBlank()) raw.setDetailId("0");
         if (raw.getDetailStatus() == null) raw.setDetailStatus(0);
         if (raw.getDataHash() == null) raw.setDataHash("");
+        // 为 NOT NULL 且无数据库默认值的字段设默认值，防止前端未传参时插入失败
+        if (raw.getProductName() == null || raw.getProductName().isBlank()) raw.setProductName("未命名原料");
+        if (raw.getProductCategory() == null || raw.getProductCategory().isBlank()) raw.setProductCategory("未分类");
+        if (raw.getSupplierId() == null || raw.getSupplierId().isBlank()) raw.setSupplierId("UNKNOWN");
+        if (raw.getSupplierName() == null || raw.getSupplierName().isBlank()) raw.setSupplierName("未知供应商");
+        if (raw.getWarehouse() == null || raw.getWarehouse().isBlank()) raw.setWarehouse("未指定仓库");
         raw.setCreateTime(now);
         raw.setUpdateTime(now);
         raw.setCreateBy(raw.getCreateBy() != null ? raw.getCreateBy() : "SYSTEM");
