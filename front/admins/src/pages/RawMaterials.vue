@@ -7,6 +7,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { rawApi } from '../services/api'
 
+const currentUser = sessionStorage.getItem('fts-admin-user') || ''
 const loading = ref(false)
 const list = ref<any[]>([])
 const pendingList = ref<any[]>([])
@@ -85,7 +86,7 @@ function confirmDelete(id: number) { deletingId.value = id; showConfirm.value = 
 async function doDelete() { try { await rawApi.delete(deletingId.value!); flash('success', '已删除'); showConfirm.value = false; loadList() } catch (e: any) { flash('error', '删除失败') } }
 
 function openQc(row: any) { qcForm.value = { batchNo: row.batchNo, checkResult: 1 }; showQcModal.value = true }
-async function submitQc() { try { await rawApi.qualityCheck(qcForm.value.batchNo, qcForm.value.checkResult); flash('success', '质检录入成功'); showQcModal.value = false; loadList() } catch (e: any) { flash('error', '质检失败') } }
+async function submitQc() { try { await rawApi.qualityCheck(qcForm.value.batchNo, qcForm.value.checkResult); flash('success', `质检录入成功（${qcForm.value.checkResult === 1 ? '合格' : '不合格'}，操作人：${currentUser || 'SYSTEM'}）`); showQcModal.value = false; loadList() } catch (e: any) { flash('error', '质检失败') } }
 
 function openMatchPending(p: any) {
   matchPendingItem.value = p
@@ -209,6 +210,7 @@ onMounted(loadList)
       <div class="modal-body">
         <div class="form-group"><label>批次号</label><input v-model="qcForm.batchNo" readonly style="background:#f8fafc" /></div>
         <div class="form-group"><label>质检结果</label><select v-model.number="qcForm.checkResult"><option :value="1">✓ 合格</option><option :value="2">✗ 不合格</option></select></div>
+        <div style="padding:10px;background:#f8fafc;border-radius:7px;font-size:12px;color:#6c84a3">操作人：<strong>{{ currentUser || '当前用户' }}</strong></div>
       </div>
       <div class="modal-footer"><button class="btn btn-outline" @click="showQcModal = false">取消</button><button class="btn btn-primary" @click="submitQc">确认提交</button></div>
     </div></div>

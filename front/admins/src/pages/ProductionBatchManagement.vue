@@ -101,6 +101,7 @@ const stats = computed(() => {
 })
 
 // ---- utils ----
+const currentUser = sessionStorage.getItem('fts-admin-user') || ''
 function flash(type: string, msg: string) { toast.value = { type, msg }; setTimeout(() => (toast.value = null), 2600) }
 function tagClass(s: string) {
   if (['已完成', '已存证', '已绑定', '已启用', '合格', '正常'].some(x => s.includes(x))) return 'tag-success'
@@ -144,8 +145,7 @@ function openQcProd(row: any) { qcTarget.value = row; qcResult.value = 1; showQc
 async function submitQcProd() {
   try {
     await productionApi.qualityCheckProd(qcTarget.value.batchNo, qcResult.value)
-    const operator = sessionStorage.getItem('fts-admin-user') || 'SYSTEM'
-    flash('success', `质检结果已录入（${qcResult.value === 1 ? '合格' : '不合格'}，操作人：${operator}）`)
+    flash('success', `质检结果已录入（${qcResult.value === 1 ? '合格' : '不合格'}，操作人：${currentUser || 'SYSTEM'}）`)
     showQcProdModal.value = false; loadProdBatch()
   } catch (e: any) { flash('error', '质检失败: ' + e.message) }
 }
@@ -575,6 +575,35 @@ onMounted(loadProdBatch)
           <pre v-if="chainData" style="background:#f8fafc;padding:12px;border-radius:8px;font-size:12px;max-height:200px;overflow:auto">{{ JSON.stringify(chainData, null, 2) }}</pre>
         </div>
         <div class="modal-footer"><button class="btn btn-outline" @click="showChainModal = false">关闭</button></div>
+      </div>
+    </div>
+
+    <!-- ==================== 质检模态框：生产批次 ==================== -->
+    <div v-if="showQcProdModal" class="modal-overlay" @click.self="showQcProdModal = false">
+      <div class="modal" style="width:460px">
+        <div class="modal-header"><h3>生产批次质检</h3><button class="modal-close" @click="showQcProdModal = false">✕</button></div>
+        <div class="modal-body">
+          <p style="color:#6c84a3;margin:0 0 16px;font-size:13px">
+            批次号：<code style="color:#2666df;font-weight:700">{{ qcTarget?.batchNo }}</code><br/>
+            产品：<strong>{{ qcTarget?.productName }}</strong>
+          </p>
+          <div class="form-group">
+            <label>质检结果 *</label>
+            <select v-model.number="qcResult" style="width:100%;padding:10px 12px;border:1px solid #d7e4f0;border-radius:7px;font-size:14px">
+              <option :value="1">✓ 合格</option>
+              <option :value="2">✗ 不合格</option>
+            </select>
+          </div>
+          <div style="padding:10px;background:#f8fafc;border-radius:7px;font-size:12px;color:#6c84a3">
+            操作人：<strong>{{ currentUser || '当前用户' }}</strong>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline" @click="showQcProdModal = false">取消</button>
+          <button class="btn" :class="qcResult === 1 ? 'btn-success' : 'btn-danger'" @click="submitQcProd">
+            确认{{ qcResult === 1 ? '合格' : '不合格' }}
+          </button>
+        </div>
       </div>
     </div>
 
