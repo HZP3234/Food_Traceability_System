@@ -1,21 +1,26 @@
 <script setup lang="ts">
-import { computed, ref, markRaw, type Component } from 'vue'
+import { computed, ref, markRaw, provide, type Component } from 'vue'
 import { navigation, roles, type RoleKey } from './config/navigation'
 import RawMaterials from './pages/RawMaterials.vue'
+import SupplierRawMaterials from './pages/SupplierRawMaterials.vue'
 import Production from './pages/Production.vue'
 import Processing from './pages/Processing.vue'
 import ColdChain from './pages/ColdChain.vue'
 import Sales from './pages/Sales.vue'
 
-const currentRole = ref<RoleKey>('super-admin')
+const currentRole = ref<RoleKey>('manufacturer')
 const activePage = ref('dashboard')
+
+// 通过 provide 让子页面感知当前角色
+provide('currentRole', currentRole)
 
 const pageComponents: Record<string, Component> = {
   'raw-batch': markRaw(RawMaterials),
+  'supplier-raw': markRaw(SupplierRawMaterials),
   'production-batch': markRaw(Production),
   'process-batch': markRaw(Processing),
   'cold-chain': markRaw(ColdChain),
-  'sales': markRaw(Sales),
+  'sales-terminal': markRaw(Sales),
 }
 
 const visibleNavigation = computed(() =>
@@ -29,6 +34,8 @@ const activeItem = computed(() =>
 )
 
 const currentComponent = computed(() => pageComponents[activePage.value] || null)
+
+const pageDesc = computed(() => activeItem.value?.desc || '')
 
 function changeRole(event: Event) {
   currentRole.value = (event.target as HTMLSelectElement).value as RoleKey
@@ -84,7 +91,7 @@ function changeRole(event: Event) {
       <section class="page-slot">
         <div class="page-title">
           <div>
-            <p>后台管理框架</p>
+            <p>{{ pageDesc || '后台管理框架' }}</p>
             <h1>{{ activeItem?.label ?? '系统首页' }}</h1>
           </div>
           <button type="button" class="ghost-button">页面说明</button>

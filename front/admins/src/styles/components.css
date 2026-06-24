@@ -82,3 +82,64 @@
 .confirm-box h3 { margin: 0 0 8px; color: #16385f; font-size: 17px; }
 .confirm-box p { margin: 0 0 22px; color: #6c84a3; font-size: 14px; }
 .confirm-actions { display: flex; justify-content: center; gap: 12px; }
+
+/* ---- 统计卡片 (app.js stats) ---- */
+.page-stats { display: grid; grid-template-columns: repeat(4, minmax(140px, 1fr)); gap: 14px; margin-bottom: 18px; }
+.stat-card { min-height: 82px; padding: 14px 16px; border: 1px solid #dce7f1; border-radius: 10px; background: #fff; box-shadow: 0 8px 22px rgba(23,32,51,.04); }
+.stat-card .stat-meta { display: flex; justify-content: space-between; gap: 8px; color: #6c84a3; font-size: 12px; font-weight: 700; margin-bottom: 8px; }
+.stat-card b { font-size: 24px; color: #173259; }
+.stat-card .stat-ico { width: 20px; height: 20px; border-radius: 6px; display: inline-grid; place-items: center; color: #2666df; background: #e8f0ff; font-size: 11px; font-weight: 900; }
+.stat-card.green { background: #e8f7ef; border-color: #bce0cc; }
+.stat-card.green .stat-ico { color: #16a34a; background: #d1f0de; }
+.stat-card.amber { background: #fff7e6; border-color: #f5d78b; }
+.stat-card.amber .stat-ico { color: #a45f00; background: #ffecbc; }
+.stat-card.red { background: #fff1f1; border-color: #fab8b8; }
+
+/* ---- 行卡片 (app.js row-card) ---- */
+.row-list { display: grid; gap: 10px; }
+.row-card { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid #dce7f1; border-radius: 10px; background: #fff; }
+.row-card:hover { background: #f8fbff; }
+.mini-badge { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; background: #e8f0ff; color: #2666df; font-size: 12px; font-weight: 900; flex: none; }
+.mini-badge.amber-bg { background: #fff7e6; color: #a45f00; }
+.mini-badge.green-bg { background: #e8f7ef; color: #16a34a; }
+
+/* ---- KV 网格 (app.js detail-list) ---- */
+.kv-grid { display: grid; gap: 0; }
+.kv { display: flex; justify-content: space-between; gap: 14px; padding: 10px 0; border-bottom: 1px solid #edf2f7; color: #41516a; }
+.kv:last-child { border-bottom: 0; }
+.kv span { color: #6c84a3; }
+.kv strong { text-align: right; }
+
+/* ---- 表单分区 (app.js form-section) ---- */
+.form-section { margin-bottom: 18px; }
+.form-section-title { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #e8f0ff; font-size: 14px; font-weight: 800; color: #2666df; }
+.form-section-title .ico { width: 22px; height: 22px; border-radius: 6px; display: inline-grid; place-items: center; color: #2666df; background: #e8f0ff; font-size: 11px; font-weight: 900; }
+.separator { margin: 18px 0; border: 0; border-top: 1px solid #dce7f1; }
+
+/* ---- 详情面板 ---- */
+.detail-panel { border: 1px solid #dce7f1; border-radius: 12px; background: #fff; padding: 16px 20px; }
+.detail-panel h4 { margin: 16px 0 8px; color: #2666df; font-size: 14px; }
+.detail-panel h4:first-child { margin-top: 0; }
+
+/* ---- 溯源链路图 (app.js chain) ---- */
+.chain-flow { display: grid; grid-template-columns: repeat(7, minmax(90px, 1fr)); gap: 10px; align-items: stretch; margin-top: 14px; }
+.chain-node { min-height: 100px; border: 1px solid #dce7f1; border-radius: 10px; background: #f8fbfd; padding: 12px; text-align: center; }
+.chain-node .chain-ico { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; margin: 0 auto 8px; background: #e8f0ff; color: #2666df; font-weight: 900; font-size: 14px; }
+.chain-node strong { display: block; margin-bottom: 6px; font-size: 13px; }
+.chain-node .muted { font-size: 12px; color: #6c84a3; }
+
+/* ---- tab badge ---- */
+.tab-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 18px; padding: 0 6px; border-radius: 99px; background: #f59e0b; color: #fff; font-size: 11px; font-weight: 800; margin-left: 4px; }
+
+/* ---- 角色提示条 ---- */
+.role-banner { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 9px; margin-bottom: 16px; font-size: 13px; font-weight: 700; }
+.role-banner.manufacturer { background: #e8f0ff; color: #2666df; border: 1px solid #c2d4f2; }
+.role-banner.supplier { background: #fff7e6; color: #a45f00; border: 1px solid #f5d78b; }
+.role-banner.seller { background: #e8f7ef; color: #16a34a; border: 1px solid #bce0cc; }
+.role-badge { padding: 2px 10px; border-radius: 99px; background: #fff; font-size: 12px; font-weight: 800; }
+.count-note { color: #91a4bc; font-size: 13px; font-weight: 400; }
+
+/* ---- 动态溯源码信息提示 ---- */
+.dynamic-hint { padding: 12px 14px; border-radius: 8px; font-size: 12px; margin-bottom: 14px; }
+.dynamic-hint.info { background: #e8f0ff; border: 1px solid #c2d4f2; color: #2666df; }
+.dynamic-hint.success { background: #e8f7ef; border: 1px solid #bce0cc; color: #16a34a; }
