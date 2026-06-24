@@ -50,6 +50,13 @@ async function post<T = any>(path: string, data?: Record<string, any>): Promise<
   return json as T
 }
 
+// ==================== Auth (认证) ====================
+export const authApi = {
+  login: (data: Record<string, any>) => post('/auth/login', data),
+  register: (data: Record<string, any>) => post('/auth/register', data),
+  logout: () => post('/auth/logout'),
+}
+
 // ==================== Raw (原料) ====================
 export const rawApi = {
   queryByBatchNo: (batchNo: string) => get('/Raw/queryByBatchNo', { batchNo }),
