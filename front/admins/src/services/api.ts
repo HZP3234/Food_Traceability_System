@@ -131,6 +131,15 @@ export const productionApi = {
   traceProcessChain: (prodBatchNo: string) => get('/Production/traceProcessChain', { prodBatchNo }),
 }
 
+// ==================== TraceCode (溯源码) ====================
+export const traceCodeApi = {
+  list: (params: Record<string, any>) => get('/TraceCode/list', params),
+  detail: (traceCode: string) => get('/TraceCode/queryDetail', { traceCode }),
+  batchGenerate: (data: Record<string, any>) => post('/TraceCode/batchGenerate', data),
+  updateStatus: (data: Record<string, any>) => post('/TraceCode/updateStatus', data),
+  verifyHash: (traceCode: string) => get('/TraceCode/verifyHash', { traceCode }),
+}
+
 // ==================== ColdChain (冷链物流) ====================
 export const coldChainApi = {
   // Warehouse

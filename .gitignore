@@ -100,6 +100,9 @@ replay_pid*
 **/node_modules/
 **/node_modules/**/*
 
+# 迁移过程保留的独立展示端备份；正式展示页已并入 front/admins。
+/front/traceability-scroll-world/
+
 # 构建产物
 **/dist/
 **/dist-ssr/

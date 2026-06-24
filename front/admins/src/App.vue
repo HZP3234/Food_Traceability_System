@@ -7,9 +7,13 @@ import Production from './pages/Production.vue'
 import Processing from './pages/Processing.vue'
 import ColdChain from './pages/ColdChain.vue'
 import Sales from './pages/Sales.vue'
+import TraceCode from './pages/TraceCode.vue'
+import LoginRegister from './pages/LoginRegister.vue'
+import LandingPage from './pages/LandingPage.vue'
 
 const currentRole = ref<RoleKey>('manufacturer')
 const activePage = ref('dashboard')
+const screen = ref<'landing' | 'login' | 'admin'>('landing')
 
 // 通过 provide 让子页面感知当前角色
 provide('currentRole', currentRole)
@@ -21,6 +25,7 @@ const pageComponents: Record<string, Component> = {
   'process-batch': markRaw(Processing),
   'cold-chain': markRaw(ColdChain),
   'sales-terminal': markRaw(Sales),
+  'trace-code': markRaw(TraceCode),
 }
 
 const visibleNavigation = computed(() =>
@@ -41,10 +46,21 @@ function changeRole(event: Event) {
   currentRole.value = (event.target as HTMLSelectElement).value as RoleKey
   if (!activeItem.value) activePage.value = 'dashboard'
 }
+
+// 临时开发登录态：后端认证接口完成后，将此处替换为真实的 /auth/login 请求。
+function handleLogin(data: { username: string; password: string; role: string }) {
+  const roleMap: Record<string, RoleKey> = { enterprise: 'manufacturer', regulator: 'regulator' }
+  currentRole.value = roleMap[data.role] || 'manufacturer'
+  sessionStorage.setItem('fts-admin-authenticated', 'true')
+  sessionStorage.setItem('fts-admin-user', data.username)
+  screen.value = 'admin'
+}
 </script>
 
 <template>
-  <main class="admin-shell">
+  <LandingPage v-if="screen === 'landing'" @enter-admin="screen = 'login'" />
+  <LoginRegister v-else-if="screen === 'login'" @login="handleLogin" />
+  <main v-else class="admin-shell">
     <aside class="sidebar">
       <div class="brand">
         <span class="brand-mark">溯</span>
