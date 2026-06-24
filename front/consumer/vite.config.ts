@@ -28,6 +28,10 @@ export default defineConfig({
         target: 'http://localhost:8081',
         changeOrigin: true
       },
+      '/api/upload': {
+        target: 'http://localhost:8081',
+        changeOrigin: true
+      },
       '/TraceCode': {
         target: 'http://localhost:8082',
         changeOrigin: true
