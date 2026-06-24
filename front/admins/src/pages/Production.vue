@@ -3,7 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { productionApi } from '../services/api'
 
 const tab = ref<'prod' | 'input' | 'env' | 'inspection'>('prod')
-const loading = ref(false)
+const loading = ref(false)//
 const list = ref<any[]>([])
 const materialInputs = ref<any[]>([])
 const envRecords = ref<any[]>([])

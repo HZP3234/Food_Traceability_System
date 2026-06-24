@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { productionApi } from '../services/api'
 
-const tab = ref<'process' | 'template'>('process')
+const tab = ref<'process' | 'template'>('process')//
 const loading = ref(false)
 const list = ref<any[]>([])
 const templates = ref<any[]>([])

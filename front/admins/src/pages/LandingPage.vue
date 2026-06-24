@@ -2,7 +2,7 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import videoUrl from '../assets/traceability-journey.mp4';
 
-const emit = defineEmits(['enter-admin']);
+const emit = defineEmits(['enter-admin']);//
 
 const videoEl = ref(null);
 const activeStage = ref(0);

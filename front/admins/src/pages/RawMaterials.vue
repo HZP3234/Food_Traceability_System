@@ -98,7 +98,7 @@ onMounted(loadList)
     <div v-if="toast" class="toast" :class="'toast-' + toast.type">{{ toast.msg }}</div>
 
     <!-- 角色提示 -->
-    <div class="role-banner manufacturer">
+    <div class="role-banner manufacturer">//
       <span class="role-badge">加工生产商</span>
       <span>您创建批次（批次号 + 供应商 + 产品）→ <strong>供应商在"原料信息上传"页面上传源头详情</strong>（产地/认证/运输）→ 自动匹配</span>
     </div>

@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { enterpriseApi } from '../services/api'
 
-const tab = ref<'list' | 'qual'>('list')
+const tab = ref<'list' | 'qual'>('list')//
 const loading = ref(false)
 const list = ref<any[]>([])
 const toast = ref<{ type: string; msg: string } | null>(null)
