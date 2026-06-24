@@ -1,0 +1,164 @@
+/* ===== 统一页面风格 — 仿照溯源码管理 (TraceCode.vue) ===== */
+
+/* ---- 页面容器 ---- */
+.trace-page { color: #244564; }
+
+/* ---- 统计卡片 ---- */
+.trace-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 18px; }
+.trace-stats article { position: relative; overflow: hidden; padding: 17px 18px; border: 1px solid #dce8f4; border-radius: 12px; background: #fff; box-shadow: 0 4px 13px #2b5d8710; }
+.trace-stats article::before { position: absolute; right: -14px; bottom: -25px; width: 76px; height: 76px; border-radius: 50%; background: #eaf2ff; content: ''; }
+.trace-stats .green::before { background: #e6f8ee; }
+.trace-stats .blue::before { background: #eaf2ff; }
+.trace-stats .amber::before { background: #fff3d9; }
+.trace-stats .red::before { background: #ffe8e8; }
+.trace-stats span, .trace-stats em { display: block; font-size: 12px; font-style: normal; color: #8195aa; }
+.trace-stats b { display: inline-block; margin: 7px 6px 1px 0; color: #173c62; font-size: 26px; }
+
+/* 统计卡片内的图标 */
+.trace-stats .stat-ico { position: relative; z-index: 1; width: 24px; height: 24px; display: inline-grid; place-items: center; border-radius: 6px; font-size: 12px; font-weight: 900; }
+.trace-stats .stat-ico :deep(.el-icon) { font-size: 14px; }
+
+/* ---- 面板 ---- */
+.trace-panel { border: 1px solid #dce8f4; border-radius: 12px; background: #fff; box-shadow: 0 4px 13px #2b5d870c; }
+.filter-panel { padding: 16px 18px; margin-bottom: 18px; }
+
+/* ---- 筛选网格 ---- */
+.filter-grid { display: grid; grid-template-columns: 1.25fr 1fr 1fr .8fr .8fr auto; gap: 12px; align-items: end; }
+.filter-grid label { display: grid; gap: 6px; color: #718ba6; font-size: 12px; font-weight: 700; }
+.filter-grid input, .filter-grid select { width: 100%; padding: 9px 10px; border: 1px solid #d7e4f0; border-radius: 7px; outline-color: #2a6cea; color: #294b6e; background: #fff; }
+.filter-actions { display: flex; gap: 8px; }
+
+/* 响应式筛选网格 — 4列 */
+.filter-grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 12px; align-items: end; }
+.filter-grid-4 label { display: grid; gap: 6px; color: #718ba6; font-size: 12px; font-weight: 700; }
+.filter-grid-4 input, .filter-grid-4 select { width: 100%; padding: 9px 10px; border: 1px solid #d7e4f0; border-radius: 7px; outline-color: #2a6cea; color: #294b6e; background: #fff; }
+
+/* 筛选字段通用 */
+.filter-field { display: grid; gap: 6px; }
+.filter-field label { color: #718ba6; font-size: 12px; font-weight: 700; }
+.filter-field input, .filter-field select { width: 100%; padding: 9px 10px; border: 1px solid #d7e4f0; border-radius: 7px; outline-color: #2a6cea; color: #294b6e; background: #fff; }
+
+/* ---- 按钮 ---- */
+.trace-page .primary, .trace-page .secondary { border: 0; border-radius: 7px; padding: 9px 14px; font-weight: 700; cursor: pointer; }
+.trace-page .primary { color: #fff; background: #2467df; box-shadow: 0 5px 10px #2368d629; }
+.trace-page .primary:hover { background: #1c52c0; }
+.trace-page .secondary { color: #507391; background: #f0f5fa; }
+.trace-page .secondary:hover { background: #e4ecf4; }
+
+/* 按钮尺寸变体 */
+.trace-page .btn-sm { padding: 5px 11px; font-size: 12px; border-radius: 6px; }
+.trace-page .btn-success { color: #fff; background: #198658; box-shadow: 0 5px 10px #19865829; }
+.trace-page .btn-success:hover { background: #146b46; }
+.trace-page .btn-danger-fill { color: #fff; background: #d34f59; box-shadow: 0 5px 10px #d34f5929; }
+
+/* ---- 面板头部 ---- */
+.panel-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 19px 14px; border-bottom: 1px solid #e6eef6; }
+.panel-header p { margin: 0 0 3px; color: #4b83d7; font-size: 12px; font-weight: 800; letter-spacing: .08em; }
+.panel-header h2 { margin: 0; color: #25486b; font-size: 18px; }
+.create { padding: 10px 15px; }
+
+/* ---- 表格 ---- */
+.table-wrap { overflow: auto; }
+.trace-page table { width: 100%; border-collapse: collapse; min-width: 1060px; }
+.trace-page th { padding: 12px 14px; background: #f8fbfe; color: #7087a1; font-size: 12px; text-align: left; }
+.trace-page td { padding: 13px 14px; border-top: 1px solid #edf2f7; color: #46617d; font-size: 13px; }
+.trace-page td strong, .trace-page td small { display: block; }
+.trace-page td strong { color: #294863; font-size: 13px; }
+.trace-page td small { margin-top: 4px; color: #96a8b9; font-size: 11px; }
+.trace-page code { color: #2366d9; font-family: Consolas, monospace; font-size: 12px; }
+.trace-page .empty { padding: 42px; text-align: center; color: #92a6b9; }
+
+/* ---- 状态标签 ---- */
+.trace-page .status, .trace-page .chain { display: inline-block; border-radius: 20px; padding: 4px 8px; font-size: 11px; font-weight: 700; }
+.trace-page .status-pending { color: #a4730a; background: #fff4d9; }
+.trace-page .status-active, .trace-page .chain.yes { color: #198658; background: #e5f8ef; }
+.trace-page .status-disabled, .trace-page .status-void { color: #c04550; background: #ffebed; }
+.trace-page .status-expired { color: #6e7985; background: #edf0f3; }
+.trace-page .chain { color: #8092a4; background: #eff3f7; }
+
+/* ---- 操作按钮 ---- */
+.trace-page .actions { white-space: nowrap; }
+.trace-page .actions button { margin-right: 7px; padding: 0; border: 0; color: #2468dc; background: transparent; font-size: 12px; cursor: pointer; }
+.trace-page .actions button:hover { text-decoration: underline; }
+.trace-page .actions .danger { color: #d24d58; }
+
+/* ---- Toast ---- */
+.trace-toast { position: fixed; z-index: 2000; top: 20px; right: 26px; max-width: 430px; padding: 12px 16px; border-radius: 9px; color: #fff; box-shadow: 0 10px 25px #163d6840; font-size: 13px; }
+.trace-toast.success { background: #1d9a66; }
+.trace-toast.error { background: #d34f59; }
+.trace-toast.info { background: #2666df; }
+
+/* ---- 模态框 ---- */
+.trace-modal-backdrop { position: fixed; z-index: 1000; inset: 0; display: grid; place-items: center; background: #17385b65; backdrop-filter: blur(3px); }
+.trace-modal { width: min(680px, calc(100vw - 42px)); max-height: 85vh; display: flex; flex-direction: column; border-radius: 14px; background: #fff; box-shadow: 0 24px 65px #0d2b4f4a; }
+.trace-modal header { display: flex; align-items: center; justify-content: space-between; padding: 20px 23px; border-bottom: 1px solid #e8eff6; }
+.trace-modal header p { margin: 0 0 3px; color: #4b83d7; font-size: 12px; font-weight: 800; letter-spacing: .08em; }
+.trace-modal header h2 { margin: 0; color: #25486b; font-size: 18px; }
+.trace-modal header button { width: 28px; height: 28px; border: 0; border-radius: 50%; color: #7890a8; background: #eef4f9; font-size: 20px; cursor: pointer; }
+.trace-modal header button:hover { background: #dce6f0; }
+.modal-body { flex: 1; overflow-y: auto; padding: 22px 23px; }
+.trace-modal footer { display: flex; justify-content: flex-end; gap: 10px; padding: 15px 23px; border-top: 1px solid #e8eff6; }
+
+/* ---- 表单 (模态框内) ---- */
+.grid-form { display: grid; grid-template-columns: 1fr 1fr; gap: 15px 18px; }
+.grid-form label { display: grid; gap: 6px; color: #718ba6; font-size: 12px; font-weight: 700; }
+.grid-form input, .grid-form select { width: 100%; padding: 9px 10px; border: 1px solid #d7e4f0; border-radius: 7px; outline-color: #2a6cea; color: #294b6e; background: #fff; }
+
+/* ---- 详情 ---- */
+.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.detail-grid div { display: grid; gap: 5px; }
+.detail-grid span { color: #91a3b4; font-size: 12px; }
+.detail-grid b { color: #34536f; font-size: 13px; }
+.detail-grid .full { grid-column: 1 / -1; }
+.detail-grid code { display: block; overflow: auto; padding: 9px; border-radius: 6px; background: #f6f9fc; white-space: nowrap; }
+.warning-detail { padding: 10px; border-radius: 7px; background: #fff6ed; }
+.target-code { margin: 0 0 18px; padding: 11px; border-radius: 7px; color: #2366d9; background: #f1f6ff; font-family: Consolas, monospace; }
+
+/* ---- 确认对话框 ---- */
+.trace-confirm-overlay { position: fixed; z-index: 1100; inset: 0; display: grid; place-items: center; background: #17385b4a; }
+.trace-confirm-box { width: 420px; padding: 32px; border-radius: 14px; background: #fff; text-align: center; box-shadow: 0 24px 65px #0d2b4f4a; }
+.trace-confirm-box h3 { margin: 12px 0 8px; color: #25486b; font-size: 18px; }
+.trace-confirm-box p { margin: 0 0 22px; color: #6c84a3; font-size: 14px; }
+.trace-confirm-actions { display: flex; justify-content: center; gap: 12px; }
+
+/* ---- Tab 切换 ---- */
+.trace-tabs { display: flex; gap: 0; margin-bottom: 20px; border-bottom: 2px solid #dce8f4; }
+.trace-tab-btn { padding: 10px 20px; border: 0; border-bottom: 2px solid transparent; margin-bottom: -2px; color: #718ba6; background: transparent; font-size: 14px; font-weight: 700; cursor: pointer; transition: all .16s; }
+.trace-tab-btn:hover { color: #2467df; }
+.trace-tab-btn.active { color: #2467df; border-bottom-color: #2467df; }
+
+/* ---- 角色提示 ---- */
+.trace-role-banner { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-radius: 12px; margin-bottom: 16px; font-size: 13px; font-weight: 600; border: 1px solid; }
+.trace-role-banner.manufacturer { background: #eaf2ff; color: #2666df; border-color: #c2d4f2; }
+.trace-role-banner.supplier { background: #fff8ed; color: #a45f00; border-color: #f5d78b; }
+.trace-role-banner.seller { background: #e6f8ee; color: #16a34a; border-color: #bce0cc; }
+.trace-role-badge { padding: 2px 10px; border-radius: 99px; background: #fff; font-size: 12px; font-weight: 800; }
+
+/* ---- 行卡片列表 ---- */
+.trace-row-list { display: grid; gap: 10px; }
+.trace-row-card { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border: 1px solid #dce8f4; border-radius: 12px; background: #fff; }
+.trace-row-card:hover { background: #f8fbff; }
+.trace-mini-badge { width: 32px; height: 32px; border-radius: 8px; display: grid; place-items: center; font-size: 12px; font-weight: 900; flex-shrink: 0; }
+.trace-mini-badge.amber { background: #fff3d9; color: #a4730a; }
+.trace-mini-badge.green { background: #e5f8ef; color: #198658; }
+.trace-mini-badge.blue { background: #eaf2ff; color: #2467df; }
+
+/* ---- 信息提示 ---- */
+.trace-hint { padding: 12px 14px; border-radius: 8px; font-size: 12px; margin-bottom: 14px; border: 1px solid; }
+.trace-hint.info { background: #eaf2ff; border-color: #c2d4f2; color: #2467df; }
+.trace-hint.success { background: #e6f8ee; border-color: #bce0cc; color: #198658; }
+
+/* ---- 为空状态 ---- */
+.trace-empty-state { padding: 42px 20px; text-align: center; color: #92a6b9; border: 1px dashed #dce8f4; border-radius: 10px; }
+.trace-empty-state .empty-icon { font-size: 36px; margin-bottom: 10px; }
+.trace-empty-state p { margin: 4px 0; font-size: 14px; }
+
+/* ---- Element Plus 图标适配 ---- */
+.trace-page .btn-icon { display: inline-flex; align-items: center; justify-content: center; }
+.trace-page .el-icon { vertical-align: -0.13em; }
+
+/* ---- 响应式 ---- */
+@media (max-width: 1250px) {
+  .trace-stats { grid-template-columns: repeat(2, 1fr); }
+  .filter-grid { grid-template-columns: repeat(3, 1fr); }
+}

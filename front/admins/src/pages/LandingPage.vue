@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import videoUrl from '../assets/traceability-journey.mp4';
+import LandingDetail from './LandingDetail.vue';
 
 const emit = defineEmits(['enter-admin']);//
 
@@ -114,9 +115,14 @@ function driveVideo() {
     } else if (difference < -.045) {
       if (!video.paused) video.pause();
       video.playbackRate = 1;
-      if (!video.seeking && Math.abs(targetTime - lastReverseSeekTarget) > .08) {
-        if (typeof video.fastSeek === 'function') video.fastSeek(targetTime); else video.currentTime = targetTime;
-        lastReverseSeekTarget = targetTime;
+      // Browsers cannot play video backward. Use the latest scroll target as soon as the
+      // previous seek completes: smoothing here creates noticeable input lag.
+      if (!video.seeking) {
+        const nextTime = Math.max(0, targetTime);
+        if (Math.abs(nextTime - video.currentTime) > .016) {
+          if (typeof video.fastSeek === 'function') video.fastSeek(nextTime); else video.currentTime = nextTime;
+          lastReverseSeekTarget = nextTime;
+        }
       }
     } else if (!video.paused) {
       video.pause(); video.playbackRate = 1;
@@ -162,7 +168,9 @@ onUnmounted(() => {
     <div class="progress-nav" aria-label="可信旅程节点"><div v-for="(item, index) in stages" :key="item.label" :class="{ active: activeStage === index }"><b>{{ String(index + 1).padStart(2, '0') }}</b><span>{{ item.label }}</span></div></div>
   </main>
 
-  <section id="system-detail" class="system-detail">
+  <LandingDetail @enter-admin="enterAdmin" />
+
+  <section v-if="false" id="system-detail" class="system-detail">
     <div class="detail-intro"><p class="detail-kicker">FOOD TRACEABILITY SYSTEM</p><h2>让一条食品链，<em>成为可验证的数据链</em></h2><p>从生产主体到消费者扫码，系统以批次为核心串联原料、加工、质检、冷链、终端与异常处置，让每一次流转都留下可追溯的证据。</p></div>
     <div class="detail-flow"><article><b>01</b><h3>一物一码</h3><p>为产品和批次生成唯一溯源码，承载产地、生产、质检与流转记录。</p></article><article><b>02</b><h3>全程留痕</h3><p>通过节点采集与批次关联，沉淀可查询、可核验、可审计的过程数据。</p></article><article><b>03</b><h3>风险闭环</h3><p>发现异常时按批次快速定位影响范围，形成预警、处置、召回与复盘闭环。</p></article></div>
     <div class="detail-band"><div><p class="detail-kicker">SYSTEM CAPABILITY</p><h2>可信不是一句口号，<br>而是每个节点都经得起回看。</h2></div><dl><div><dt>生产主体</dt><dd>资质、品类、批次建档</dd></div><div><dt>质量检测</dt><dd>报告、留样、校验留痕</dd></div><div><dt>冷链物流</dt><dd>仓储、车辆、温度监测</dd></div><div><dt>消费者查询</dt><dd>扫码验真、链路可视</dd></div></dl></div>
@@ -172,3 +180,5 @@ onUnmounted(() => {
 </template>
 
 <style scoped src="../styles/landing.css"></style>
+<style scoped src="../styles/landing-redesign.css"></style>
+<style scoped src="../styles/landing-fixes.css"></style>

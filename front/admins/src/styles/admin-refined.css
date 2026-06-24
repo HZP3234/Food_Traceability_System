@@ -1,0 +1,9 @@
+/* 配合 trace-page 的样式微调 — 不强制覆盖 */
+/* 主题色保持蓝色系，与 TraceCode 一致 */
+
+/* 统计卡片在小屏幕上的适配 */
+@media (max-width: 1250px) {
+  .trace-stats {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}

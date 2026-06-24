@@ -1,0 +1,11 @@
+.topbar {
+  position: absolute !important;
+  top: 0 !important;
+  height: 70px;
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  background: #102317 !important;
+  border-bottom-color: #dce7d8 !important;
+  backdrop-filter: none !important;
+}

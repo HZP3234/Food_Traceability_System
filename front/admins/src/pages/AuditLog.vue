@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { Close, Document, DocumentAdd, Files, Link, Search, Warning } from '@element-plus/icons-vue'
 import { auditApi } from '../services/api'
 
 const loading = ref(false)
 const list = ref<any[]>([])
-const toast = ref<{ type: string; msg: string } | null>(null)
+const toast = ref<{ type: 'success' | 'error'; text: string } | null>(null)
 const showDetail = ref(false)
 const showChain = ref(false)
 const showWrite = ref(false)
@@ -30,7 +31,7 @@ const writeForm = ref({
   beforeData: '', afterData: '', operationResult: 1, failureReason: '', isAbnormal: 0, abnormalDesc: '',
 })
 
-function flash(type: string, msg: string) { toast.value = { type, msg }; setTimeout(() => (toast.value = null), 2600) }
+function notify(type: 'success' | 'error', text: string) { toast.value = { type, text }; setTimeout(() => (toast.value = null), 2600) }
 
 async function loadList() {
   loading.value = true
@@ -42,8 +43,13 @@ async function loadList() {
     if (filters.value.endTime) p.endTime = filters.value.endTime
     const res = await auditApi.list(p)
     list.value = (res as any).data?.records ?? (Array.isArray(res) ? res : [])
-  } catch (e: any) { flash('error', '加载失败: ' + e.message) }
+  } catch (e: any) { notify('error', '加载失败: ' + e.message) }
   finally { loading.value = false }
+}
+
+function resetFilters() {
+  filters.value = { operatorName: '', actionType: '', startTime: '', endTime: '' }
+  loadList()
 }
 
 function openDetail(row: any) { viewing.value = row; showDetail.value = true }
@@ -54,7 +60,7 @@ async function doVerifyChain() {
     const res = await auditApi.verifyChain()
     chainResult.value = (res as any).data ?? res
     showChain.value = true
-  } catch (e: any) { flash('error', '校验失败: ' + e.message) }
+  } catch (e: any) { notify('error', '校验失败: ' + e.message) }
   finally { verifying.value = false }
 }
 
@@ -63,9 +69,9 @@ async function doArchive() {
   try {
     const res = await auditApi.archive()
     const data = (res as any).data ?? res
-    flash('success', data?.message ?? '归档完成')
+    notify('success', data?.message ?? '归档完成')
     loadList()
-  } catch (e: any) { flash('error', '归档失败: ' + e.message) }
+  } catch (e: any) { notify('error', '归档失败: ' + e.message) }
   finally { archiving.value = false }
 }
 
@@ -77,9 +83,9 @@ function openWrite() {
 async function submitWrite() {
   try {
     await auditApi.write(writeForm.value)
-    flash('success', '审计日志写入成功')
+    notify('success', '审计日志写入成功')
     showWrite.value = false; loadList()
-  } catch (e: any) { flash('error', '写入失败: ' + e.message) }
+  } catch (e: any) { notify('error', '写入失败: ' + e.message) }
 }
 
 function formatDataJson(data: string | null | undefined): string {
@@ -92,159 +98,140 @@ onMounted(loadList)
 </script>
 
 <template>
-  <div class="page-module">
-    <div v-if="toast" class="toast" :class="'toast-' + toast.type">{{ toast.msg }}</div>
+  <div class="trace-page">
+    <div v-if="toast" class="trace-toast" :class="toast.type">{{ toast.text }}</div>
 
-    <!-- 统计卡片 -->
-    <div class="page-stats">
-      <div class="stat-card"><div class="stat-meta"><span>日志总数</span><span class="stat-ico">志</span></div><b>{{ stats.total }}</b></div>
-      <div class="stat-card green"><div class="stat-meta"><span>操作成功</span><span class="stat-ico">✓</span></div><b>{{ stats.success }}</b></div>
-      <div class="stat-card amber"><div class="stat-meta"><span>操作失败</span><span class="stat-ico">!</span></div><b>{{ stats.failed }}</b></div>
-      <div class="stat-card red"><div class="stat-meta"><span>异常操作</span><span class="stat-ico">⚠</span></div><b>{{ stats.abnormal }}</b></div>
-    </div>
+    <section class="trace-stats">
+      <article><span><el-icon><Files /></el-icon> 日志总数</span><b>{{ stats.total }}</b><em>条审计记录</em></article>
+      <article class="green"><span><el-icon><Search /></el-icon> 操作成功</span><b>{{ stats.success }}</b><em>操作执行成功</em></article>
+      <article class="amber"><span><el-icon><Warning /></el-icon> 操作失败</span><b>{{ stats.failed }}</b><em>需要关注</em></article>
+      <article class="red"><span><el-icon><Warning /></el-icon> 异常操作</span><b>{{ stats.abnormal }}</b><em>可能存在风险</em></article>
+    </section>
 
-    <!-- 搜索栏 -->
-    <div class="search-bar">
-      <div class="search-field"><label>操作人</label><input v-model="filters.operatorName" placeholder="操作人姓名" @keyup.enter="loadList" /></div>
-      <div class="search-field"><label>操作类型</label><select v-model="filters.actionType"><option value="">全部</option><option value="1">新增</option><option value="2">修改</option><option value="3">删除</option><option value="4">查询</option><option value="5">导出</option></select></div>
-      <div class="search-field"><label>开始时间</label><input v-model="filters.startTime" type="datetime-local" /></div>
-      <div class="search-field"><label>结束时间</label><input v-model="filters.endTime" type="datetime-local" /></div>
-      <div class="search-field" style="align-self:end"><button class="btn btn-primary" @click="loadList">🔍 查询</button></div>
-    </div>
-
-    <!-- 工具栏 -->
-    <div class="toolbar">
-      <h3>审计日志列表 <span class="count-note">({{ list.length }} 条)</span></h3>
-      <div class="toolbar-actions">
-        <button class="btn btn-outline" :disabled="verifying" @click="doVerifyChain">🔗 Hash链校验</button>
-        <button class="btn btn-outline" :disabled="archiving" @click="doArchive">📦 日志归档</button>
-        <button class="btn btn-primary" @click="openWrite">＋ 写入日志</button>
+    <section class="trace-panel filter-panel">
+      <div class="filter-grid-4">
+        <label>操作人<input v-model="filters.operatorName" placeholder="操作人姓名" @keyup.enter="loadList" /></label>
+        <label>操作类型<select v-model="filters.actionType"><option value="">全部</option><option value="1">新增</option><option value="2">修改</option><option value="3">删除</option><option value="4">查询</option><option value="5">导出</option></select></label>
+        <label>开始时间<input v-model="filters.startTime" type="datetime-local" /></label>
+        <label>结束时间<input v-model="filters.endTime" type="datetime-local" /></label>
+        <div class="filter-actions">
+          <button class="secondary" @click="resetFilters"><el-icon><Close /></el-icon> 重置</button>
+          <button class="primary" @click="loadList"><el-icon><Search /></el-icon> 查询</button>
+        </div>
       </div>
-    </div>
+    </section>
 
-    <!-- 表格 -->
-    <div class="data-table-wrap">
-      <table class="data-table">
-        <thead><tr><th>操作人</th><th>操作类型</th><th>目标描述</th><th>操作时间</th><th>结果</th><th>异常</th><th class="col-actions">操作</th></tr></thead>
-        <tbody>
-          <tr v-if="loading"><td colspan="7" style="text-align:center;padding:32px">加载中...</td></tr>
-          <tr v-else-if="!list.length"><td colspan="7"><div class="empty-state"><div class="empty-icon">📋</div><p>暂无审计日志</p></div></td></tr>
-          <tr v-for="row in list" :key="row.logId">
-            <td><strong>{{ row.operatorName || '-' }}</strong></td>
-            <td><span class="tag tag-info">{{ actionTypeLabels[row.actionType] || '-' }}</span></td>
-            <td>{{ row.targetDesc || '-' }}</td>
-            <td style="font-size:13px">{{ row.operationTime || '-' }}</td>
-            <td><span class="tag" :class="row.operationResult === 1 ? 'tag-success' : 'tag-danger'">{{ resultLabels[row.operationResult] ?? '-' }}</span></td>
-            <td><span class="tag" :class="row.isAbnormal === 1 ? 'tag-danger' : 'tag-success'">{{ row.isAbnormal === 1 ? '异常' : '正常' }}</span></td>
-            <td class="col-actions">
-              <button class="btn btn-outline btn-sm" @click="openDetail(row)">📄 详情</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <section class="trace-panel list-panel">
+      <header class="panel-header">
+        <div><p>审计台账</p><h2>审计日志列表</h2></div>
+        <div style="display:flex;gap:8px">
+          <button class="secondary" :disabled="verifying" @click="doVerifyChain"><el-icon><Link /></el-icon> Hash链校验</button>
+          <button class="secondary" :disabled="archiving" @click="doArchive"><el-icon><Files /></el-icon> 日志归档</button>
+          <button class="primary create" @click="openWrite"><el-icon><DocumentAdd /></el-icon> 写入日志</button>
+        </div>
+      </header>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>操作人</th><th>操作类型</th><th>目标描述</th><th>操作时间</th><th>结果</th><th>异常</th><th>操作</th></tr></thead>
+          <tbody>
+            <tr v-if="loading"><td colspan="7" class="empty">加载中...</td></tr>
+            <tr v-else-if="!list.length"><td colspan="7" class="empty">暂无审计日志</td></tr>
+            <tr v-for="row in list" :key="row.logId">
+              <td><strong>{{ row.operatorName || '-' }}</strong></td>
+              <td><span class="status status-active">{{ actionTypeLabels[row.actionType] || '-' }}</span></td>
+              <td>{{ row.targetDesc || '-' }}</td>
+              <td>{{ row.operationTime || '-' }}</td>
+              <td><span class="status" :class="row.operationResult === 1 ? 'status-active' : 'status-disabled'">{{ resultLabels[row.operationResult] ?? '-' }}</span></td>
+              <td><span class="status" :class="row.isAbnormal === 1 ? 'status-void' : 'status-active'">{{ row.isAbnormal === 1 ? '异常' : '正常' }}</span></td>
+              <td class="actions">
+                <button @click="openDetail(row)"><el-icon><Document /></el-icon> 详情</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
 
-    <!-- 日志详情模态框（含前后数据对比） -->
-    <div v-if="showDetail" class="modal-overlay" @click.self="showDetail = false">
-      <div class="modal" style="width:800px">
-        <div class="modal-header"><h3>审计日志详情</h3><button class="modal-close" @click="showDetail = false">✕</button></div>
-        <div class="modal-body">
-          <div class="detail-panel" v-if="viewing">
-            <h4>操作信息</h4>
-            <div class="kv-grid">
-              <div class="kv"><span>操作人</span><strong>{{ viewing.operatorName || '-' }}</strong></div>
-              <div class="kv"><span>操作人ID</span><code style="font-size:12px">{{ viewing.operatorId || '-' }}</code></div>
-              <div class="kv"><span>操作类型</span><span class="tag tag-info">{{ actionTypeLabels[viewing.actionType] || '-' }}</span></div>
-              <div class="kv"><span>操作时间</span><strong>{{ viewing.operationTime || '-' }}</strong></div>
-              <div class="kv"><span>目标描述</span><strong>{{ viewing.targetDesc || '-' }}</strong></div>
-              <div class="kv"><span>目标ID</span><code style="font-size:12px">{{ viewing.targetId || '-' }}</code></div>
+    <!-- 详情模态框 -->
+    <div v-if="showDetail" class="trace-modal-backdrop" @click.self="showDetail = false">
+      <section class="trace-modal" style="width:800px">
+        <header><div><p>日志记录</p><h2>审计日志详情</h2></div><button @click="showDetail = false"><el-icon><Close /></el-icon></button></header>
+        <div class="modal-body" v-if="viewing">
+          <div class="detail-grid">
+            <div><span>操作人</span><b>{{ viewing.operatorName || '-' }}</b></div>
+            <div><span>操作人ID</span><code>{{ viewing.operatorId || '-' }}</code></div>
+            <div><span>操作类型</span><b>{{ actionTypeLabels[viewing.actionType] || '-' }}</b></div>
+            <div><span>操作时间</span><b>{{ viewing.operationTime || '-' }}</b></div>
+            <div><span>目标描述</span><b>{{ viewing.targetDesc || '-' }}</b></div>
+            <div><span>目标ID</span><code>{{ viewing.targetId || '-' }}</code></div>
+            <div><span>结果</span><b :style="{ color: viewing.operationResult === 1 ? '#198658' : '#c04550' }">{{ resultLabels[viewing.operationResult] ?? '-' }}</b></div>
+            <div><span>失败原因</span><b style="color:#c72929">{{ viewing.failureReason || '-' }}</b></div>
+            <div><span>是否异常</span><b :style="{ color: viewing.isAbnormal === 1 ? '#c04550' : '#198658' }">{{ viewing.isAbnormal === 1 ? '异常' : '正常' }}</b></div>
+            <div><span>异常描述</span><b style="color:#c72929">{{ viewing.abnormalDesc || '-' }}</b></div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:18px">
+            <div><span style="color:#91a3b4;font-size:12px;font-weight:700;display:block;margin-bottom:6px">📋 操作前数据</span>
+              <pre style="background:#f8fafc;padding:10px;border-radius:6px;font-size:11px;max-height:200px;overflow:auto;margin:0;border:1px solid #e8eef5;white-space:pre-wrap">{{ formatDataJson(viewing.beforeData) }}</pre>
             </div>
-            <h4>操作结果</h4>
-            <div class="kv-grid">
-              <div class="kv"><span>结果</span><span class="tag" :class="viewing.operationResult === 1 ? 'tag-success' : 'tag-danger'">{{ resultLabels[viewing.operationResult] ?? '-' }}</span></div>
-              <div class="kv"><span>失败原因</span><strong style="color:#c72929">{{ viewing.failureReason || '-' }}</strong></div>
-              <div class="kv"><span>是否异常</span><span class="tag" :class="viewing.isAbnormal === 1 ? 'tag-danger' : 'tag-success'">{{ viewing.isAbnormal === 1 ? '异常' : '正常' }}</span></div>
-              <div class="kv"><span>异常描述</span><strong style="color:#c72929">{{ viewing.abnormalDesc || '-' }}</strong></div>
+            <div><span style="color:#91a3b4;font-size:12px;font-weight:700;display:block;margin-bottom:6px">📝 操作后数据</span>
+              <pre style="background:#f8fafc;padding:10px;border-radius:6px;font-size:11px;max-height:200px;overflow:auto;margin:0;border:1px solid #e8eef5;white-space:pre-wrap">{{ formatDataJson(viewing.afterData) }}</pre>
             </div>
-            <h4>数据对比</h4>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-              <div>
-                <p style="font-size:12px;font-weight:700;color:#6c84a3;margin:0 0 6px">📋 操作前数据</p>
-                <pre style="background:#f8fafc;padding:10px;border-radius:6px;font-size:11px;max-height:200px;overflow:auto;margin:0;border:1px solid #e8eef5;white-space:pre-wrap">{{ formatDataJson(viewing.beforeData) }}</pre>
-              </div>
-              <div>
-                <p style="font-size:12px;font-weight:700;color:#6c84a3;margin:0 0 6px">📝 操作后数据</p>
-                <pre style="background:#f8fafc;padding:10px;border-radius:6px;font-size:11px;max-height:200px;overflow:auto;margin:0;border:1px solid #e8eef5;white-space:pre-wrap">{{ formatDataJson(viewing.afterData) }}</pre>
-              </div>
-            </div>
-            <h4>安全信息</h4>
-            <div class="kv-grid">
-              <div class="kv"><span>日志Hash (SHA-256)</span><code style="font-size:11px;word-break:break-all">{{ viewing.logHash || '-' }}</code></div>
-              <div class="kv"><span>日志UUID</span><code style="font-size:12px">{{ viewing.logUuid || '-' }}</code></div>
-              <div class="kv"><span>创建时间</span><strong>{{ viewing.createTime || '-' }}</strong></div>
-            </div>
+          </div>
+          <div class="detail-grid" style="margin-top:18px">
+            <div class="full"><span>日志Hash (SHA-256)</span><code>{{ viewing.logHash || '-' }}</code></div>
+            <div><span>日志UUID</span><b>{{ viewing.logUuid || '-' }}</b></div>
+            <div><span>创建时间</span><b>{{ viewing.createTime || '-' }}</b></div>
           </div>
         </div>
-        <div class="modal-footer"><button class="btn btn-outline" @click="showDetail = false">关闭</button></div>
-      </div>
+        <footer><button class="secondary" @click="showDetail = false"><el-icon><Close /></el-icon> 关闭</button></footer>
+      </section>
     </div>
 
-    <!-- Hash链校验结果模态框 -->
-    <div v-if="showChain" class="modal-overlay" @click.self="showChain = false">
-      <div class="modal" style="width:520px">
-        <div class="modal-header"><h3>Hash链完整性校验</h3><button class="modal-close" @click="showChain = false">✕</button></div>
-        <div class="modal-body">
-          <div v-if="chainResult" style="text-align:center;padding:20px">
-            <div v-if="chainResult.chainValid" style="font-size:60px;margin-bottom:12px">✅</div>
-            <div v-else style="font-size:60px;margin-bottom:12px">❌</div>
-            <h3 :style="{color: chainResult.chainValid ? '#15824b' : '#c72929'}">{{ chainResult.message }}</h3>
-            <div v-if="chainResult.chainValid" class="dynamic-hint success" style="margin-top:16px;text-align:left">
-              ✅ 所有日志Hash链完整，通过防篡改检测。系统采用 SHA-256 链式结构，每条日志的Hash包含前一条日志的Hash值，确保日志不可篡改。
-            </div>
-            <div v-else class="dynamic-hint info" style="margin-top:16px;text-align:left;background:#ffeaea;border-color:#fab8b8;color:#c72929">
-              ❌ 日志Hash链存在断裂，可能存在篡改行为！请立即核查相关日志记录。
-            </div>
-          </div>
+    <!-- Hash链校验结果 -->
+    <div v-if="showChain" class="trace-modal-backdrop" @click.self="showChain = false">
+      <section class="trace-modal" style="width:520px">
+        <header><div><p>校验结果</p><h2>Hash链完整性校验</h2></div><button @click="showChain = false"><el-icon><Close /></el-icon></button></header>
+        <div class="modal-body" style="text-align:center;padding:20px" v-if="chainResult">
+          <div v-if="chainResult.chainValid" style="font-size:60px;margin-bottom:12px">✅</div>
+          <div v-else style="font-size:60px;margin-bottom:12px">❌</div>
+          <h3 :style="{ margin: 0, color: chainResult.chainValid ? '#15824b' : '#c72929' }">{{ chainResult.message }}</h3>
+          <div v-if="chainResult.chainValid" class="trace-hint success" style="text-align:left;margin-top:16px">✅ 所有日志Hash链完整，通过防篡改检测。系统采用 SHA-256 链式结构，确保日志不可篡改。</div>
+          <div v-else class="trace-hint info" style="text-align:left;margin-top:16px;background:#ffeaea;border-color:#fab8b8;color:#c72929">❌ 日志Hash链存在断裂，可能存在篡改行为！请立即核查相关日志记录。</div>
         </div>
-        <div class="modal-footer"><button class="btn btn-outline" @click="showChain = false">关闭</button></div>
-      </div>
+        <footer><button class="secondary" @click="showChain = false"><el-icon><Close /></el-icon> 关闭</button></footer>
+      </section>
     </div>
 
-    <!-- 手工写入日志模态框 -->
-    <div v-if="showWrite" class="modal-overlay" @click.self="showWrite = false">
-      <div class="modal">
-        <div class="modal-header"><h3>手工写入审计日志</h3><button class="modal-close" @click="showWrite = false">✕</button></div>
+    <!-- 写入日志模态框 -->
+    <div v-if="showWrite" class="trace-modal-backdrop" @click.self="showWrite = false">
+      <section class="trace-modal">
+        <header><div><p>手工记录</p><h2>写入审计日志</h2></div><button @click="showWrite = false"><el-icon><Close /></el-icon></button></header>
         <div class="modal-body">
-          <div class="form-section"><div class="form-section-title"><span class="ico">操</span>操作信息</div>
-            <div class="form-row">
-              <div class="form-group"><label>操作人姓名 *</label><input v-model="writeForm.operatorName" placeholder="操作人姓名" /></div>
-              <div class="form-group"><label>操作人ID</label><input v-model="writeForm.operatorId" placeholder="操作人ID" /></div>
-            </div>
-            <div class="form-row">
-              <div class="form-group"><label>操作类型 *</label><select v-model.number="writeForm.actionType"><option :value="1">新增</option><option :value="2">修改</option><option :value="3">删除</option><option :value="4">查询</option><option :value="5">导出</option></select></div>
-              <div class="form-group"><label>操作结果</label><select v-model.number="writeForm.operationResult"><option :value="1">成功</option><option :value="0">失败</option></select></div>
-            </div>
-            <div class="form-row">
-              <div class="form-group"><label>目标ID</label><input v-model="writeForm.targetId" placeholder="targetId" /></div>
-              <div class="form-group"><label>目标描述</label><input v-model="writeForm.targetDesc" placeholder="操作目标描述" /></div>
-            </div>
+          <div class="grid-form">
+            <label>操作人姓名 *<input v-model="writeForm.operatorName" placeholder="操作人姓名" /></label>
+            <label>操作人ID<input v-model="writeForm.operatorId" placeholder="操作人ID" /></label>
+            <label>操作类型 *<select v-model.number="writeForm.actionType"><option :value="1">新增</option><option :value="2">修改</option><option :value="3">删除</option><option :value="4">查询</option><option :value="5">导出</option></select></label>
+            <label>操作结果<select v-model.number="writeForm.operationResult"><option :value="1">成功</option><option :value="0">失败</option></select></label>
+            <label>目标ID<input v-model="writeForm.targetId" placeholder="targetId" /></label>
+            <label>目标描述<input v-model="writeForm.targetDesc" placeholder="操作目标描述" /></label>
+            <label>是否异常<select v-model.number="writeForm.isAbnormal"><option :value="0">正常</option><option :value="1">异常</option></select></label>
+            <label>失败原因<input v-model="writeForm.failureReason" placeholder="如操作失败请填写" /></label>
           </div>
-          <div class="form-section"><div class="form-section-title"><span class="ico">数</span>数据对比</div>
-            <div class="form-row">
-              <div class="form-group"><label>操作前数据 (JSON)</label><textarea v-model="writeForm.beforeData" placeholder='{"key": "old_value"}' style="min-height:60px;font-family:monospace;font-size:12px" /></div>
-              <div class="form-group"><label>操作后数据 (JSON)</label><textarea v-model="writeForm.afterData" placeholder='{"key": "new_value"}' style="min-height:60px;font-family:monospace;font-size:12px" /></div>
-            </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-top:15px">
+            <label style="display:grid;gap:6px;color:#718ba6;font-size:12px;font-weight:700">操作前数据 (JSON)<textarea v-model="writeForm.beforeData" placeholder='{"key": "old_value"}' style="min-height:60px;font-family:monospace;font-size:12px;padding:9px;border:1px solid #d7e4f0;border-radius:7px" /></label>
+            <label style="display:grid;gap:6px;color:#718ba6;font-size:12px;font-weight:700">操作后数据 (JSON)<textarea v-model="writeForm.afterData" placeholder='{"key": "new_value"}' style="min-height:60px;font-family:monospace;font-size:12px;padding:9px;border:1px solid #d7e4f0;border-radius:7px" /></label>
           </div>
-          <div class="form-section"><div class="form-section-title"><span class="ico">异</span>异常信息</div>
-            <div class="form-row">
-              <div class="form-group"><label>失败原因</label><input v-model="writeForm.failureReason" placeholder="如操作失败请填写" /></div>
-              <div class="form-group"><label>是否异常</label><select v-model.number="writeForm.isAbnormal"><option :value="0">正常</option><option :value="1">异常</option></select></div>
-            </div>
-            <div class="form-group"><label>异常描述</label><textarea v-model="writeForm.abnormalDesc" placeholder="如异常请描述" /></div>
-          </div>
+          <label style="display:grid;gap:6px;color:#718ba6;font-size:12px;font-weight:700;margin-top:15px">异常描述<textarea v-model="writeForm.abnormalDesc" placeholder="如异常请描述" style="min-height:60px;padding:9px;border:1px solid #d7e4f0;border-radius:7px" /></label>
         </div>
-        <div class="modal-footer"><button class="btn btn-outline" @click="showWrite = false">取消</button><button class="btn btn-primary" @click="submitWrite">确认写入</button></div>
-      </div>
+        <footer>
+          <button class="secondary" @click="showWrite = false"><el-icon><Close /></el-icon> 取消</button>
+          <button class="primary" @click="submitWrite"><el-icon><DocumentAdd /></el-icon> 确认写入</button>
+        </footer>
+      </section>
     </div>
   </div>
 </template>
+
+<style scoped>
+@import '../styles/trace-page.css';
+</style>

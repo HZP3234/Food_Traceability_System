@@ -1,0 +1,149 @@
+/* 后台管理 Shell 布局 & 滚动条隐藏 — 蓝色主题 */
+
+.admin-shell {
+  display: block !important;
+  height: 100vh !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+/* ---- 左侧栏 ---- */
+.sidebar {
+  position: fixed !important;
+  z-index: 30;
+  inset: 0 auto 0 0;
+  width: 282px !important;
+  height: 100vh !important;
+  margin: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+/* 侧边栏品牌区 */
+.brand {
+  height: auto !important;
+  margin: 0 0 18px !important;
+  padding: 4px 0 14px !important;
+  border-bottom: 1px solid #1a3060 !important;
+  flex-shrink: 0;
+}
+
+/* 角色卡片 */
+.role-card {
+  flex-shrink: 0;
+}
+
+/* 导航区域：flex-1 撑满中间，滚动条隐藏 */
+.side-nav {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto !important;
+
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.side-nav::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+/* 侧边栏底部：始终固定在底部，水平排列 */
+.sidebar-footer {
+  flex-shrink: 0;
+  margin-top: auto !important;
+  padding: 14px 0 0 !important;
+  border-top: 1px solid #1a3060 !important;
+  background: #0b1a3b !important;
+  color: #7b95c4 !important;
+  font-size: 12px;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  width: 100%;
+}
+/* 覆盖 style.css 中把 span 变 7×7 绿点的旧规则 */
+.sidebar-footer > span {
+  width: auto !important;
+  height: auto !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  flex-shrink: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #7b95c4;
+  font-size: 12px;
+}
+
+/* ---- 右侧内容区 ---- */
+.workspace {
+  height: 100vh !important;
+  margin-left: 282px !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.workspace::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+/* 模态框内容区滚动条也隐藏 */
+.modal-body::-webkit-scrollbar,
+.table-wrap::-webkit-scrollbar,
+.trace-modal .modal-body::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+.modal-body,
+.table-wrap,
+.trace-modal .modal-body {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+/* ---- Topbar ---- */
+.topbar {
+  position: sticky !important;
+  z-index: 20;
+  top: 0 !important;
+  left: 0;
+  background: #fff !important;
+  border-bottom: 1px solid #dce8f4;
+}
+
+/* ---- 页面标题区 ---- */
+.page-title {
+  border-bottom: 1px solid #dce8f4;
+  padding-bottom: 22px;
+  margin-bottom: 28px;
+}
+.page-title h1 { letter-spacing: -0.04em; }
+.page-title p { max-width: 680px; line-height: 1.7; }
+
+/* ---- 调整操作区 padding ---- */
+.page-slot {
+  padding: 34px 38px 52px !important;
+  max-width: 1680px;
+}
+
+/* ---- 响应式 ---- */
+@media (max-width: 1180px) {
+  .sidebar { width: 252px !important; }
+  .workspace { margin-left: 252px !important; }
+}

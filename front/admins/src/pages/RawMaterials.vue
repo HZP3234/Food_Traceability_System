@@ -1,17 +1,13 @@
 <script setup lang="ts">
-/**
- * 原料批次管理 —— 加工生产商视角
- * 职责：创建原料批次（批次号+供应商+产品）、质检、查看供应商匹配状态
- * 供应商通过"原料信息上传"页面上传源头详情
- */
 import { ref, computed, onMounted } from 'vue'
+import { Box, Check, Close, Delete, Edit, Plus, Refresh, Search, Select, Upload } from '@element-plus/icons-vue'
 import { rawApi } from '../services/api'
 
 const currentUser = sessionStorage.getItem('fts-admin-user') || ''
 const loading = ref(false)
 const list = ref<any[]>([])
 const pendingList = ref<any[]>([])
-const toast = ref<{ type: string; msg: string } | null>(null)
+const toast = ref<{ type: 'success' | 'error'; text: string } | null>(null)
 const showBatchModal = ref(false)
 const showQcModal = ref(false)
 const showConfirm = ref(false)
@@ -32,11 +28,9 @@ const stats = computed(() => ({
 
 const batchForm = ref({ batchNo: '', productName: '', productCategory: '', amount: '', unit: '', supplierId: '', supplierName: '', warehouse: '', storageMethod: 0, shelfLife: '', purchaseDate: '', remark: '' })
 const qcForm = ref({ batchNo: '', checkResult: 1 })
-
 const storageMethods = ['常温', '冷藏', '冷冻']
-const detailStatusLabels = ['', '待上传', '已上传', '已匹配']
 
-function flash(type: string, msg: string) { toast.value = { type, msg }; setTimeout(() => (toast.value = null), 2600) }
+function notify(type: 'success' | 'error', text: string) { toast.value = { type, text }; setTimeout(() => (toast.value = null), 2600) }
 
 async function loadList() {
   loading.value = true
@@ -50,195 +44,163 @@ async function loadList() {
     if (filters.value.detailStatus) p.detailStatus = Number(filters.value.detailStatus)
     const data = await rawApi.list(p)
     list.value = Array.isArray(data) ? data : []
-    // 同时加载待匹配列表（供应商主动上传但未匹配的）
     const pdata = await rawApi.listPending(undefined, 1)
     pendingList.value = Array.isArray(pdata) ? pdata : []
-  } catch (e: any) { flash('error', '加载失败: ' + e.message) }
+  } catch (e: any) { notify('error', '加载失败: ' + e.message) }
   finally { loading.value = false }
 }
 
-function openCreate() {
-  editing.value = null
-  batchForm.value = { batchNo: '', productName: '', productCategory: '', amount: '', unit: '', supplierId: '', supplierName: '', warehouse: '', storageMethod: 0, shelfLife: '', purchaseDate: '', remark: '' }
-  showBatchModal.value = true
+function resetFilters() {
+  filters.value = { supplierName: '', productCategory: '', checkResult: '', warehouse: '', batchStatus: '', detailStatus: '' }
+  loadList()
 }
-function openEdit(row: any) {
-  editing.value = row
-  batchForm.value = { batchNo: row.batchNo ?? '', productName: row.productName ?? '', productCategory: row.productCategory ?? '', amount: row.amount ?? '', unit: row.unit ?? '', supplierId: row.supplierId ?? '', supplierName: row.supplierName ?? '', warehouse: row.warehouse ?? '', storageMethod: row.storageMethod ?? 0, shelfLife: row.shelfLife ?? '', purchaseDate: row.purchaseDate ?? '', remark: row.remark ?? '' }
-  showBatchModal.value = true
-}
+
+function openCreate() { editing.value = null; batchForm.value = { batchNo: '', productName: '', productCategory: '', amount: '', unit: '', supplierId: '', supplierName: '', warehouse: '', storageMethod: 0, shelfLife: '', purchaseDate: '', remark: '' }; showBatchModal.value = true }
+function openEdit(row: any) { editing.value = row; batchForm.value = { batchNo: row.batchNo ?? '', productName: row.productName ?? '', productCategory: row.productCategory ?? '', amount: row.amount ?? '', unit: row.unit ?? '', supplierId: row.supplierId ?? '', supplierName: row.supplierName ?? '', warehouse: row.warehouse ?? '', storageMethod: row.storageMethod ?? 0, shelfLife: row.shelfLife ?? '', purchaseDate: row.purchaseDate ?? '', remark: row.remark ?? '' }; showBatchModal.value = true }
 async function submitBatch() {
-  // 前端校验必填字段
-  if (!batchForm.value.productName.trim()) { flash('error', '请填写产品名称'); return }
-  if (!batchForm.value.productCategory.trim()) { flash('error', '请填写产品类别'); return }
-  if (!batchForm.value.supplierName.trim()) { flash('error', '请填写供应商名称'); return }
-  if (!batchForm.value.supplierId.trim()) { flash('error', '请填写供应商编码'); return }
-  if (!batchForm.value.warehouse.trim()) { flash('error', '请填写仓库'); return }
+  if (!batchForm.value.productName.trim()) { notify('error', '请填写产品名称'); return }
+  if (!batchForm.value.productCategory.trim()) { notify('error', '请填写产品类别'); return }
+  if (!batchForm.value.supplierName.trim()) { notify('error', '请填写供应商名称'); return }
+  if (!batchForm.value.supplierId.trim()) { notify('error', '请填写供应商编码'); return }
+  if (!batchForm.value.warehouse.trim()) { notify('error', '请填写仓库'); return }
   try {
     const data: Record<string, any> = { ...batchForm.value }
-    if (editing.value) { data.rawBatchId = editing.value.rawBatchId; await rawApi.update(data); flash('success', '批次更新成功') }
-    else { await rawApi.create(data); flash('success', '批次创建成功，等待供应商上传源头信息') }
+    if (editing.value) { data.rawBatchId = editing.value.rawBatchId; await rawApi.update(data); notify('success', '批次更新成功') }
+    else { await rawApi.create(data); notify('success', '批次创建成功，等待供应商上传源头信息') }
     showBatchModal.value = false; loadList()
-  } catch (e: any) { flash('error', '操作失败: ' + e.message) }
+  } catch (e: any) { notify('error', '操作失败: ' + e.message) }
 }
 
 function confirmDelete(id: number) { deletingId.value = id; showConfirm.value = true }
-async function doDelete() { try { await rawApi.delete(deletingId.value!); flash('success', '已删除'); showConfirm.value = false; loadList() } catch (e: any) { flash('error', '删除失败') } }
+async function doDelete() { try { await rawApi.delete(deletingId.value!); notify('success', '已删除'); showConfirm.value = false; loadList() } catch (e: any) { notify('error', '删除失败') } }
 
 function openQc(row: any) { qcForm.value = { batchNo: row.batchNo, checkResult: 1 }; showQcModal.value = true }
-async function submitQc() { try { await rawApi.qualityCheck(qcForm.value.batchNo, qcForm.value.checkResult); flash('success', `质检录入成功（${qcForm.value.checkResult === 1 ? '合格' : '不合格'}，操作人：${currentUser || 'SYSTEM'}）`); showQcModal.value = false; loadList() } catch (e: any) { flash('error', '质检失败') } }
+async function submitQc() { try { await rawApi.qualityCheck(qcForm.value.batchNo, qcForm.value.checkResult); notify('success', `质检录入成功（${qcForm.value.checkResult === 1 ? '合格' : '不合格'}）`); showQcModal.value = false; loadList() } catch (e: any) { notify('error', '质检失败') } }
 
-function openMatchPending(p: any) {
-  matchPendingItem.value = p
-  matchTargetBatch.value = list.value[0]?.batchNo || ''
-  showMatchModal.value = true
-}
-async function submitMatch() {
-  if (!matchTargetBatch.value) { flash('error', '请选择目标批次号'); return }
-  try {
-    await rawApi.matchBatch(matchPendingItem.value.pendingCode, matchTargetBatch.value)
-    flash('success', '匹配成功')
-    showMatchModal.value = false
-    loadList()
-  } catch (e: any) { flash('error', '匹配失败: ' + e.message) }
-}
+function openMatchPending(p: any) { matchPendingItem.value = p; matchTargetBatch.value = list.value[0]?.batchNo || ''; showMatchModal.value = true }
+async function submitMatch() { if (!matchTargetBatch.value) { notify('error', '请选择目标批次号'); return }; try { await rawApi.matchBatch(matchPendingItem.value.pendingCode, matchTargetBatch.value); notify('success', '匹配成功'); showMatchModal.value = false; loadList() } catch (e: any) { notify('error', '匹配失败: ' + e.message) } }
 
 onMounted(loadList)
 </script>
 
 <template>
-  <div class="page-module">
-    <div v-if="toast" class="toast" :class="'toast-' + toast.type">{{ toast.msg }}</div>
+  <div class="trace-page">
+    <div v-if="toast" class="trace-toast" :class="toast.type">{{ toast.text }}</div>
 
-    <!-- 角色提示 -->
-    <div class="role-banner manufacturer">//
-      <span class="role-badge">加工生产商</span>
-      <span>您创建批次（批次号 + 供应商 + 产品）→ <strong>供应商在"原料信息上传"页面上传源头详情</strong>（产地/认证/运输）→ 自动匹配</span>
+    <div class="trace-role-banner manufacturer">
+      <span class="trace-role-badge">加工生产商</span>
+      <span>您创建批次 → <strong>供应商上传源头详情</strong> → 自动匹配</span>
     </div>
 
-    <!-- 统计 -->
-    <div class="page-stats">
-      <div class="stat-card"><div class="stat-meta"><span>批次总数</span><span class="stat-ico">原</span></div><b>{{ stats.total }}</b></div>
-      <div class="stat-card green"><div class="stat-meta"><span>已匹配溯源</span><span class="stat-ico">✓</span></div><b>{{ stats.matched }}</b></div>
-      <div class="stat-card amber"><div class="stat-meta"><span>待供应商上传</span><span class="stat-ico">待</span></div><b>{{ stats.unmatched }}</b></div>
-      <div class="stat-card" :class="stats.unchecked > 0 ? 'amber' : ''"><div class="stat-meta"><span>待质检</span><span class="stat-ico">检</span></div><b>{{ stats.unchecked }}</b></div>
-    </div>
+    <section class="trace-stats">
+      <article><span><el-icon><Box /></el-icon> 批次总数</span><b>{{ stats.total }}</b><em>个原料批次</em></article>
+      <article class="green"><span><el-icon><Check /></el-icon> 已匹配溯源</span><b>{{ stats.matched }}</b><em>源头已关联</em></article>
+      <article class="amber"><span><el-icon><Upload /></el-icon> 待供应商上传</span><b>{{ stats.unmatched }}</b><em>等待源头信息</em></article>
+      <article :class="stats.unchecked > 0 ? 'amber' : ''"><span><el-icon><Search /></el-icon> 待质检</span><b>{{ stats.unchecked }}</b><em>需检验</em></article>
+    </section>
 
-    <!-- 搜索 -->
-    <div class="search-bar">
-      <div class="search-field"><label>供应商</label><input v-model="filters.supplierName" placeholder="供应商名称" @keyup.enter="loadList" /></div>
-      <div class="search-field"><label>产品类别</label><input v-model="filters.productCategory" @keyup.enter="loadList" /></div>
-      <div class="search-field"><label>质检</label><select v-model="filters.checkResult"><option value="">全部</option><option value="1">合格</option><option value="2">不合格</option></select></div>
-      <div class="search-field"><label>状态</label><select v-model="filters.batchStatus"><option value="">全部</option><option value="1">待入库</option><option value="2">已入库</option><option value="3">已启用</option></select></div>
-      <div class="search-field"><label>溯源匹配</label><select v-model="filters.detailStatus"><option value="">全部</option><option value="0">待上传</option><option value="1">已上传</option><option value="2">已匹配</option></select></div>
-      <div class="search-field" style="align-self:end;display:flex;gap:8px"><button class="btn btn-primary" @click="loadList">🔍 查询</button><button class="btn btn-outline" @click="filters = { supplierName: '', productCategory: '', checkResult: '', warehouse: '', batchStatus: '', detailStatus: '' }; loadList()">↻ 重置</button></div>
-    </div>
+    <section class="trace-panel filter-panel">
+      <div class="filter-grid">
+        <label>供应商<input v-model="filters.supplierName" placeholder="供应商名称" @keyup.enter="loadList" /></label>
+        <label>产品类别<input v-model="filters.productCategory" @keyup.enter="loadList" /></label>
+        <label>质检<select v-model="filters.checkResult"><option value="">全部</option><option value="1">合格</option><option value="2">不合格</option></select></label>
+        <label>状态<select v-model="filters.batchStatus"><option value="">全部</option><option value="1">待入库</option><option value="2">已入库</option><option value="3">已启用</option></select></label>
+        <label>溯源匹配<select v-model="filters.detailStatus"><option value="">全部</option><option value="0">待上传</option><option value="1">已上传</option><option value="2">已匹配</option></select></label>
+        <div class="filter-actions"><button class="secondary" @click="resetFilters"><el-icon><Refresh /></el-icon> 重置</button><button class="primary" @click="loadList"><el-icon><Search /></el-icon> 查询</button></div>
+      </div>
+    </section>
 
-    <!-- 工具栏 -->
-    <div class="toolbar">
-      <h3>原料批次列表 <span class="count-note">({{ list.length }} 条)</span></h3>
-      <button class="btn btn-primary" @click="openCreate">＋ 创建原料批次</button>
-    </div>
-
-    <!-- 表格 -->
-    <div class="data-table-wrap">
-      <table class="data-table">
-        <thead><tr><th>批次号</th><th>产品</th><th>供应商</th><th>数量</th><th>仓库</th><th>质检</th><th>状态</th><th>溯源匹配</th><th>日期</th><th class="col-actions">操作</th></tr></thead>
+    <section class="trace-panel list-panel" style="margin-bottom:28px">
+      <header class="panel-header"><div><p>原料台账</p><h2>原料批次列表</h2></div><button class="primary create" @click="openCreate"><el-icon><Plus /></el-icon> 创建原料批次</button></header>
+      <div class="table-wrap"><table><thead><tr><th>批次号</th><th>产品</th><th>供应商</th><th>数量</th><th>仓库</th><th>质检</th><th>状态</th><th>溯源匹配</th><th>日期</th><th>操作</th></tr></thead>
         <tbody>
-          <tr v-if="loading"><td colspan="10" style="text-align:center;padding:40px">加载中...</td></tr>
-          <tr v-else-if="!list.length"><td colspan="10"><div class="empty-state"><div class="empty-icon">📦</div><p>暂无原料批次，点击"创建原料批次"开始</p></div></td></tr>
+          <tr v-if="loading"><td colspan="10" class="empty">加载中...</td></tr>
+          <tr v-else-if="!list.length"><td colspan="10" class="empty">暂无原料批次，点击"创建原料批次"开始</td></tr>
           <tr v-for="row in list" :key="row.rawBatchId">
-            <td><code style="color:#2666df;font-size:13px">{{ row.batchNo }}</code></td>
-            <td>{{ row.productName }}</td>
-            <td>{{ row.supplierName }}</td>
-            <td>{{ row.amount }}{{ row.unit }}</td>
-            <td>{{ row.warehouse }}</td>
+            <td><code>{{ row.batchNo }}</code></td><td>{{ row.productName }}</td><td>{{ row.supplierName }}</td>
+            <td>{{ row.amount }}{{ row.unit }}</td><td>{{ row.warehouse }}</td>
+            <td><span class="status" :class="row.checkResult === 1 ? 'status-active' : row.checkResult === 2 ? 'status-void' : 'status-pending'">{{ row.checkResult === 1 ? '合格' : row.checkResult === 2 ? '不合格' : '未检测' }}</span></td>
+            <td><span class="status" :class="row.batchStatus === 2 ? 'status-active' : row.batchStatus === 1 ? 'status-pending' : 'status-active'">{{ ['','待入库','已入库','已启用'][row.batchStatus] || '-' }}</span></td>
             <td>
-              <span class="tag" :class="row.checkResult === 1 ? 'tag-success' : row.checkResult === 2 ? 'tag-danger' : 'tag-warn'">
-                {{ row.checkResult === 1 ? '合格' : row.checkResult === 2 ? '不合格' : '未检测' }}
-              </span>
-            </td>
-            <td><span class="tag" :class="row.batchStatus === 2 ? 'tag-success' : row.batchStatus === 1 ? 'tag-warn' : 'tag-info'">{{ ['','待入库','已入库','已启用'][row.batchStatus] || '-' }}</span></td>
-            <td>
-              <span v-if="row.detailStatus >= 1" class="tag tag-success">✓ 已匹配</span>
-              <span v-else class="tag tag-warn">⏳ {{ detailStatusLabels[row.detailStatus] || '待上传' }}</span>
+              <span v-if="row.detailStatus >= 1" class="status status-active">✓ 已匹配</span>
+              <span v-else class="status status-pending">⏳ 待上传</span>
             </td>
             <td>{{ row.purchaseDate }}</td>
-            <td class="col-actions">
-              <button class="btn btn-outline btn-sm" @click="openEdit(row)">✎</button>
-              <button v-if="!row.checkResult || row.checkResult === 0" class="btn btn-success btn-sm" style="margin-left:3px" @click="openQc(row)">✓ 质检</button>
-              <button class="btn btn-danger btn-sm" style="margin-left:3px" @click="confirmDelete(row.rawBatchId)">🗑</button>
+            <td class="actions">
+              <button @click="openEdit(row)"><el-icon><Edit /></el-icon> 编辑</button>
+              <button v-if="!row.checkResult" @click="openQc(row)"><el-icon><Check /></el-icon> 质检</button>
+              <button class="danger" @click="confirmDelete(row.rawBatchId)"><el-icon><Delete /></el-icon> 删除</button>
             </td>
           </tr>
-        </tbody>
-      </table>
-    </div>
+        </tbody></table></div>
+    </section>
 
-    <!-- 供应商主动上传的待匹配列表 -->
-    <div v-if="pendingList.length" style="margin-top:28px">
-      <div class="toolbar"><h3>⏳ 供应商主动上传的待匹配原料 <span class="count-note" style="color:#f59e0b">({{ pendingList.length }} 条 — 供应商已上传详情，等待匹配批次号)</span></h3></div>
-      <div class="row-list">
-        <div v-for="p in pendingList" :key="p.rawPendingId" class="row-card">
-          <span class="mini-badge amber-bg">待</span>
-          <div style="flex:1"><strong>{{ p.pendingCode }}</strong><div class="muted">{{ p.productName || '未知原料' }} · {{ p.supplierName || '' }} · {{ p.uploadTime }}</div></div>
-          <button class="btn btn-primary btn-sm" @click="openMatchPending(p)">匹配批次</button>
+    <!-- 待匹配列表 -->
+    <section v-if="pendingList.length" class="trace-panel list-panel">
+      <header class="panel-header"><div><p>待匹配</p><h2>供应商主动上传的待匹配原料</h2></div><span style="color:#a4730a;font-size:13px">({{ pendingList.length }} 条)</span></header>
+      <div class="trace-row-list" style="padding:0 18px 18px">
+        <div v-for="p in pendingList" :key="p.rawPendingId" class="trace-row-card">
+          <span class="trace-mini-badge amber">待</span>
+          <div style="flex:1"><strong>{{ p.pendingCode }}</strong><small style="display:block;color:#96a8b9;font-size:11px">{{ p.productName || '未知原料' }} · {{ p.supplierName || '' }} · {{ p.uploadTime }}</small></div>
+          <button class="primary btn-sm" @click="openMatchPending(p)"><el-icon><Select /></el-icon> 匹配批次</button>
         </div>
       </div>
-    </div>
+    </section>
 
-    <!-- 创建/编辑批次模态框 -->
-    <div v-if="showBatchModal" class="modal-overlay" @click.self="showBatchModal = false"><div class="modal"><div class="modal-header"><h3>{{ editing ? '编辑原料批次' : '创建原料批次' }}</h3><button class="modal-close" @click="showBatchModal = false">✕</button></div>
-      <div class="modal-body">
-        <div style="padding:10px;background:#e8f0ff;border-radius:7px;font-size:12px;color:#2666df;margin-bottom:14px">
-          💡 填写<strong>批次号、产品、供应商</strong>。创建后，原料供应商将在"原料信息上传"页面补充<strong>产地、认证、运输等源头详情</strong>。
+    <!-- 批次模态框 -->
+    <div v-if="showBatchModal" class="trace-modal-backdrop" @click.self="showBatchModal = false">
+      <section class="trace-modal"><header><div><p>批次管理</p><h2>{{ editing ? '编辑原料批次' : '创建原料批次' }}</h2></div><button @click="showBatchModal = false"><el-icon><Close /></el-icon></button></header>
+        <div class="modal-body">
+          <div class="trace-hint info">💡 填写批次号、产品、供应商。创建后，原料供应商将补充源头详情。</div>
+          <div class="grid-form">
+            <label>批次号<input v-model="batchForm.batchNo" placeholder="留空自动生成" /></label>
+            <label>产品名称 *<input v-model="batchForm.productName" placeholder="如：生牛乳" /></label>
+            <label>产品类别 *<input v-model="batchForm.productCategory" placeholder="如：乳制品原料" /></label>
+            <label>供应商名称 *<input v-model="batchForm.supplierName" placeholder="哪家公司供货" /></label>
+            <label>数量<input v-model="batchForm.amount" type="number" placeholder="0.00" /></label>
+            <label>单位<input v-model="batchForm.unit" placeholder="kg / t" /></label>
+            <label>仓库 *<input v-model="batchForm.warehouse" placeholder="如：A1-03" /></label>
+            <label>储存方式<select v-model.number="batchForm.storageMethod"><option v-for="(m,i) in storageMethods" :key="i" :value="i">{{ m }}</option></select></label>
+            <label>保质期<input v-model="batchForm.shelfLife" type="date" /></label>
+            <label>采购日期<input v-model="batchForm.purchaseDate" type="date" /></label>
+          </div>
+          <label style="display:grid;gap:6px;color:#718ba6;font-size:12px;font-weight:700;margin-top:15px">供应商编码 *<input v-model="batchForm.supplierId" placeholder="如：SUP2026001" style="width:100%;padding:9px;border:1px solid #d7e4f0;border-radius:7px" /></label>
+          <label style="display:grid;gap:6px;color:#718ba6;font-size:12px;font-weight:700;margin-top:15px">备注<textarea v-model="batchForm.remark" style="width:100%;padding:9px;border:1px solid #d7e4f0;border-radius:7px;min-height:60px" /></label>
         </div>
-        <div class="form-section"><div class="form-section-title"><span class="ico">基</span>基本信息</div>
-          <div class="form-row"><div class="form-group"><label>批次号</label><input v-model="batchForm.batchNo" placeholder="留空自动生成" /></div><div class="form-group"><label>产品名称 *</label><input v-model="batchForm.productName" placeholder="如：生牛乳" required /></div></div>
-          <div class="form-row"><div class="form-group"><label>产品类别 *</label><input v-model="batchForm.productCategory" placeholder="如：乳制品原料" required /></div><div class="form-group"><label>供应商名称 *</label><input v-model="batchForm.supplierName" placeholder="哪家公司供货" required /></div></div>
-          <div class="form-row"><div class="form-group"><label>数量</label><input v-model="batchForm.amount" type="number" min="0" step="0.01" placeholder="0.00" /></div><div class="form-group"><label>单位</label><input v-model="batchForm.unit" placeholder="kg / t" /></div></div>
-          <div class="form-row"><div class="form-group"><label>仓库 *</label><input v-model="batchForm.warehouse" placeholder="如：A1-03" required /></div><div class="form-group"><label>储存方式</label><select v-model.number="batchForm.storageMethod"><option v-for="(m,i) in storageMethods" :key="i" :value="i">{{ m }}</option></select></div></div>
-          <div class="form-row"><div class="form-group"><label>保质期</label><input v-model="batchForm.shelfLife" type="date" /></div><div class="form-group"><label>采购日期</label><input v-model="batchForm.purchaseDate" type="date" /></div></div>
-        </div>
-        <div class="form-group"><label>供应商编码 *</label><input v-model="batchForm.supplierId" placeholder="如：SUP2026001" required /></div>
-        <div class="form-group"><label>备注</label><textarea v-model="batchForm.remark" /></div>
-      </div>
-      <div class="modal-footer"><button class="btn btn-outline" @click="showBatchModal = false">取消</button><button class="btn btn-primary" @click="submitBatch">{{ editing ? '保存' : '创建批次' }}</button></div>
-    </div></div>
+        <footer><button class="secondary" @click="showBatchModal = false"><el-icon><Close /></el-icon> 取消</button><button class="primary" @click="submitBatch"><el-icon><Check /></el-icon> {{ editing ? '保存' : '创建批次' }}</button></footer>
+      </section>
+    </div>
 
     <!-- 质检模态框 -->
-    <div v-if="showQcModal" class="modal-overlay" @click.self="showQcModal = false"><div class="modal" style="width:420px"><div class="modal-header"><h3>质检录入</h3><button class="modal-close" @click="showQcModal = false">✕</button></div>
-      <div class="modal-body">
-        <div class="form-group"><label>批次号</label><input v-model="qcForm.batchNo" readonly style="background:#f8fafc" /></div>
-        <div class="form-group"><label>质检结果</label><select v-model.number="qcForm.checkResult"><option :value="1">✓ 合格</option><option :value="2">✗ 不合格</option></select></div>
-        <div style="padding:10px;background:#f8fafc;border-radius:7px;font-size:12px;color:#6c84a3">操作人：<strong>{{ currentUser || '当前用户' }}</strong></div>
-      </div>
-      <div class="modal-footer"><button class="btn btn-outline" @click="showQcModal = false">取消</button><button class="btn btn-primary" @click="submitQc">确认提交</button></div>
-    </div></div>
-
-    <!-- 匹配批次模态框 -->
-    <div v-if="showMatchModal" class="modal-overlay" @click.self="showMatchModal = false">
-      <div class="modal" style="width:480px">
-        <div class="modal-header"><h3>匹配原料批次</h3><button class="modal-close" @click="showMatchModal = false">✕</button></div>
+    <div v-if="showQcModal" class="trace-modal-backdrop" @click.self="showQcModal = false">
+      <section class="trace-modal" style="width:420px"><header><div><p>质检录入</p><h2>批次质检</h2></div><button @click="showQcModal = false"><el-icon><Close /></el-icon></button></header>
         <div class="modal-body">
-          <p style="color:#6c84a3;margin:0 0 16px;font-size:13px">
-            将待匹配原料 <code style="color:#2666df">{{ matchPendingItem?.pendingCode }}</code> 关联到已有批次：
-          </p>
-          <div class="form-group">
-            <label>目标批次号 *</label>
-            <select v-model="matchTargetBatch" style="width:100%;padding:10px 12px;border:1px solid #d7e4f0;border-radius:7px">
-              <option value="">-- 请选择目标批次 --</option>
-              <option v-for="r in list" :key="r.rawBatchId" :value="r.batchNo">{{ r.batchNo }} - {{ r.productName }} ({{ r.supplierName }})</option>
-            </select>
-          </div>
+          <label style="display:grid;gap:6px;color:#718ba6;font-size:12px;font-weight:700;margin-bottom:16px">批次号<input v-model="qcForm.batchNo" readonly style="background:#f8fafc;width:100%;padding:9px;border:1px solid #d7e4f0;border-radius:7px" /></label>
+          <label style="display:grid;gap:6px;color:#718ba6;font-size:12px;font-weight:700;margin-bottom:16px">质检结果<select v-model.number="qcForm.checkResult" style="width:100%;padding:9px;border:1px solid #d7e4f0;border-radius:7px"><option :value="1">✓ 合格</option><option :value="2">✗ 不合格</option></select></label>
+          <div class="trace-hint info">操作人：<strong>{{ currentUser || '当前用户' }}</strong></div>
         </div>
-        <div class="modal-footer">
-          <button class="btn btn-outline" @click="showMatchModal = false">取消</button>
-          <button class="btn btn-primary" @click="submitMatch" :disabled="!matchTargetBatch">确认匹配</button>
+        <footer><button class="secondary" @click="showQcModal = false"><el-icon><Close /></el-icon> 取消</button><button class="primary" @click="submitQc"><el-icon><Check /></el-icon> 确认提交</button></footer>
+      </section>
+    </div>
+
+    <!-- 匹配模态框 -->
+    <div v-if="showMatchModal" class="trace-modal-backdrop" @click.self="showMatchModal = false">
+      <section class="trace-modal" style="width:480px"><header><div><p>批次匹配</p><h2>匹配原料批次</h2></div><button @click="showMatchModal = false"><el-icon><Close /></el-icon></button></header>
+        <div class="modal-body">
+          <p class="target-code">{{ matchPendingItem?.pendingCode }}</p>
+          <label style="display:grid;gap:6px;color:#718ba6;font-size:12px;font-weight:700">目标批次号 *<select v-model="matchTargetBatch" style="width:100%;padding:9px;border:1px solid #d7e4f0;border-radius:7px"><option value="">-- 请选择目标批次 --</option><option v-for="r in list" :key="r.rawBatchId" :value="r.batchNo">{{ r.batchNo }} - {{ r.productName }}</option></select></label>
         </div>
-      </div>
+        <footer><button class="secondary" @click="showMatchModal = false"><el-icon><Close /></el-icon> 取消</button><button class="primary" @click="submitMatch" :disabled="!matchTargetBatch"><el-icon><Select /></el-icon> 确认匹配</button></footer>
+      </section>
     </div>
 
     <!-- 删除确认 -->
-    <div v-if="showConfirm" class="confirm-overlay"><div class="confirm-box"><div class="confirm-icon">⚠️</div><h3>确认删除</h3><p>确定要删除该原料批次吗？</p><div class="confirm-actions"><button class="btn btn-outline" @click="showConfirm = false">取消</button><button class="btn btn-danger" @click="doDelete">确认删除</button></div></div></div>
+    <div v-if="showConfirm" class="trace-confirm-overlay" @click.self="showConfirm = false">
+      <div class="trace-confirm-box"><h3>确认删除</h3><p>确定要删除该原料批次吗？</p><div class="trace-confirm-actions"><button class="secondary" @click="showConfirm = false"><el-icon><Close /></el-icon> 取消</button><button class="primary danger-fill" @click="doDelete"><el-icon><Delete /></el-icon> 确认删除</button></div></div>
+    </div>
   </div>
 </template>
+
+<style scoped>
+@import '../styles/trace-page.css';
+</style>

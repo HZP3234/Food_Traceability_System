@@ -1,0 +1,41 @@
+/* 配合版面的细微操作优化 — 蓝色主题 */
+
+/* ---- 左侧栏密度 ---- */
+.sidebar { padding: 25px 16px !important; }
+.side-nav { padding-bottom: 0 !important; }
+.nav-group { margin: 18px 0 !important; }
+.nav-group p {
+  font: 700 10px ui-monospace, monospace !important;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+.nav-item { min-height: 36px !important; border-radius: 8px !important; font-size: 13px !important; }
+.nav-icon { width: 24px !important; height: 24px !important; border-radius: 6px !important; }
+.role-card { border-radius: 10px !important; }
+
+/* ---- 顶栏 ---- */
+.topbar { height: 64px !important; box-shadow: none !important; }
+
+/* ---- 工作区 ---- */
+.workspace { background: #f0f4fa !important; }
+
+/* ---- 页面标题 ---- */
+.page-title {
+  display: flex;
+  align-items: end;
+  padding: 0 0 25px !important;
+  margin: 0 0 26px !important;
+  border-bottom-color: #dce8f4;
+}
+.page-title h1 { font-size: 36px !important; font-weight: 500 !important; }
+.page-title p {
+  color: #4b83d7 !important;
+  font: 700 11px/1.1 ui-monospace, monospace !important;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.ghost-button {
+  border-radius: 7px !important;
+  border-color: #c2d4f2 !important;
+  color: #2467df !important;
+}
