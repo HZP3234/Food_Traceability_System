@@ -15,6 +15,7 @@ const showEnvModal = ref(false)
 const showInspectionModal = ref(false)
 const showConfirm = ref(false)
 const showChainModal = ref(false)
+const showQcProdModal = ref(false)
 const confirmMsg = ref('')
 
 // ---- lists ----
@@ -30,6 +31,8 @@ const editing = ref<any>(null)
 const editingProcess = ref<any>(null)
 const editingTemplate = ref<any>(null)
 const deletingId = ref<number | null>(null)
+const qcTarget = ref<any>(null)
+const qcResult = ref(1)
 const deleteKind = ref<'prod' | 'process'>('prod')
 const chainData = ref<any>(null)
 
@@ -98,6 +101,7 @@ const stats = computed(() => {
 })
 
 // ---- utils ----
+const currentUser = sessionStorage.getItem('fts-admin-user') || ''
 function flash(type: string, msg: string) { toast.value = { type, msg }; setTimeout(() => (toast.value = null), 2600) }
 function tagClass(s: string) {
   if (['已完成', '已存证', '已绑定', '已启用', '合格', '正常'].some(x => s.includes(x))) return 'tag-success'
@@ -122,8 +126,14 @@ async function loadProdBatch() {
 function openCreateProd() { editing.value = null; form.value = { batchNo: '', productName: '', processBatchNo: '', productionLine: '', plannedAmount: '', actualAmount: '', productionDate: '', remark: '' }; showModal.value = true }
 function openEditProd(row: any) { editing.value = row; form.value = { batchNo: row.batchNo ?? '', productName: row.productName ?? '', processBatchNo: row.processBatchNo ?? '', productionLine: row.productionLine ?? '', plannedAmount: row.plannedAmount ?? '', actualAmount: row.actualAmount ?? '', productionDate: row.productionDate ?? '', remark: row.remark ?? '' }; showModal.value = true }
 async function submitProdBatch() {
+  if (!form.value.productName.trim()) { flash('error', '请填写产品名称'); return }
+  if (!form.value.productionLine.trim()) { flash('error', '请填写生产线'); return }
+  if (!form.value.productionDate.trim()) { flash('error', '请选择生产日期'); return }
   try {
     const data: Record<string, any> = { ...form.value }
+    // 确保数值字段不为空字符串
+    if (!data.plannedAmount) data.plannedAmount = '0'
+    if (!data.actualAmount) data.actualAmount = '0'
     if (editing.value) { data.prodBatchId = editing.value.prodBatchId; await productionApi.updateProdBatch(data); flash('success', '生产批次更新成功') }
     else { await productionApi.createProdBatch(data); flash('success', '生产批次创建成功') }
     showModal.value = false; loadProdBatch()
@@ -131,7 +141,14 @@ async function submitProdBatch() {
 }
 async function completeProd(id: number) { try { await productionApi.completeProdBatch(id); flash('success', '生产批次已完成'); loadProdBatch() } catch (e: any) { flash('error', '操作失败: ' + e.message) } }
 async function bindCode(id: number) { try { await productionApi.bindCode(id); flash('success', '溯源码绑定完成'); loadProdBatch() } catch (e: any) { flash('error', '绑码失败: ' + e.message) } }
-async function qualityCheckProd(batchNo: string, result: number) { try { await productionApi.qualityCheckProd(batchNo, result); flash('success', '质检录入成功'); loadProdBatch() } catch (e: any) { flash('error', '质检失败: ' + e.message) } }
+function openQcProd(row: any) { qcTarget.value = row; qcResult.value = 1; showQcProdModal.value = true }
+async function submitQcProd() {
+  try {
+    await productionApi.qualityCheckProd(qcTarget.value.batchNo, qcResult.value)
+    flash('success', `质检结果已录入（${qcResult.value === 1 ? '合格' : '不合格'}，操作人：${currentUser || 'SYSTEM'}）`)
+    showQcProdModal.value = false; loadProdBatch()
+  } catch (e: any) { flash('error', '质检失败: ' + e.message) }
+}
 async function traceChain(batchNo: string) { try { const result = await productionApi.traceProcessChain(batchNo); chainData.value = result; showChainModal.value = true } catch (e: any) { flash('error', '追溯失败: ' + e.message) } }
 
 // ==================== 加工批次 ====================
@@ -165,6 +182,10 @@ function openEditProcess(row: any) {
   showProcessModal.value = true
 }
 async function submitProcess() {
+  if (!processForm.value.productName.trim()) { flash('error', '请填写产品名称'); return }
+  if (!processForm.value.templateName.trim()) { flash('error', '请填写工艺模板名称'); return }
+  if (!processForm.value.rawBatchNo.trim()) { flash('error', '请填写原料批次号'); return }
+  if (!processForm.value.productionLine.trim()) { flash('error', '请填写生产线'); return }
   try {
     const data: Record<string, any> = { ...processForm.value }
     if (editingProcess.value) { data.processBatchId = editingProcess.value.processBatchId; await productionApi.updateProcessBatch(data); flash('success', '加工批次更新成功') }
@@ -200,6 +221,7 @@ function openEditTemplate(row: any) {
   showTemplateModal.value = true
 }
 async function submitTemplate() {
+  if (!templateForm.value.templateName.trim()) { flash('error', '请填写模板名称'); return }
   try {
     const data: Record<string, any> = { ...templateForm.value }
     if (editingTemplate.value) { data.templateId = editingTemplate.value.templateId; await productionApi.updateTemplate(data); flash('success', '工艺模板更新成功') }
@@ -207,7 +229,9 @@ async function submitTemplate() {
     showTemplateModal.value = false; loadTemplates()
   } catch (e: any) { flash('error', '操作失败: ' + e.message) }
 }
-async function deleteTemplate(id: number) { if (!confirm('确认删除该工艺模板？')) return; try { await productionApi.deleteTemplate(id); flash('success', '工艺模板删除成功'); loadTemplates() } catch (e: any) { flash('error', '删除失败: ' + e.message) } }
+const showTemplateConfirm = ref(false); const deletingTemplateId = ref<number | null>(null)
+function confirmDeleteTemplate(id: number) { deletingTemplateId.value = id; showTemplateConfirm.value = true }
+async function doDeleteTemplate() { try { await productionApi.deleteTemplate(deletingTemplateId.value!); flash('success', '工艺模板删除成功'); showTemplateConfirm.value = false; loadTemplates() } catch (e: any) { flash('error', '删除失败: ' + e.message) } }
 
 // ==================== 投料记录 ====================
 async function loadMaterialInput() { try { const d = await productionApi.listMaterialInput(); materialInputs.value = Array.isArray(d) ? d : [] } catch (e: any) { flash('error', '加载失败') } }
@@ -298,8 +322,7 @@ onMounted(loadProdBatch)
                 <button class="btn btn-outline btn-sm" @click="openEditProd(row)">✎</button>
                 <button v-if="row.batchStatus === 2" class="btn btn-success btn-sm" style="margin-left:3px" @click="completeProd(row.prodBatchId)">✓ 完成</button>
                 <button v-if="row.batchStatus === 3 && row.codeStatus !== 2" class="btn btn-outline btn-sm" style="margin-left:3px" @click="bindCode(row.prodBatchId)">🔗 绑码</button>
-                <button v-if="!row.checkResult" class="btn btn-success btn-sm" style="margin-left:3px" @click="qualityCheckProd(row.batchNo, 1)">✓ 合格</button>
-                <button v-if="!row.checkResult" class="btn btn-danger btn-sm" style="margin-left:3px" @click="qualityCheckProd(row.batchNo, 2)">✗ 不合格</button>
+                <button v-if="!row.checkResult" class="btn btn-outline btn-sm" style="margin-left:3px" @click="openQcProd(row)">🔬 质检</button>
                 <button class="btn btn-outline btn-sm" style="margin-left:3px" @click="traceChain(row.batchNo)">🔍 追溯</button>
                 <button class="btn btn-danger btn-sm" style="margin-left:3px" @click="confirmDeleteProd(row.prodBatchId)">🗑</button>
               </td>
@@ -371,7 +394,7 @@ onMounted(loadProdBatch)
               <td><span class="tag" :class="row.templateStatus === 1 ? 'tag-success' : 'tag-neutral'">{{ row.templateStatus === 1 ? '启用' : '停用' }}</span></td>
               <td class="col-actions">
                 <button class="btn btn-outline btn-sm" @click="openEditTemplate(row)">✎</button>
-                <button class="btn btn-danger btn-sm" style="margin-left:4px" @click="deleteTemplate(row.templateId)">🗑</button>
+                <button class="btn btn-danger btn-sm" style="margin-left:4px" @click="confirmDeleteTemplate(row.templateId)">🗑</button>
               </td>
             </tr>
           </tbody>
@@ -424,10 +447,10 @@ onMounted(loadProdBatch)
       <div class="modal"><div class="modal-header"><h3>{{ editing ? '编辑生产批次' : '新增生产批次' }}</h3><button class="modal-close" @click="showModal = false">✕</button></div>
         <div class="modal-body">
           <div class="form-section"><div class="form-section-title"><span class="ico">基</span>基本信息</div>
-            <div class="form-row"><div class="form-group"><label>批次号</label><input v-model="form.batchNo" /></div><div class="form-group"><label>产品名称 *</label><input v-model="form.productName" /></div></div>
-            <div class="form-row"><div class="form-group"><label>加工批次号</label><input v-model="form.processBatchNo" /></div><div class="form-group"><label>生产线</label><input v-model="form.productionLine" /></div></div>
-            <div class="form-row"><div class="form-group"><label>计划数量</label><input v-model="form.plannedAmount" type="number" /></div><div class="form-group"><label>实际数量</label><input v-model="form.actualAmount" type="number" /></div></div>
-            <div class="form-row"><div class="form-group"><label>生产日期</label><input v-model="form.productionDate" /></div></div>
+            <div class="form-row"><div class="form-group"><label>批次号</label><input v-model="form.batchNo" placeholder="留空自动生成" /></div><div class="form-group"><label>产品名称 *</label><input v-model="form.productName" placeholder="如：鲜牛奶" required /></div></div>
+            <div class="form-row"><div class="form-group"><label>加工批次号</label><input v-model="form.processBatchNo" placeholder="关联的加工批次" /></div><div class="form-group"><label>生产线 *</label><input v-model="form.productionLine" placeholder="如：L-01" required /></div></div>
+            <div class="form-row"><div class="form-group"><label>计划数量</label><input v-model="form.plannedAmount" type="number" min="0" placeholder="0" /></div><div class="form-group"><label>实际数量</label><input v-model="form.actualAmount" type="number" min="0" placeholder="0" /></div></div>
+            <div class="form-row"><div class="form-group"><label>生产日期 *</label><input v-model="form.productionDate" type="date" required /></div></div>
           </div>
           <div class="form-group"><label>备注</label><textarea v-model="form.remark" /></div>
         </div>
@@ -555,11 +578,48 @@ onMounted(loadProdBatch)
       </div>
     </div>
 
+    <!-- ==================== 质检模态框：生产批次 ==================== -->
+    <div v-if="showQcProdModal" class="modal-overlay" @click.self="showQcProdModal = false">
+      <div class="modal" style="width:460px">
+        <div class="modal-header"><h3>生产批次质检</h3><button class="modal-close" @click="showQcProdModal = false">✕</button></div>
+        <div class="modal-body">
+          <p style="color:#6c84a3;margin:0 0 16px;font-size:13px">
+            批次号：<code style="color:#2666df;font-weight:700">{{ qcTarget?.batchNo }}</code><br/>
+            产品：<strong>{{ qcTarget?.productName }}</strong>
+          </p>
+          <div class="form-group">
+            <label>质检结果 *</label>
+            <select v-model.number="qcResult" style="width:100%;padding:10px 12px;border:1px solid #d7e4f0;border-radius:7px;font-size:14px">
+              <option :value="1">✓ 合格</option>
+              <option :value="2">✗ 不合格</option>
+            </select>
+          </div>
+          <div style="padding:10px;background:#f8fafc;border-radius:7px;font-size:12px;color:#6c84a3">
+            操作人：<strong>{{ currentUser || '当前用户' }}</strong>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline" @click="showQcProdModal = false">取消</button>
+          <button class="btn" :class="qcResult === 1 ? 'btn-success' : 'btn-danger'" @click="submitQcProd">
+            确认{{ qcResult === 1 ? '合格' : '不合格' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- ==================== 删除确认 ==================== -->
     <div v-if="showConfirm" class="confirm-overlay" @click.self="showConfirm = false">
       <div class="confirm-box">
         <div class="confirm-icon">⚠️</div><h3>确认删除</h3><p>{{ confirmMsg }}</p>
         <div class="confirm-actions"><button class="btn btn-outline" @click="showConfirm = false">取消</button><button class="btn btn-danger" @click="doDelete">确认删除</button></div>
+      </div>
+    </div>
+
+    <!-- ==================== 删除模板确认 ==================== -->
+    <div v-if="showTemplateConfirm" class="confirm-overlay" @click.self="showTemplateConfirm = false">
+      <div class="confirm-box">
+        <div class="confirm-icon">⚠️</div><h3>确认删除</h3><p>确定要删除该工艺模板吗？</p>
+        <div class="confirm-actions"><button class="btn btn-outline" @click="showTemplateConfirm = false">取消</button><button class="btn btn-danger" @click="doDeleteTemplate">确认删除</button></div>
       </div>
     </div>
   </div>
