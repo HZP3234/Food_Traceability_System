@@ -142,6 +142,7 @@ export const productionApi = {
   createProdBatch: (data: Record<string, any>) => post('/Production/createProdBatch', data),
   updateProdBatch: (data: Record<string, any>) => post('/Production/updateProdBatch', data),
   completeProdBatch: (prodBatchId: number) => post('/Production/completeProdBatch', { prodBatchId }),
+  startProdBatch: (prodBatchId: number) => post('/Production/startProdBatch', { prodBatchId }),
   bindCode: (prodBatchId: number) => post('/Production/bindCode', { prodBatchId }),
   deleteProdBatch: (prodBatchId: number) => post('/Production/deleteProdBatch', { prodBatchId }),
 

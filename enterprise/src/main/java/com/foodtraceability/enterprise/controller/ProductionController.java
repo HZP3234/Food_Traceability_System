@@ -183,6 +183,17 @@ public class ProductionController {
         }
     }
 
+    // 开始生产批次（待生产 → 生产中）
+    @RequestMapping("/startProdBatch")
+    public String startProdBatch(Long prodBatchId) {
+        int num = productionService.startProdBatch(prodBatchId);
+        if (num == 1) {
+            return "生产已开始";
+        } else {
+            return "操作失败：批次不存在或状态不允许";
+        }
+    }
+
     // 完成生产批次
     @RequestMapping("/completeProdBatch")
     public String completeProdBatch(Long prodBatchId) {

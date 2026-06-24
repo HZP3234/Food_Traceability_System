@@ -56,7 +56,12 @@ function openEditT(row: any) { editingT.value = row; tForm.value = { orderNo: ro
 async function submitT() { try { const data: Record<string, any> = { ...tForm.value }; if (editingT.value) { data.transportId = editingT.value.transportId; await coldChainApi.updateTransport(data); flash('success', '运输订单更新成功') } else { await coldChainApi.createTransport(data); flash('success', '运输订单创建成功') } showTModal.value = false; loadTransports() } catch (e: any) { flash('error', '操作失败: ' + e.message) } }
 function confirmDeleteT(id: number) { deletingTId.value = id; showTConfirm.value = true }
 async function doDeleteT() { try { await coldChainApi.deleteTransport(deletingTId.value!); flash('success', '订单删除成功'); showTConfirm.value = false; loadTransports() } catch (e: any) { flash('error', '删除失败: ' + e.message) } }
-async function stateAction(action: string, id: number) { try { if (action === 'depart') await coldChainApi.departTransport(id); else if (action === 'arrive') await coldChainApi.arriveTransport(id); else if (action === 'alert') await coldChainApi.alertTransport(id); else if (action === 'close') await coldChainApi.closeTransport(id); flash('success', '操作成功'); loadTransports() } catch (e: any) { flash('error', '操作失败: ' + e.message) } }
+async function stateAction(action: string, id: number) {
+  const labels: Record<string, string> = { depart: '发运', arrive: '签收', alert: '预警', close: '关闭' }
+  const actionLabel = labels[action] || action
+  if (!confirm(`确认执行"${actionLabel}"操作？此操作将更改运输订单状态。`)) return
+  try { if (action === 'depart') await coldChainApi.departTransport(id); else if (action === 'arrive') await coldChainApi.arriveTransport(id); else if (action === 'alert') await coldChainApi.alertTransport(id); else if (action === 'close') await coldChainApi.closeTransport(id); flash('success', '操作成功'); loadTransports() } catch (e: any) { flash('error', '操作失败: ' + e.message) }
+}
 
 // Vehicle CRUD
 async function loadVehicles() { loadingV.value = true; try { const p: Record<string, any> = {}; if (vFilters.value.vehicleStatus) p.vehicleStatus = Number(vFilters.value.vehicleStatus); if (vFilters.value.ownerName) p.ownerName = vFilters.value.ownerName; if (vFilters.value.coldType) p.coldType = vFilters.value.coldType; const data = await coldChainApi.listVehicle(p); vehicles.value = Array.isArray(data) ? data : [] } catch (e: any) { flash('error', '加载车辆失败') } finally { loadingV.value = false } }

@@ -16,7 +16,12 @@ const showInspectionModal = ref(false)
 const showConfirm = ref(false)
 const showChainModal = ref(false)
 const showQcProdModal = ref(false)
+const confirmTitle = ref('确认操作')
 const confirmMsg = ref('')
+const confirmBtnLabel = ref('确认')
+const confirmBtnClass = ref('btn-danger')
+const confirmCallback = ref<null | (() => void)>(null)
+function doConfirm() { if (confirmCallback.value) { confirmCallback.value() } }
 
 // ---- lists ----
 const list = ref<any[]>([])           // prod batch
@@ -30,10 +35,8 @@ const inspections = ref<any[]>([])
 const editing = ref<any>(null)
 const editingProcess = ref<any>(null)
 const editingTemplate = ref<any>(null)
-const deletingId = ref<number | null>(null)
 const qcTarget = ref<any>(null)
 const qcResult = ref(1)
-const deleteKind = ref<'prod' | 'process'>('prod')
 const chainData = ref<any>(null)
 
 // ---- filters ----
@@ -125,29 +128,37 @@ async function loadProdBatch() {
 }
 function openCreateProd() { editing.value = null; form.value = { batchNo: '', productName: '', processBatchNo: '', productionLine: '', plannedAmount: '', actualAmount: '', productionDate: '', remark: '' }; showModal.value = true }
 function openEditProd(row: any) { editing.value = row; form.value = { batchNo: row.batchNo ?? '', productName: row.productName ?? '', processBatchNo: row.processBatchNo ?? '', productionLine: row.productionLine ?? '', plannedAmount: row.plannedAmount ?? '', actualAmount: row.actualAmount ?? '', productionDate: row.productionDate ?? '', remark: row.remark ?? '' }; showModal.value = true }
-async function submitProdBatch() {
+function submitProdBatch() {
   if (!form.value.productName.trim()) { flash('error', '请填写产品名称'); return }
   if (!form.value.productionLine.trim()) { flash('error', '请填写生产线'); return }
   if (!form.value.productionDate.trim()) { flash('error', '请选择生产日期'); return }
-  try {
-    const data: Record<string, any> = { ...form.value }
-    // 确保数值字段不为空字符串
-    if (!data.plannedAmount) data.plannedAmount = '0'
-    if (!data.actualAmount) data.actualAmount = '0'
-    if (editing.value) { data.prodBatchId = editing.value.prodBatchId; await productionApi.updateProdBatch(data); flash('success', '生产批次更新成功') }
-    else { await productionApi.createProdBatch(data); flash('success', '生产批次创建成功') }
-    showModal.value = false; loadProdBatch()
-  } catch (e: any) { flash('error', '操作失败: ' + e.message) }
+  const label = editing.value ? '更新' : '创建'
+  confirmTitle.value = `确认${label}`; confirmMsg.value = `确认${label}该生产批次？`; confirmBtnLabel.value = `确认${label}`; confirmBtnClass.value = 'btn-primary'
+  confirmCallback.value = async () => {
+    try {
+      const data: Record<string, any> = { ...form.value }
+      if (!data.plannedAmount) data.plannedAmount = '0'
+      if (!data.actualAmount) data.actualAmount = '0'
+      if (editing.value) { data.prodBatchId = editing.value.prodBatchId; await productionApi.updateProdBatch(data); flash('success', '生产批次更新成功') }
+      else { await productionApi.createProdBatch(data); flash('success', '生产批次创建成功') }
+      showModal.value = false; showConfirm.value = false; loadProdBatch()
+    } catch (e: any) { flash('error', '操作失败: ' + e.message) }
+  }; showConfirm.value = true
 }
-async function completeProd(id: number) { try { await productionApi.completeProdBatch(id); flash('success', '生产批次已完成'); loadProdBatch() } catch (e: any) { flash('error', '操作失败: ' + e.message) } }
-async function bindCode(id: number) { try { await productionApi.bindCode(id); flash('success', '溯源码绑定完成'); loadProdBatch() } catch (e: any) { flash('error', '绑码失败: ' + e.message) } }
+function startProd(id: number) { confirmTitle.value = '确认开始生产'; confirmMsg.value = '确认开始该批次的生产？此操作将标记批次为"生产中"。'; confirmBtnLabel.value = '确认开始'; confirmBtnClass.value = 'btn-primary'; confirmCallback.value = async () => { try { await productionApi.startProdBatch(id); flash('success', '生产已开始'); showConfirm.value = false; loadProdBatch() } catch (e: any) { flash('error', '操作失败: ' + e.message) } }; showConfirm.value = true }
+function completeProd(id: number) { confirmTitle.value = '确认完成'; confirmMsg.value = '确认完成该生产批次？此操作将标记批次为"生产完成"。'; confirmBtnLabel.value = '确认完成'; confirmBtnClass.value = 'btn-success'; confirmCallback.value = async () => { try { await productionApi.completeProdBatch(id); flash('success', '生产批次已完成'); showConfirm.value = false; loadProdBatch() } catch (e: any) { flash('error', '操作失败: ' + e.message) } }; showConfirm.value = true }
+function bindCode(id: number) { confirmTitle.value = '确认绑码'; confirmMsg.value = '确认为该生产批次绑定溯源码？绑定后将标记为"生产完成"。'; confirmBtnLabel.value = '确认绑码'; confirmBtnClass.value = 'btn-primary'; confirmCallback.value = async () => { try { await productionApi.bindCode(id); flash('success', '溯源码绑定完成'); showConfirm.value = false; loadProdBatch() } catch (e: any) { flash('error', '绑码失败: ' + e.message) } }; showConfirm.value = true }
 function openQcProd(row: any) { qcTarget.value = row; qcResult.value = 1; showQcProdModal.value = true }
-async function submitQcProd() {
-  try {
-    await productionApi.qualityCheckProd(qcTarget.value.batchNo, qcResult.value)
-    flash('success', `质检结果已录入（${qcResult.value === 1 ? '合格' : '不合格'}，操作人：${currentUser || 'SYSTEM'}）`)
-    showQcProdModal.value = false; loadProdBatch()
-  } catch (e: any) { flash('error', '质检失败: ' + e.message) }
+function submitQcProd() {
+  const resultLabel = qcResult.value === 1 ? '合格' : '不合格'
+  confirmTitle.value = '确认质检'; confirmMsg.value = `确认将该批次质检结果标记为"${resultLabel}"？`; confirmBtnLabel.value = `确认${resultLabel}`; confirmBtnClass.value = qcResult.value === 1 ? 'btn-success' : 'btn-danger'
+  confirmCallback.value = async () => {
+    try {
+      await productionApi.qualityCheckProd(qcTarget.value.batchNo, qcResult.value)
+      flash('success', `质检结果已录入（${resultLabel}，操作人：${currentUser || 'SYSTEM'}）`)
+      showQcProdModal.value = false; showConfirm.value = false; loadProdBatch()
+    } catch (e: any) { flash('error', '质检失败: ' + e.message) }
+  }; showConfirm.value = true
 }
 async function traceChain(batchNo: string) { try { const result = await productionApi.traceProcessChain(batchNo); chainData.value = result; showChainModal.value = true } catch (e: any) { flash('error', '追溯失败: ' + e.message) } }
 
@@ -181,19 +192,23 @@ function openEditProcess(row: any) {
   }
   showProcessModal.value = true
 }
-async function submitProcess() {
+function submitProcess() {
   if (!processForm.value.productName.trim()) { flash('error', '请填写产品名称'); return }
   if (!processForm.value.templateName.trim()) { flash('error', '请填写工艺模板名称'); return }
   if (!processForm.value.rawBatchNo.trim()) { flash('error', '请填写原料批次号'); return }
   if (!processForm.value.productionLine.trim()) { flash('error', '请填写生产线'); return }
-  try {
-    const data: Record<string, any> = { ...processForm.value }
-    if (editingProcess.value) { data.processBatchId = editingProcess.value.processBatchId; await productionApi.updateProcessBatch(data); flash('success', '加工批次更新成功') }
-    else { await productionApi.createProcessBatch(data); flash('success', '加工批次创建成功') }
-    showProcessModal.value = false; loadProcess()
-  } catch (e: any) { flash('error', '操作失败: ' + e.message) }
+  const label = editingProcess.value ? '更新' : '创建'
+  confirmTitle.value = `确认${label}`; confirmMsg.value = `确认${label}该加工批次？`; confirmBtnLabel.value = `确认${label}`; confirmBtnClass.value = 'btn-primary'
+  confirmCallback.value = async () => {
+    try {
+      const data: Record<string, any> = { ...processForm.value }
+      if (editingProcess.value) { data.processBatchId = editingProcess.value.processBatchId; await productionApi.updateProcessBatch(data); flash('success', '加工批次更新成功') }
+      else { await productionApi.createProcessBatch(data); flash('success', '加工批次创建成功') }
+      showProcessModal.value = false; showConfirm.value = false; loadProcess()
+    } catch (e: any) { flash('error', '操作失败: ' + e.message) }
+  }; showConfirm.value = true
 }
-async function completeProcess(id: number) { try { await productionApi.completeProcessBatch(id); flash('success', '加工批次已完成'); loadProcess() } catch (e: any) { flash('error', '操作失败: ' + e.message) } }
+function completeProcess(id: number) { confirmTitle.value = '确认完成'; confirmMsg.value = '确认完成该加工批次？此操作将标记批次为"加工完成"。'; confirmBtnLabel.value = '确认完成'; confirmBtnClass.value = 'btn-success'; confirmCallback.value = async () => { try { await productionApi.completeProcessBatch(id); flash('success', '加工批次已完成'); showConfirm.value = false; loadProcess() } catch (e: any) { flash('error', '操作失败: ' + e.message) } }; showConfirm.value = true }
 
 // ==================== 工艺模板 ====================
 async function loadTemplates() {
@@ -220,40 +235,36 @@ function openEditTemplate(row: any) {
   }
   showTemplateModal.value = true
 }
-async function submitTemplate() {
+function submitTemplate() {
   if (!templateForm.value.templateName.trim()) { flash('error', '请填写模板名称'); return }
-  try {
-    const data: Record<string, any> = { ...templateForm.value }
-    if (editingTemplate.value) { data.templateId = editingTemplate.value.templateId; await productionApi.updateTemplate(data); flash('success', '工艺模板更新成功') }
-    else { await productionApi.createTemplate(data); flash('success', '工艺模板创建成功') }
-    showTemplateModal.value = false; loadTemplates()
-  } catch (e: any) { flash('error', '操作失败: ' + e.message) }
+  const label = editingTemplate.value ? '更新' : '创建'
+  confirmTitle.value = `确认${label}`; confirmMsg.value = `确认${label}该工艺模板？`; confirmBtnLabel.value = `确认${label}`; confirmBtnClass.value = 'btn-primary'
+  confirmCallback.value = async () => {
+    try {
+      const data: Record<string, any> = { ...templateForm.value }
+      if (editingTemplate.value) { data.templateId = editingTemplate.value.templateId; await productionApi.updateTemplate(data); flash('success', '工艺模板更新成功') }
+      else { await productionApi.createTemplate(data); flash('success', '工艺模板创建成功') }
+      showTemplateModal.value = false; showConfirm.value = false; loadTemplates()
+    } catch (e: any) { flash('error', '操作失败: ' + e.message) }
+  }; showConfirm.value = true
 }
-const showTemplateConfirm = ref(false); const deletingTemplateId = ref<number | null>(null)
-function confirmDeleteTemplate(id: number) { deletingTemplateId.value = id; showTemplateConfirm.value = true }
-async function doDeleteTemplate() { try { await productionApi.deleteTemplate(deletingTemplateId.value!); flash('success', '工艺模板删除成功'); showTemplateConfirm.value = false; loadTemplates() } catch (e: any) { flash('error', '删除失败: ' + e.message) } }
+function confirmDeleteTemplate(id: number) { confirmTitle.value = '确认删除'; confirmMsg.value = '确定要删除该工艺模板吗？此操作不可恢复。'; confirmBtnLabel.value = '确认删除'; confirmBtnClass.value = 'btn-danger'; confirmCallback.value = async () => { try { await productionApi.deleteTemplate(id); flash('success', '工艺模板删除成功'); showConfirm.value = false; loadTemplates() } catch (e: any) { flash('error', '删除失败: ' + e.message) } }; showConfirm.value = true }
 
 // ==================== 投料记录 ====================
 async function loadMaterialInput() { try { const d = await productionApi.listMaterialInput(); materialInputs.value = Array.isArray(d) ? d : [] } catch (e: any) { flash('error', '加载失败') } }
-async function submitMaterialInput() { try { await productionApi.recordMaterialInput(inputForm.value); flash('success', '投料记录成功'); showInputModal.value = false; loadMaterialInput() } catch (e: any) { flash('error', '投料失败: ' + e.message) } }
+function submitMaterialInput() { confirmTitle.value = '确认投料'; confirmMsg.value = '确认记录该投料信息？'; confirmBtnLabel.value = '确认记录'; confirmBtnClass.value = 'btn-primary'; confirmCallback.value = async () => { try { await productionApi.recordMaterialInput(inputForm.value); flash('success', '投料记录成功'); showInputModal.value = false; showConfirm.value = false; loadMaterialInput() } catch (e: any) { flash('error', '投料失败: ' + e.message) } }; showConfirm.value = true }
 
 // ==================== 环境监测 ====================
 async function loadEnvRecords() { try { if (envLine.value) { const d = await productionApi.listEnvRecord(envLine.value); envRecords.value = Array.isArray(d) ? d : [] } } catch (e: any) { flash('error', '加载失败') } }
-async function submitEnv() { try { await productionApi.recordEnv(envForm.value); flash('success', '环境数据采集成功'); showEnvModal.value = false; loadEnvRecords() } catch (e: any) { flash('error', '采集失败: ' + e.message) } }
+function submitEnv() { confirmTitle.value = '确认采集'; confirmMsg.value = '确认提交该环境监测数据？'; confirmBtnLabel.value = '确认提交'; confirmBtnClass.value = 'btn-primary'; confirmCallback.value = async () => { try { await productionApi.recordEnv(envForm.value); flash('success', '环境数据采集成功'); showEnvModal.value = false; showConfirm.value = false; loadEnvRecords() } catch (e: any) { flash('error', '采集失败: ' + e.message) } }; showConfirm.value = true }
 
 // ==================== 质检记录 ====================
 async function loadInspections() { try { const p: Record<string, any> = {}; if (inspFilters.value.bizType) p.bizType = Number(inspFilters.value.bizType); if (inspFilters.value.bizBatchNo) p.bizBatchNo = inspFilters.value.bizBatchNo; if (inspFilters.value.inspectionResult) p.inspectionResult = Number(inspFilters.value.inspectionResult); const d = await productionApi.listInspection(p); inspections.value = Array.isArray(d) ? d : [] } catch (e: any) { flash('error', '加载失败') } }
-async function submitInspection() { try { await productionApi.createInspection(inspectionForm.value); flash('success', '质检记录创建成功'); showInspectionModal.value = false; loadInspections() } catch (e: any) { flash('error', '创建失败: ' + e.message) } }
+function submitInspection() { confirmTitle.value = '确认提交'; confirmMsg.value = '确认创建该质检记录？'; confirmBtnLabel.value = '确认提交'; confirmBtnClass.value = 'btn-primary'; confirmCallback.value = async () => { try { await productionApi.createInspection(inspectionForm.value); flash('success', '质检记录创建成功'); showInspectionModal.value = false; showConfirm.value = false; loadInspections() } catch (e: any) { flash('error', '创建失败: ' + e.message) } }; showConfirm.value = true }
 
 // ==================== 删除确认 ====================
-function confirmDeleteProd(id: number) { deletingId.value = id; deleteKind.value = 'prod'; confirmMsg.value = '确定要删除该生产批次吗？'; showConfirm.value = true }
-function confirmDeleteProcess(id: number) { deletingId.value = id; deleteKind.value = 'process'; confirmMsg.value = '确定要删除该加工批次吗？'; showConfirm.value = true }
-async function doDelete() {
-  try {
-    if (deleteKind.value === 'prod') { await productionApi.deleteProdBatch(deletingId.value!); flash('success', '删除成功'); showConfirm.value = false; loadProdBatch() }
-    else { await productionApi.deleteProcessBatch(deletingId.value!); flash('success', '加工批次删除成功'); showConfirm.value = false; loadProcess() }
-  } catch (e: any) { flash('error', '删除失败: ' + e.message) }
-}
+function confirmDeleteProd(id: number) { confirmTitle.value = '确认删除'; confirmMsg.value = '确定要删除该生产批次吗？此操作不可恢复。'; confirmBtnLabel.value = '确认删除'; confirmBtnClass.value = 'btn-danger'; confirmCallback.value = async () => { try { await productionApi.deleteProdBatch(id); flash('success', '删除成功'); showConfirm.value = false; loadProdBatch() } catch (e: any) { flash('error', '删除失败: ' + e.message) } }; showConfirm.value = true }
+function confirmDeleteProcess(id: number) { confirmTitle.value = '确认删除'; confirmMsg.value = '确定要删除该加工批次吗？此操作不可恢复。'; confirmBtnLabel.value = '确认删除'; confirmBtnClass.value = 'btn-danger'; confirmCallback.value = async () => { try { await productionApi.deleteProcessBatch(id); flash('success', '加工批次删除成功'); showConfirm.value = false; loadProcess() } catch (e: any) { flash('error', '删除失败: ' + e.message) } }; showConfirm.value = true }
 
 // ==================== tab switch ====================
 function switchTab(t: typeof tab.value) {
@@ -320,6 +331,7 @@ onMounted(loadProdBatch)
               <td><span class="tag" :class="row.codeStatus === 2 ? 'tag-success' : 'tag-warn'">{{ codeStatusLabels[row.codeStatus] || '-' }}</span></td>
               <td class="col-actions">
                 <button class="btn btn-outline btn-sm" @click="openEditProd(row)">✎</button>
+                <button v-if="row.batchStatus === 1" class="btn btn-primary btn-sm" style="margin-left:3px" @click="startProd(row.prodBatchId)">▶ 开始生产</button>
                 <button v-if="row.batchStatus === 2" class="btn btn-success btn-sm" style="margin-left:3px" @click="completeProd(row.prodBatchId)">✓ 完成</button>
                 <button v-if="row.batchStatus === 3 && row.codeStatus !== 2" class="btn btn-outline btn-sm" style="margin-left:3px" @click="bindCode(row.prodBatchId)">🔗 绑码</button>
                 <button v-if="!row.checkResult" class="btn btn-outline btn-sm" style="margin-left:3px" @click="openQcProd(row)">🔬 质检</button>
@@ -607,19 +619,11 @@ onMounted(loadProdBatch)
       </div>
     </div>
 
-    <!-- ==================== 删除确认 ==================== -->
+    <!-- ==================== 通用确认对话框 ==================== -->
     <div v-if="showConfirm" class="confirm-overlay" @click.self="showConfirm = false">
       <div class="confirm-box">
-        <div class="confirm-icon">⚠️</div><h3>确认删除</h3><p>{{ confirmMsg }}</p>
-        <div class="confirm-actions"><button class="btn btn-outline" @click="showConfirm = false">取消</button><button class="btn btn-danger" @click="doDelete">确认删除</button></div>
-      </div>
-    </div>
-
-    <!-- ==================== 删除模板确认 ==================== -->
-    <div v-if="showTemplateConfirm" class="confirm-overlay" @click.self="showTemplateConfirm = false">
-      <div class="confirm-box">
-        <div class="confirm-icon">⚠️</div><h3>确认删除</h3><p>确定要删除该工艺模板吗？</p>
-        <div class="confirm-actions"><button class="btn btn-outline" @click="showTemplateConfirm = false">取消</button><button class="btn btn-danger" @click="doDeleteTemplate">确认删除</button></div>
+        <div class="confirm-icon">⚠️</div><h3>{{ confirmTitle }}</h3><p>{{ confirmMsg }}</p>
+        <div class="confirm-actions"><button class="btn btn-outline" @click="showConfirm = false">取消</button><button class="btn" :class="confirmBtnClass" @click="doConfirm">{{ confirmBtnLabel }}</button></div>
       </div>
     </div>
   </div>

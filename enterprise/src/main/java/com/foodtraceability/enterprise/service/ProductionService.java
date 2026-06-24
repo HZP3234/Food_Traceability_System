@@ -267,7 +267,8 @@ public class ProductionService {
         if (prodBatch.getBatchNo() == null || prodBatch.getBatchNo().isBlank()) {
             prodBatch.setBatchNo(generateProdBatchNo());
         }
-        if (prodBatch.getCheckResult() == null) prodBatch.setCheckResult(2);
+        // 新建批次默认为"未检测"(checkResult=0)，等待后续质检
+        if (prodBatch.getCheckResult() == null) prodBatch.setCheckResult(0);
         if (prodBatch.getBatchStatus() == null) prodBatch.setBatchStatus(1);
         String now = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         prodBatch.setCreateTime(now);
@@ -285,11 +286,22 @@ public class ProductionService {
         return prodBatchMapper.updateById(prodBatch);
     }
 
+    // 开始生产批次（待生产 → 生产中）
+    public int startProdBatch(Long prodBatchId) {
+        ProdBatch prodBatch = prodBatchMapper.selectById(prodBatchId);
+        if (prodBatch != null && prodBatch.getBatchStatus() != null && prodBatch.getBatchStatus() == 1) {
+            prodBatch.setBatchStatus(2);
+            prodBatch.setUpdateTime(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+            return prodBatchMapper.updateById(prodBatch);
+        }
+        return 0;
+    }
+
     // 完成生产批次
     public int completeProdBatch(Long prodBatchId) {
         ProdBatch prodBatch = prodBatchMapper.selectById(prodBatchId);
         if (prodBatch != null) {
-            prodBatch.setBatchStatus(2);
+            prodBatch.setBatchStatus(3);
             prodBatch.setUpdateTime(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
             return prodBatchMapper.updateById(prodBatch);
         }
@@ -466,15 +478,13 @@ public class ProductionService {
 
     // ==================== 质检结果联动 ====================
 
-    // 录入质检结果并联动更新生产批次
+    // 录入质检结果（仅记录质检，不改变生产批次状态）
     public void recordQualityCheckForProd(String prodBatchNo, int checkResult) {
         ProdBatch prodBatch = getByProdBatchNo(prodBatchNo);
         if (prodBatch != null) {
             prodBatch.setCheckResult(checkResult);
-            if (checkResult == 1) {
-                prodBatch.setBatchStatus(2);
-            }
-            updateProdBatch(prodBatch);
+            prodBatch.setUpdateTime(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+            prodBatchMapper.updateById(prodBatch);
         }
     }
 
