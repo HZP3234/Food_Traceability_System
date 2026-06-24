@@ -4,8 +4,13 @@
  * 职责：为生产商创建的批次上传源头详情（产地/认证/运输），或主动上传后等待匹配
  * 生产商在"原料批次管理"页面创建批次
  */
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, inject, type Ref } from 'vue'
 import { rawApi } from '../services/api'
+import type { RoleKey } from '../config/navigation'
+
+// 当前登录用户信息
+const currentUser = sessionStorage.getItem('fts-admin-user') || ''
+const currentRole = inject<Ref<RoleKey>>('currentRole')
 
 const loading = ref(false)
 const needUploadBatches = ref<any[]>([])   // 生产商已创建，等待供应商上传
@@ -38,15 +43,19 @@ function flash(type: string, msg: string) { toast.value = { type, msg }; setTime
 async function loadData() {
   loading.value = true
   try {
-    // 所有原料批次
-    const data = await rawApi.list({})
+    // 供应商角色只看自己的数据，超管看全部
+    const isSupplier = currentRole?.value === 'supplier'
+    const supplierFilter = isSupplier && currentUser ? currentUser : undefined
+
+    // 所有原料批次（按供应商过滤）
+    const data = await rawApi.list(supplierFilter ? { supplierName: supplierFilter } : {})
     const all = Array.isArray(data) ? data : []
     // 还没有溯源详情的 = 需要供应商上传
     needUploadBatches.value = all.filter((r: any) => !r.detailStatus || r.detailStatus < 1)
     // 已经有溯源详情的 = 已匹配
     matchedBatches.value = all.filter((r: any) => r.detailStatus === 1 || r.detailStatus === 2)
-    // 待匹配列表（供应商主动上传的）
-    const pdata = await rawApi.listPending(undefined, 1)
+    // 待匹配列表（供应商主动上传的，按供应商过滤）
+    const pdata = await rawApi.listPending(supplierFilter, 1)
     pendingList.value = Array.isArray(pdata) ? pdata : []
   } catch (e: any) { flash('error', '加载失败: ' + e.message) }
   finally { loading.value = false }
@@ -63,7 +72,7 @@ function openUploadForBatch(row: any) {
 function openNewUpload() {
   isNewUpload.value = true
   viewingBatchNo.value = ''
-  uploadForm.value = { origin: '', lngLat: '', farmType: '', feed: '', cert: '', inspectionNo: '', breed: '', scale: '', collectDate: '', transportCar: '', transportTemp: '', storage: '', shelfLife: '', uploader: '', productName: '' }
+  uploadForm.value = { origin: '', lngLat: '', farmType: '', feed: '', cert: '', inspectionNo: '', breed: '', scale: '', collectDate: '', transportCar: '', transportTemp: '', storage: '', shelfLife: '', uploader: currentUser, productName: '' }
   showUploadModal.value = true
 }
 
@@ -86,8 +95,8 @@ async function submitProactiveUpload() {
   try {
     const now = new Date().toISOString().slice(0, 19).replace('T', ' ')
     await rawApi.proactiveUpload(
-      { origin: uploadForm.value.origin, lngLat: uploadForm.value.lngLat, farmType: uploadForm.value.farmType, feed: uploadForm.value.feed, cert: uploadForm.value.cert, inspectionNo: uploadForm.value.inspectionNo, breed: uploadForm.value.breed, scale: uploadForm.value.scale, collectDate: uploadForm.value.collectDate, transportCar: uploadForm.value.transportCar, transportTemp: uploadForm.value.transportTemp, storage: uploadForm.value.storage, uploader: uploadForm.value.uploader || 'SYSTEM', uploadTime: now },
-      { pendingCode: '', supplierName: uploadForm.value.uploader || '', productName: uploadForm.value.productName || '待匹配原料', amount: '0', uploadTime: now, pendingStatus: 1 }
+      { origin: uploadForm.value.origin, lngLat: uploadForm.value.lngLat, farmType: uploadForm.value.farmType, feed: uploadForm.value.feed, cert: uploadForm.value.cert, inspectionNo: uploadForm.value.inspectionNo, breed: uploadForm.value.breed, scale: uploadForm.value.scale, collectDate: uploadForm.value.collectDate, transportCar: uploadForm.value.transportCar, transportTemp: uploadForm.value.transportTemp, storage: uploadForm.value.storage, uploader: currentUser || uploadForm.value.uploader || 'SYSTEM', uploadTime: now },
+      { pendingCode: '', supplierName: currentUser || uploadForm.value.uploader || '', productName: uploadForm.value.productName || '待匹配原料', amount: '0', uploadTime: now, pendingStatus: 1 }
     )
     flash('success', '原料信息已保存至待匹配列表，等生产商创建批次后自动匹配')
     showUploadModal.value = false; loadData()

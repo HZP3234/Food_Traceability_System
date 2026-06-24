@@ -250,4 +250,18 @@ public class RawService {
         qw.eq("is_deleted", 0);
         return rawPendingMapper.selectList(qw);
     }
+
+    // 按供应商 + 状态组合查询待匹配列表
+    public List<RawPending> listPendingBySupplierAndStatus(String supplierName, Integer pendingStatus) {
+        QueryWrapper<RawPending> qw = new QueryWrapper<>();
+        qw.eq("is_deleted", 0);
+        if (supplierName != null && !supplierName.isBlank()) {
+            qw.eq("supplier_name", supplierName);
+        }
+        if (pendingStatus != null) {
+            qw.eq("pending_status", pendingStatus);
+        }
+        qw.orderByDesc("upload_time");
+        return rawPendingMapper.selectList(qw);
+    }
 }
