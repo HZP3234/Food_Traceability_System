@@ -10,6 +10,9 @@ import Sales from './pages/Sales.vue'
 import TraceCode from './pages/TraceCode.vue'
 import LoginRegister from './pages/LoginRegister.vue'
 import LandingPage from './pages/LandingPage.vue'
+import AuditLog from './pages/AuditLog.vue'
+import EnterpriseQualification from './pages/EnterpriseQualification.vue'
+import RegulatoryTrace from './pages/RegulatoryTrace.vue'
 
 const currentRole = ref<RoleKey>('manufacturer')
 const activePage = ref('dashboard')
@@ -26,6 +29,9 @@ const pageComponents: Record<string, Component> = {
   'cold-chain': markRaw(ColdChain),
   'sales-terminal': markRaw(Sales),
   'trace-code': markRaw(TraceCode),
+  'enterprise-qualification': markRaw(EnterpriseQualification),
+  'regulatory-trace': markRaw(RegulatoryTrace),
+  'audit-log': markRaw(AuditLog),
 }
 
 const visibleNavigation = computed(() =>

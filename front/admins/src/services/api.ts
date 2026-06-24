@@ -50,6 +50,47 @@ async function post<T = any>(path: string, data?: Record<string, any>): Promise<
   return json as T
 }
 
+/** 通用 POST 请求（JSON body，regulation 后端使用 @RequestBody） */
+async function postJson<T = any>(path: string, data?: Record<string, any>): Promise<T> {
+  const res = await fetch(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: data ? JSON.stringify(data) : undefined,
+  })
+  if (!res.ok) throw new Error(`请求失败 ${res.status}`)
+  const text = await res.text()
+  let json: any
+  try { json = JSON.parse(text) } catch { return text as any }
+  checkBizError(json)
+  return json as T
+}
+
+/** 通用 PUT 请求（JSON body） */
+async function put<T = any>(path: string, data?: Record<string, any>): Promise<T> {
+  const res = await fetch(path, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: data ? JSON.stringify(data) : undefined,
+  })
+  if (!res.ok) throw new Error(`请求失败 ${res.status}`)
+  const text = await res.text()
+  let json: any
+  try { json = JSON.parse(text) } catch { return text as any }
+  checkBizError(json)
+  return json as T
+}
+
+/** 通用 DELETE 请求 */
+async function del<T = any>(path: string): Promise<T> {
+  const res = await fetch(path, { method: 'DELETE' })
+  if (!res.ok) throw new Error(`请求失败 ${res.status}`)
+  const text = await res.text()
+  let json: any
+  try { json = JSON.parse(text) } catch { return text as any }
+  checkBizError(json)
+  return json as T
+}
+
 // ==================== Auth (认证) ====================
 export const authApi = {
   login: (data: Record<string, any>) => post('/auth/login', data),
@@ -223,4 +264,34 @@ export const salesApi = {
   // Anti Fraud
   antiFraudCheck: (area: string) => get('/Sales/antiFraudCheck', { area }),
   runAntiFraud: () => post('/Sales/runAntiFraud'),
+}
+
+// ==================== Audit (审计日志，regulation 后端 :8081) ====================
+export const auditApi = {
+  list: (params: Record<string, any>) => get('/api/audit', params),
+  detail: (logId: number) => get(`/api/audit/${logId}`),
+  verifyChain: () => get('/api/audit/verify-chain'),
+  archive: () => post('/api/audit/archive'),
+  write: (data: Record<string, any>) => postJson('/api/audit', data),
+}
+
+// ==================== Enterprise (企业资质，regulation 后端 :8081) ====================
+export const enterpriseApi = {
+  list: (params: Record<string, any>) => get('/api/enterprise', params),
+  detail: (enterpriseId: number) => get(`/api/enterprise/${enterpriseId}`),
+  listByRisk: (level: number) => get(`/api/enterprise/risk/${level}`),
+  create: (data: Record<string, any>) => postJson('/api/enterprise', data),
+  update: (enterpriseId: number, data: Record<string, any>) => put(`/api/enterprise/${enterpriseId}`, data),
+  delete: (enterpriseId: number) => del(`/api/enterprise/${enterpriseId}`),
+  checkStatus: () => post('/api/enterprise/check-status'),
+}
+
+// ==================== Trace (监管全链追溯，regulation 后端 :8081) ====================
+export const traceApi = {
+  getByCode: (traceCode: string) => get(`/api/trace/code/${encodeURIComponent(traceCode)}`),
+  listByBatch: (batchNo: string) => get(`/api/trace/batch/${encodeURIComponent(batchNo)}`),
+  listByEnterprise: (enterpriseUuid: string) => get(`/api/trace/enterprise/${encodeURIComponent(enterpriseUuid)}`),
+  verifyHash: (traceCode: string) => get(`/api/trace/verify/${encodeURIComponent(traceCode)}`),
+  disable: (traceCode: string, reason: string) => put(`/api/trace/disable/${encodeURIComponent(traceCode)}?reason=${encodeURIComponent(reason)}`),
+  void: (traceCode: string, reason: string) => put(`/api/trace/void/${encodeURIComponent(traceCode)}?reason=${encodeURIComponent(reason)}`),
 }

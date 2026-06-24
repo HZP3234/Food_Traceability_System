@@ -12,6 +12,7 @@ export default defineConfig({
       '/ColdChain': 'http://localhost:8082',
       '/Sales': 'http://localhost:8082',
       '/TraceCode': 'http://localhost:8082',
+      '/api': 'http://localhost:8081',
     },
   },
 })
