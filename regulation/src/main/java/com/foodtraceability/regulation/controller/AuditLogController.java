@@ -8,6 +8,7 @@ import com.foodtraceability.regulation.service.AuditLogService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -25,6 +26,7 @@ public class AuditLogController {
 
     @Operation(summary = "审计日志分页查询")
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'REGULATOR')")
     public Result<Page<AuditLog>> list(
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer size,
@@ -44,18 +46,21 @@ public class AuditLogController {
 
     @Operation(summary = "查看日志详情（含前后数据对比）")
     @GetMapping("/{logId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'REGULATOR')")
     public Result<AuditLog> detail(@PathVariable Long logId) {
         return Result.success(auditLogService.getById(logId));
     }
 
     @Operation(summary = "手工写入审计日志")
     @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'REGULATOR', 'MANUFACTURER', 'SUPPLIER', 'LOGISTICS', 'SELLER')")
     public Result<AuditLog> write(@RequestBody AuditLog log) {
         return Result.success(auditLogService.writeLog(log));
     }
 
     @Operation(summary = "校验日志Hash链完整性")
     @GetMapping("/verify-chain")
+    @PreAuthorize("hasAnyRole('ADMIN', 'REGULATOR')")
     public Result<Map<String, Object>> verifyChain() {
         boolean valid = auditLogService.verifyLogChainIntegrity();
         return Result.success(Map.of(
@@ -66,6 +71,7 @@ public class AuditLogController {
 
     @Operation(summary = "手动触发日志归档（12个月以前）")
     @PostMapping("/archive")
+    @PreAuthorize("hasRole('ADMIN')")
     public Result<Map<String, Object>> archive() {
         int count = auditLogService.archiveOldLogs();
         return Result.success(Map.of(

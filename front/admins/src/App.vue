@@ -15,11 +15,16 @@ import RegulatoryTrace from './pages/RegulatoryTrace.vue'
 import Dashboard from './pages/Dashboard.vue'
 import Warnings from './pages/Warnings.vue'
 
+import { authApi } from './services/api'
+
+const loginRegisterRef = ref<InstanceType<typeof LoginRegister> | null>(null)
+
 const currentRole = ref<RoleKey>('manufacturer')
 const activePage = ref('dashboard')
 const screen = ref<'landing' | 'login' | 'admin'>('landing')
 const showPageInfo = ref(false)
 const showLogoutConfirm = ref(false)
+const currentUser = ref<{ username: string; roleType: string; realName: string; enterpriseUuid: string; enterpriseType?: number } | null>(null)
 
 // 通过 provide 让子页面感知当前角色
 provide('currentRole', currentRole)
@@ -54,17 +59,49 @@ const currentComponent = computed(() => pageComponents[activePage.value] || null
 const pageDesc = computed(() => activeItem.value?.desc || '')
 
 function changeRole(event: Event) {
+  // 仅超级管理员可切换视角预览
+  if (currentUser.value?.roleType !== 'ADMIN') return
   currentRole.value = (event.target as HTMLSelectElement).value as RoleKey
   if (!activeItem.value) activePage.value = 'dashboard'
 }
 
-// 临时开发登录态：后端认证接口完成后，将此处替换为真实的 /auth/login 请求。
-function handleLogin(data: { username: string; password: string; role: string }) {
-  const roleMap: Record<string, RoleKey> = { enterprise: 'manufacturer', regulator: 'regulator' }
-  currentRole.value = roleMap[data.role] || 'manufacturer'
-  sessionStorage.setItem('fts-admin-authenticated', 'true')
-  sessionStorage.setItem('fts-admin-user', data.username)
-  screen.value = 'admin'
+// 调用后端认证接口进行登录/注册
+async function handleLogin(data: { username: string; password: string; role: string }) {
+  const loginRef = loginRegisterRef.value
+  try {
+    const res: any = await authApi.login(data.username, data.password)
+    if (res.code === 200 && res.data) {
+      const { token, username, roleType, realName, enterpriseUuid, enterpriseType } = res.data
+      sessionStorage.setItem('fts-admin-token', token)
+      sessionStorage.setItem('fts-admin-authenticated', 'true')
+      const userInfo = { username, roleType, realName, enterpriseUuid, enterpriseType }
+      sessionStorage.setItem('fts-admin-user', JSON.stringify(userInfo))
+      currentUser.value = userInfo
+
+      // 角色映射: 后端 roleType + enterpriseType -> 前端 RoleKey
+      // enterpriseType: 1-供应商 2-加工商 3-物流商 4-零售商
+      const enterpriseTypeToRole: Record<number, RoleKey> = {
+        1: 'supplier',
+        2: 'manufacturer',
+        3: 'logistics',
+        4: 'seller',
+      }
+      const roleMap: Record<string, RoleKey> = {
+        ADMIN: 'super-admin',
+        REGULATOR: 'regulator',
+        ENTERPRISE: enterpriseType ? (enterpriseTypeToRole[enterpriseType] || 'manufacturer') : 'manufacturer',
+      }
+      currentRole.value = roleMap[roleType] || 'manufacturer'
+      screen.value = 'admin'
+      if (loginRef) loginRef.setError('')
+    } else {
+      if (loginRef) loginRef.setError(res.message || '登录失败')
+    }
+  } catch (e: any) {
+    if (loginRef) loginRef.setError(e.message || '网络请求失败，请检查后端服务')
+  } finally {
+    if (loginRef) loginRef.setLoading(false)
+  }
 }
 
 function handleLogout() {
@@ -72,8 +109,10 @@ function handleLogout() {
 }
 
 function confirmLogout() {
+  sessionStorage.removeItem('fts-admin-token')
   sessionStorage.removeItem('fts-admin-authenticated')
   sessionStorage.removeItem('fts-admin-user')
+  currentUser.value = null
   showLogoutConfirm.value = false
   screen.value = 'landing'
   activePage.value = 'dashboard'
@@ -82,7 +121,7 @@ function confirmLogout() {
 
 <template>
   <LandingPage v-if="screen === 'landing'" @enter-admin="screen = 'login'" />
-  <LoginRegister v-else-if="screen === 'login'" @login="handleLogin" />
+  <LoginRegister v-else-if="screen === 'login'" ref="loginRegisterRef" @login="handleLogin" />
   <main v-else class="admin-shell">
     <aside class="sidebar">
       <div class="brand">
@@ -91,10 +130,18 @@ function confirmLogout() {
       </div>
 
       <section class="role-card" aria-label="当前角色">
-        <label for="role">当前角色</label>
-        <select id="role" :value="currentRole" @change="changeRole">
-          <option v-for="(label, key) in roles" :key="key" :value="key">{{ label }}</option>
-        </select>
+        <!-- 超级管理员可切换角色视角 -->
+        <template v-if="currentUser?.roleType === 'ADMIN'">
+          <label for="role">当前角色</label>
+          <select id="role" :value="currentRole" @change="changeRole">
+            <option v-for="(label, key) in roles" :key="key" :value="key">{{ label }}</option>
+          </select>
+        </template>
+        <!-- 普通用户仅显示当前角色 -->
+        <template v-else>
+          <p class="role-display-label">当前角色</p>
+          <p class="role-display-value">{{ roles[currentRole] }}</p>
+        </template>
       </section>
 
       <nav class="side-nav" aria-label="主导航">
@@ -125,8 +172,8 @@ function confirmLogout() {
         <div class="breadcrumb">{{ roles[currentRole] }} <span>/</span> {{ activeItem?.label ?? '系统首页' }}</div>
         <div class="account">
           <span>2026年06月24日</span>
-          <i>超</i>
-          <strong>{{ roles[currentRole] }}</strong>
+          <i>{{ currentUser?.realName?.charAt(0) || '用' }}</i>
+          <strong>{{ currentUser?.realName || roles[currentRole] }}</strong>
         </div>
       </header>
 

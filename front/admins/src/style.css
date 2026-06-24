@@ -18,6 +18,8 @@ button { cursor: pointer; }
 .role-card { margin: 28px 6px 18px; padding: 14px; border: 1px solid #dce7f1; border-radius: 10px; background: #f9fcff; }
 .role-card label { display: block; margin-bottom: 8px; color: #6c84a3; font-size: 13px; font-weight: 700; }
 .role-card select { width: 100%; padding: 9px 11px; border: 1px solid #d7e4f0; border-radius: 7px; color: #284666; background: #fff; outline-color: #2b6cea; }
+.role-display-label { margin: 0 0 4px; color: #6c84a3; font-size: 13px; font-weight: 700; }
+.role-display-value { margin: 0; color: #284666; font-size: 16px; font-weight: 700; }
 .side-nav { overflow: auto; padding: 0 6px; }
 .nav-group { margin: 0 0 15px; }
 .nav-group p { margin: 0 0 6px 12px; color: #91a4bc; font-size: 13px; font-weight: 700; }

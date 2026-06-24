@@ -1,8 +1,23 @@
 /**
- * API 服务层 —— 封装对 enterprise 后端 (port 8082) 的所有请求。
+ * API 服务层 —— 封装对后端的所有请求。
  * 后端使用 @RequestMapping（同时接受 GET/POST），参数为 form 风格。
  */
 // 开发环境走 Vite 代理，生产环境同域部署，都使用相对路径
+
+/** 获取当前存储的 Token */
+function getToken(): string | null {
+  return sessionStorage.getItem('fts-admin-token')
+}
+
+/** 构建带 Authorization 的 headers（如果有 token） */
+function authHeaders(extra?: Record<string, string>): Record<string, string> {
+  const headers: Record<string, string> = { ...extra }
+  const token = getToken()
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`
+  }
+  return headers
+}
 
 /** 检查后端业务异常：GlobalExceptionHandler 返回 success=false 但 HTTP 200 */
 function checkBizError(json: any) {
@@ -11,7 +26,7 @@ function checkBizError(json: any) {
   }
 }
 
-/** 通用 GET 请求（参数拼在 query string） */
+/** 通用 GET 请求（参数拼在 query string，自动带 Token） */
 async function get<T = any>(path: string, params?: Record<string, any>): Promise<T> {
   const url = new URL(path, window.location.origin)
   if (params) {
@@ -19,7 +34,7 @@ async function get<T = any>(path: string, params?: Record<string, any>): Promise
       if (v !== undefined && v !== null && v !== '') url.searchParams.set(k, String(v))
     })
   }
-  const res = await fetch(url.toString())
+  const res = await fetch(url.toString(), { headers: authHeaders() })
   if (!res.ok) throw new Error(`请求失败 ${res.status}`)
   const text = await res.text()
   let json: any
@@ -28,7 +43,7 @@ async function get<T = any>(path: string, params?: Record<string, any>): Promise
   return json as T
 }
 
-/** 通用 POST 请求（form-encoded body） */
+/** 通用 POST 请求（form-encoded body，自动带 Token） */
 async function post<T = any>(path: string, data?: Record<string, any>): Promise<T> {
   const body = new URLSearchParams()
   if (data) {
@@ -38,7 +53,7 @@ async function post<T = any>(path: string, data?: Record<string, any>): Promise<
   }
   const res = await fetch(path, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    headers: authHeaders({ 'Content-Type': 'application/x-www-form-urlencoded' }),
     body: body.toString(),
   })
   if (!res.ok) throw new Error(`请求失败 ${res.status}`)
@@ -64,11 +79,30 @@ async function postJson<T = any>(path: string, data?: Record<string, any>): Prom
   return json as T
 }
 
-/** 通用 PUT 请求（JSON body） */
+/** 通用带 Token 的 GET 请求 */
+async function getWithAuth<T = any>(path: string, token: string, params?: Record<string, any>): Promise<T> {
+  const url = new URL(path, window.location.origin)
+  if (params) {
+    Object.entries(params).forEach(([k, v]) => {
+      if (v !== undefined && v !== null && v !== '') url.searchParams.set(k, String(v))
+    })
+  }
+  const res = await fetch(url.toString(), {
+    headers: { 'Authorization': `Bearer ${token}` },
+  })
+  if (!res.ok) throw new Error(`请求失败 ${res.status}`)
+  const text = await res.text()
+  let json: any
+  try { json = JSON.parse(text) } catch { return text as any }
+  checkBizError(json)
+  return json as T
+}
+
+/** 通用 PUT 请求（JSON body，自动带 Token） */
 async function put<T = any>(path: string, data?: Record<string, any>): Promise<T> {
   const res = await fetch(path, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: data ? JSON.stringify(data) : undefined,
   })
   if (!res.ok) throw new Error(`请求失败 ${res.status}`)
@@ -79,9 +113,9 @@ async function put<T = any>(path: string, data?: Record<string, any>): Promise<T
   return json as T
 }
 
-/** 通用 DELETE 请求 */
+/** 通用 DELETE 请求（自动带 Token） */
 async function del<T = any>(path: string): Promise<T> {
-  const res = await fetch(path, { method: 'DELETE' })
+  const res = await fetch(path, { method: 'DELETE', headers: authHeaders() })
   if (!res.ok) throw new Error(`请求失败 ${res.status}`)
   const text = await res.text()
   let json: any
@@ -92,9 +126,15 @@ async function del<T = any>(path: string): Promise<T> {
 
 // ==================== Auth (认证) ====================
 export const authApi = {
-  login: (data: Record<string, any>) => post('/auth/login', data),
-  register: (data: Record<string, any>) => post('/auth/register', data),
-  logout: () => post('/auth/logout'),
+  /** 登录 — 返回 { code, message, data: { token, username, roleType, realName, enterpriseUuid } } */
+  login: (username: string, password: string) =>
+    postJson('/api/auth/login', { username, password }),
+  /** 注册 */
+  register: (data: Record<string, any>) =>
+    postJson('/api/auth/register', data),
+  /** 获取当前用户信息 */
+  me: (token: string) =>
+    getWithAuth('/api/auth/me', token),
 }
 
 // ==================== Raw (原料) ====================

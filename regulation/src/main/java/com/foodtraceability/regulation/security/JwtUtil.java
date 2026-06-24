@@ -68,4 +68,18 @@ public class JwtUtil {
     public String getUsername(String token) {
         return parseToken(token).getSubject();
     }
+
+    /**
+     * 从 Token 中获取角色类型
+     */
+    public String getRoleType(String token) {
+        return parseToken(token).get("roleType", String.class);
+    }
+
+    /**
+     * 从 Token 中获取企业类型 (1-供应商 2-加工商 3-物流商 4-零售商)
+     */
+    public Integer getEnterpriseType(String token) {
+        return parseToken(token).get("enterpriseType", Integer.class);
+    }
 }

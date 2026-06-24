@@ -5,6 +5,7 @@ import com.foodtraceability.enterprise.entity.TraceCode;
 import com.foodtraceability.enterprise.entity.TraceCodeBind;
 import com.foodtraceability.enterprise.service.TraceCodeService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -35,6 +36,7 @@ public class TraceCodeController {
      * 对应概要设计 表格65：generateTraceCode
      */
     @RequestMapping("/generate")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANUFACTURER')")
     public TraceCodeVO generateTraceCode(TraceCodeGenerateDTO dto) {
         return traceCodeService.generateTraceCode(dto);
     }
@@ -45,6 +47,7 @@ public class TraceCodeController {
      * 对应概要设计 表格66：batchGenerateTraceCode
      */
     @RequestMapping("/batchGenerate")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANUFACTURER')")
     public List<TraceCodeVO> batchGenerateTraceCode(TraceCodeBatchDTO dto) {
         return traceCodeService.batchGenerateTraceCode(dto);
     }
@@ -55,6 +58,7 @@ public class TraceCodeController {
      * 按溯源码值精确查询
      */
     @RequestMapping("/queryByCode")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANUFACTURER', 'REGULATOR', 'SELLER', 'LOGISTICS', 'SUPPLIER')")
     public TraceCode queryByCode(@RequestParam String traceCode) {
         return traceCodeService.getByCode(traceCode);
     }
@@ -65,6 +69,7 @@ public class TraceCodeController {
      * 对应概要设计 表格67：queryTraceCodeDetail
      */
     @RequestMapping("/queryDetail")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANUFACTURER', 'REGULATOR', 'SELLER', 'LOGISTICS', 'SUPPLIER')")
     public TraceCodeDetailVO queryDetail(@RequestParam String traceCode) {
         return traceCodeService.queryTraceCodeDetail(traceCode);
     }
@@ -75,6 +80,7 @@ public class TraceCodeController {
      * 对应概要设计 表格69：queryTraceCodeList
      */
     @RequestMapping("/list")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANUFACTURER', 'REGULATOR')")
     public List<TraceCodeVO> listTraceCode(TraceCodeQueryDTO dto) {
         return traceCodeService.queryTraceCodeList(dto);
     }
@@ -83,6 +89,7 @@ public class TraceCodeController {
      * 按批次号查询所有溯源码
      */
     @RequestMapping("/listByBatch")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANUFACTURER', 'REGULATOR')")
     public List<TraceCode> listByBatch(@RequestParam String batchNo) {
         return traceCodeService.listByBatchNo(batchNo);
     }
@@ -91,6 +98,7 @@ public class TraceCodeController {
      * 按企业ID查询溯源码
      */
     @RequestMapping("/listByEnterprise")
+    @PreAuthorize("hasAnyRole('ADMIN', 'REGULATOR')")
     public List<TraceCode> listByEnterprise(@RequestParam String enterpriseId) {
         return traceCodeService.listByEnterprise(enterpriseId);
     }
@@ -99,6 +107,7 @@ public class TraceCodeController {
      * 按生成批次号查询（同一批批量生成的溯源码）
      */
     @RequestMapping("/listByGenerateBatch")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANUFACTURER', 'REGULATOR')")
     public List<TraceCode> listByGenerateBatch(@RequestParam String generateBatchNo) {
         return traceCodeService.listByGenerateBatchNo(generateBatchNo);
     }
@@ -106,11 +115,12 @@ public class TraceCodeController {
     // ==================== 消费者扫码 ====================
 
     /**
-     * 消费者扫码查询接口（公开接口）
+     * 消费者扫码查询接口（公开接口 — 在 SecurityConfig 中已放行 /api/consumer/**，此处用于内部调用）
      * <p>
      * 对应概要设计 表格70：queryByCode
      */
     @RequestMapping("/scan")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANUFACTURER', 'REGULATOR')")
     public ConsumerTraceVO scan(@RequestParam String traceCode) {
         return traceCodeService.queryByCode(traceCode);
     }
@@ -123,6 +133,7 @@ public class TraceCodeController {
      * 对应概要设计 表格68：updateTraceCodeStatus
      */
     @RequestMapping("/updateStatus")
+    @PreAuthorize("hasAnyRole('ADMIN', 'REGULATOR')")
     public String updateStatus(TraceCodeStatusDTO dto) {
         traceCodeService.updateTraceCodeStatus(dto);
         String statusName = TraceCodeService.getStatusName(dto.getTargetStatus());
@@ -133,6 +144,7 @@ public class TraceCodeController {
      * 禁用溯源码（快捷接口）
      */
     @RequestMapping("/disable")
+    @PreAuthorize("hasAnyRole('ADMIN', 'REGULATOR')")
     public String disable(@RequestParam String traceCode,
                            @RequestParam String reason,
                            @RequestParam String operator) {
@@ -149,6 +161,7 @@ public class TraceCodeController {
      * 作废溯源码（快捷接口）
      */
     @RequestMapping("/void")
+    @PreAuthorize("hasAnyRole('ADMIN', 'REGULATOR')")
     public String voidCode(@RequestParam String traceCode,
                             @RequestParam String reason,
                             @RequestParam String operator) {
@@ -169,6 +182,7 @@ public class TraceCodeController {
      * 对应概要设计 表格72：verifyTraceCode
      */
     @RequestMapping("/verify")
+    @PreAuthorize("hasAnyRole('ADMIN', 'REGULATOR')")
     public TraceCode verify(@RequestParam String traceCode) {
         return traceCodeService.verifyTraceCode(traceCode);
     }
@@ -177,6 +191,7 @@ public class TraceCodeController {
      * 校验溯源码内容Hash完整性
      */
     @RequestMapping("/verifyHash")
+    @PreAuthorize("hasAnyRole('ADMIN', 'REGULATOR')")
     public String verifyHash(@RequestParam String traceCode) {
         TraceCode tc = traceCodeService.getByCode(traceCode);
         if (tc == null) {
@@ -193,6 +208,7 @@ public class TraceCodeController {
      * 建立溯源码与业务数据的绑定关系
      */
     @RequestMapping("/bindBiz")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANUFACTURER')")
     public String bindBiz(@RequestParam String traceCode,
                            @RequestParam String bizType,
                            @RequestParam String bizId,
@@ -206,6 +222,7 @@ public class TraceCodeController {
      * 查询溯源码的所有绑定关系
      */
     @RequestMapping("/listBinds")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANUFACTURER', 'REGULATOR')")
     public List<TraceCodeBind> listBinds(@RequestParam String traceCode) {
         return traceCodeService.listBindsByCode(traceCode);
     }
@@ -218,6 +235,7 @@ public class TraceCodeController {
      * 对应概要设计 表格74：exportTraceCodeLabel
      */
     @RequestMapping("/exportLabel")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANUFACTURER')")
     public String exportLabel(TraceCodeExportDTO dto) {
         String exportId = traceCodeService.exportTraceCodeLabel(dto);
         return "导出任务已提交，任务编号: " + exportId;

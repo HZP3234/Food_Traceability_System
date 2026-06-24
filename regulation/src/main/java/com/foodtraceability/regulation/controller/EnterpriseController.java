@@ -7,6 +7,7 @@ import com.foodtraceability.regulation.service.EnterpriseService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -24,6 +25,7 @@ public class EnterpriseController {
 
     @Operation(summary = "查询企业列表")
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'REGULATOR')")
     public Result<Page<Enterprise>> list(
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer size,
@@ -40,18 +42,21 @@ public class EnterpriseController {
 
     @Operation(summary = "查看企业详情")
     @GetMapping("/{enterpriseId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'REGULATOR')")
     public Result<Enterprise> detail(@PathVariable Long enterpriseId) {
         return Result.success(enterpriseService.getById(enterpriseId));
     }
 
     @Operation(summary = "按风险等级筛选")
     @GetMapping("/risk/{level}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'REGULATOR')")
     public Result<List<Enterprise>> listByRisk(@PathVariable Integer level) {
         return Result.success(enterpriseService.listByRiskLevel(level));
     }
 
     @Operation(summary = "新增企业")
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public Result<Enterprise> create(@RequestBody Enterprise enterprise) {
         enterpriseService.save(enterprise);
         return Result.success(enterprise);
@@ -59,6 +64,7 @@ public class EnterpriseController {
 
     @Operation(summary = "修改企业信息")
     @PutMapping("/{enterpriseId}")
+    @PreAuthorize("hasRole('ADMIN')")
     public Result<Enterprise> update(@PathVariable Long enterpriseId, @RequestBody Enterprise enterprise) {
         enterprise.setEnterpriseId(enterpriseId);
         enterpriseService.updateById(enterprise);
@@ -67,6 +73,7 @@ public class EnterpriseController {
 
     @Operation(summary = "删除企业（逻辑删除）")
     @DeleteMapping("/{enterpriseId}")
+    @PreAuthorize("hasRole('ADMIN')")
     public Result<Void> delete(@PathVariable Long enterpriseId) {
         enterpriseService.removeById(enterpriseId);
         return Result.success();
@@ -74,6 +81,7 @@ public class EnterpriseController {
 
     @Operation(summary = "手动触发资质状态检查")
     @PostMapping("/check-status")
+    @PreAuthorize("hasRole('ADMIN')")
     public Result<Void> checkStatus() {
         enterpriseService.checkAndUpdateQualificationStatus();
         return Result.success("资质状态检查已触发");
