@@ -1,9 +1,3 @@
-CREATE DATABASE IF NOT EXISTS food_traceability
-    DEFAULT CHARACTER SET utf8mb4
-    DEFAULT COLLATE utf8mb4_general_ci;
-
-USE food_traceability;
-
 CREATE TABLE IF NOT EXISTS t_complaint_record (
     id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '主键ID',
     complaint_no VARCHAR(32) NOT NULL COMMENT '投诉编号',

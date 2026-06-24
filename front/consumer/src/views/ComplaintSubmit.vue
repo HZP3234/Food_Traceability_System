@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showToast, showConfirmDialog } from 'vant'
 import { submitComplaint } from '@/api/complaint'
 import { uploadImage } from '@/api/upload'
+import { useAppStore } from '@/store/app'
 import type { ComplaintTypeKey } from '@/types'
 
 const route = useRoute()
 const router = useRouter()
+const store = useAppStore()
 
 const formRef = ref()
 const submitting = ref(false)
@@ -21,6 +23,13 @@ const form = reactive({
   complaintContent: '',
   consumerName: '',
   consumerPhone: ''
+})
+
+onMounted(() => {
+  if (store.isLoggedIn && store.userInfo) {
+    form.consumerPhone = store.userInfo.phone
+    form.consumerName = store.userInfo.nickName
+  }
 })
 
 const complaintTypes = [

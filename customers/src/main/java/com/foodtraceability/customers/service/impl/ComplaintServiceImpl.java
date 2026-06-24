@@ -1,6 +1,5 @@
 package com.foodtraceability.customers.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.foodtraceability.customers.dto.ComplaintFeedbackDTO;
 import com.foodtraceability.customers.dto.ComplaintQueryDTO;
@@ -11,7 +10,6 @@ import com.foodtraceability.customers.service.ComplaintService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -44,16 +42,14 @@ public class ComplaintServiceImpl implements ComplaintService {
 
     @Override
     public Page<Complaint> page(ComplaintQueryDTO dto) {
-        LambdaQueryWrapper<Complaint> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(StringUtils.hasText(dto.getComplaintNo()), Complaint::getComplaintNo, dto.getComplaintNo());
-        wrapper.eq(StringUtils.hasText(dto.getProductBatchNo()), Complaint::getProductBatchNo, dto.getProductBatchNo());
-        wrapper.eq(StringUtils.hasText(dto.getConsumerPhone()), Complaint::getConsumerPhone, dto.getConsumerPhone());
-        wrapper.eq(dto.getComplaintType() != null, Complaint::getComplaintType, dto.getComplaintType());
-        wrapper.eq(dto.getStatus() != null, Complaint::getStatus, dto.getStatus());
-        wrapper.orderByDesc(Complaint::getCreateTime);
-
         Page<Complaint> page = new Page<>(dto.getPageNum(), dto.getPageSize());
-        return complaintMapper.selectPage(page, wrapper);
+        return complaintMapper.selectComplaintPage(page,
+                dto.getComplaintNo(),
+                dto.getProductBatchNo(),
+                dto.getProductName(),
+                dto.getConsumerPhone(),
+                dto.getComplaintType(),
+                dto.getStatus());
     }
 
     @Override
