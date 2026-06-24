@@ -5,7 +5,7 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 
 @TableName("t_cc_vehicle")
-public class CcVehicle {
+public class CcVehicle { 
     @TableId(type = IdType.AUTO)
     private Integer vehicleId;
     private String plateNo;

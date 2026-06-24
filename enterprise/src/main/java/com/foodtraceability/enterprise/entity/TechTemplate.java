@@ -3,7 +3,7 @@ package com.foodtraceability.enterprise.entity;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-
+//
 @TableName("t_tech_template")
 public class TechTemplate {
     @TableId(type = IdType.AUTO)

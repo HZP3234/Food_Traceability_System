@@ -5,7 +5,7 @@ import java.math.BigDecimal;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-
+//
 @TableName("t_cc_temp_humidity")
 public class CcTempHumidity {
     @TableId(type = IdType.AUTO)

@@ -13,7 +13,7 @@ import com.foodtraceability.enterprise.entity.CcTempHumidity;
 import com.foodtraceability.enterprise.entity.CcTransportNode;
 import com.foodtraceability.enterprise.entity.CcReceipt;
 import com.foodtraceability.enterprise.service.ColdChainService;
-
+//
 @RestController
 @RequestMapping("/ColdChain")
 public class ColdChainController {
