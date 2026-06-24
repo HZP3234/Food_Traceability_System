@@ -16,14 +16,14 @@ const transportMethodLabels = ['', '公路', '铁路', '航空', '海运']
 // Vehicle
 const loadingV = ref(false); const vehicles = ref<any[]>([])
 const vFilters = ref({ vehicleStatus: '', ownerName: '', coldType: '' })
-const showVModal = ref(false); const editingV = ref<any>(null)
+const showVModal = ref(false); const editingV = ref<any>(null); const showVConfirm = ref(false); const deletingVId = ref<number | null>(null)
 const vForm = ref({ plateNo: '', vehicleModel: '', driverName: '', driverPhone: '', ownerName: '', coldType: '', tempRange: '', remark: '' })
 const vehicleStatusLabels = ['', '空闲', '运输中', '维修中']
 
 // Warehouse
 const loadingW = ref(false); const warehouses = ref<any[]>([])
 const wFilters = ref({ warehouseType: '', warehouseStatus: '' })
-const showWModal = ref(false); const editingW = ref<any>(null)
+const showWModal = ref(false); const editingW = ref<any>(null); const showWConfirm = ref(false); const deletingWId = ref<number | null>(null)
 const wForm = ref({ warehouseName: '', warehouseType: 0, address: '', capacity: '', manager: '', tempRange: '', humidityRange: '', warehouseStatus: 0, remark: '' })
 const warehouseTypeLabels = ['', '原料仓', '成品仓', '冷链仓', '中转仓']
 const warehouseStatusLabels = ['', '启用', '停用']
@@ -63,14 +63,16 @@ async function loadVehicles() { loadingV.value = true; try { const p: Record<str
 function openCreateV() { editingV.value = null; vForm.value = { plateNo: '', vehicleModel: '', driverName: '', driverPhone: '', ownerName: '', coldType: '', tempRange: '', remark: '' }; showVModal.value = true }
 function openEditV(row: any) { editingV.value = row; vForm.value = { plateNo: row.plateNo ?? '', vehicleModel: row.vehicleModel ?? '', driverName: row.driverName ?? '', driverPhone: row.driverPhone ?? '', ownerName: row.ownerName ?? '', coldType: row.coldType ?? '', tempRange: row.tempRange ?? '', remark: row.remark ?? '' }; showVModal.value = true }
 async function submitV() { try { const data: Record<string, any> = { ...vForm.value }; if (editingV.value) { data.vehicleId = editingV.value.vehicleId; await coldChainApi.updateVehicle(data); flash('success', '车辆信息更新成功') } else { await coldChainApi.createVehicle(data); flash('success', '冷链车辆注册成功') } showVModal.value = false; loadVehicles() } catch (e: any) { flash('error', '操作失败') } }
-async function deleteVehicle(id: number) { if (!confirm('确认删除？')) return; try { await coldChainApi.deleteVehicle(id); flash('success', '车辆删除成功'); loadVehicles() } catch (e: any) { flash('error', '删除失败') } }
+function confirmDeleteV(id: number) { deletingVId.value = id; showVConfirm.value = true }
+async function doDeleteV() { try { await coldChainApi.deleteVehicle(deletingVId.value!); flash('success', '车辆删除成功'); showVConfirm.value = false; loadVehicles() } catch (e: any) { flash('error', '删除失败') } }
 
 // Warehouse CRUD
 async function loadWarehouses() { loadingW.value = true; try { const p: Record<string, any> = {}; if (wFilters.value.warehouseType) p.warehouseType = Number(wFilters.value.warehouseType); if (wFilters.value.warehouseStatus) p.warehouseStatus = Number(wFilters.value.warehouseStatus); const data = await coldChainApi.listWarehouse(p); warehouses.value = Array.isArray(data) ? data : [] } catch (e: any) { flash('error', '加载仓库失败') } finally { loadingW.value = false } }
 function openCreateW() { editingW.value = null; wForm.value = { warehouseName: '', warehouseType: 0, address: '', capacity: '', manager: '', tempRange: '', humidityRange: '', warehouseStatus: 0, remark: '' }; showWModal.value = true }
 function openEditW(row: any) { editingW.value = row; wForm.value = { warehouseName: row.warehouseName ?? '', warehouseType: row.warehouseType ?? 0, address: row.address ?? '', capacity: row.capacity ?? '', manager: row.manager ?? '', tempRange: row.tempRange ?? '', humidityRange: row.humidityRange ?? '', warehouseStatus: row.warehouseStatus ?? 0, remark: row.remark ?? '' }; showWModal.value = true }
 async function submitW() { try { const data: Record<string, any> = { ...wForm.value }; if (editingW.value) { data.warehouseId = editingW.value.warehouseId; await coldChainApi.updateWarehouse(data); flash('success', '仓库更新成功') } else { await coldChainApi.createWarehouse(data); flash('success', '仓库创建成功') } showWModal.value = false; loadWarehouses() } catch (e: any) { flash('error', '操作失败') } }
-async function deleteWarehouse(id: number) { if (!confirm('确认删除？')) return; try { await coldChainApi.deleteWarehouse(id); flash('success', '仓库删除成功'); loadWarehouses() } catch (e: any) { flash('error', '删除失败') } }
+function confirmDeleteW(id: number) { deletingWId.value = id; showWConfirm.value = true }
+async function doDeleteW() { try { await coldChainApi.deleteWarehouse(deletingWId.value!); flash('success', '仓库删除成功'); showWConfirm.value = false; loadWarehouses() } catch (e: any) { flash('error', '删除失败') } }
 
 function switchTab(t: 'transport' | 'vehicle' | 'warehouse') { tab.value = t; if (t === 'transport') loadTransports(); else if (t === 'vehicle') loadVehicles(); else loadWarehouses() }
 onMounted(loadTransports)
@@ -151,7 +153,7 @@ onMounted(loadTransports)
         <tbody><tr v-if="loadingV"><td colspan="9" style="text-align:center;padding:32px">加载中...</td></tr><tr v-else-if="!vehicles.length"><td colspan="9"><div class="empty-state"><div class="empty-icon">🚚</div><p>暂无冷链车辆</p></div></td></tr>
           <tr v-for="row in vehicles" :key="row.vehicleId"><td><strong>{{ row.plateNo }}</strong></td><td>{{ row.vehicleModel || '-' }}</td><td>{{ row.driverName }}</td><td>{{ row.driverPhone }}</td><td>{{ row.ownerName }}</td><td>{{ row.coldType }}</td><td>{{ row.tempRange || '-' }}</td>
             <td><span class="tag" :class="tagClass(vehicleStatusLabels[row.vehicleStatus] || '')">{{ vehicleStatusLabels[row.vehicleStatus] || '-' }}</span></td>
-            <td class="col-actions"><button class="btn btn-outline btn-sm" @click="openEditV(row)">✎</button><button class="btn btn-danger btn-sm" style="margin-left:4px" @click="deleteVehicle(row.vehicleId)">🗑</button></td></tr></tbody></table></div>
+            <td class="col-actions"><button class="btn btn-outline btn-sm" @click="openEditV(row)">✎</button><button class="btn btn-danger btn-sm" style="margin-left:4px" @click="confirmDeleteV(row.vehicleId)">🗑</button></td></tr></tbody></table></div>
 
       <!-- Vehicle Modal -->
       <div v-if="showVModal" class="modal-overlay" @click.self="showVModal = false"><div class="modal"><div class="modal-header"><h3>{{ editingV ? '编辑车辆' : '注册冷链车辆' }}</h3><button class="modal-close" @click="showVModal = false">✕</button></div>
@@ -178,7 +180,7 @@ onMounted(loadTransports)
         <tbody><tr v-if="loadingW"><td colspan="9" style="text-align:center;padding:32px">加载中...</td></tr><tr v-else-if="!warehouses.length"><td colspan="9"><div class="empty-state"><div class="empty-icon">🏪</div><p>暂无仓库</p></div></td></tr>
           <tr v-for="row in warehouses" :key="row.warehouseId"><td><strong>{{ row.warehouseName }}</strong></td><td>{{ warehouseTypeLabels[row.warehouseType] || '-' }}</td><td>{{ row.address }}</td><td>{{ row.capacity }}</td><td>{{ row.manager }}</td><td>{{ row.tempRange || '-' }}</td><td>{{ row.humidityRange || '-' }}</td>
             <td><span class="tag" :class="row.warehouseStatus === 1 ? 'tag-success' : 'tag-neutral'">{{ warehouseStatusLabels[row.warehouseStatus] || '-' }}</span></td>
-            <td class="col-actions"><button class="btn btn-outline btn-sm" @click="openEditW(row)">✎</button><button class="btn btn-danger btn-sm" style="margin-left:4px" @click="deleteWarehouse(row.warehouseId)">🗑</button></td></tr></tbody></table></div>
+            <td class="col-actions"><button class="btn btn-outline btn-sm" @click="openEditW(row)">✎</button><button class="btn btn-danger btn-sm" style="margin-left:4px" @click="confirmDeleteW(row.warehouseId)">🗑</button></td></tr></tbody></table></div>
 
       <!-- Warehouse Modal -->
       <div v-if="showWModal" class="modal-overlay" @click.self="showWModal = false"><div class="modal"><div class="modal-header"><h3>{{ editingW ? '编辑仓库' : '新增仓库' }}</h3><button class="modal-close" @click="showWModal = false">✕</button></div>
@@ -193,7 +195,13 @@ onMounted(loadTransports)
       </div></div>
     </template>
 
-    <!-- Delete Confirm -->
-    <div v-if="showTConfirm" class="confirm-overlay"><div class="confirm-box"><div class="confirm-icon">⚠️</div><h3>确认删除</h3><p>确定要删除该运输订单吗？</p><div class="confirm-actions"><button class="btn btn-outline" @click="showTConfirm = false">取消</button><button class="btn btn-danger" @click="doDeleteT">确认删除</button></div></div></div>
+    <!-- Delete Confirm Transport -->
+    <div v-if="showTConfirm" class="confirm-overlay" @click.self="showTConfirm = false"><div class="confirm-box"><div class="confirm-icon">⚠️</div><h3>确认删除</h3><p>确定要删除该运输订单吗？</p><div class="confirm-actions"><button class="btn btn-outline" @click="showTConfirm = false">取消</button><button class="btn btn-danger" @click="doDeleteT">确认删除</button></div></div></div>
+
+    <!-- Delete Confirm Vehicle -->
+    <div v-if="showVConfirm" class="confirm-overlay" @click.self="showVConfirm = false"><div class="confirm-box"><div class="confirm-icon">⚠️</div><h3>确认删除</h3><p>确定要删除该冷链车辆吗？</p><div class="confirm-actions"><button class="btn btn-outline" @click="showVConfirm = false">取消</button><button class="btn btn-danger" @click="doDeleteV">确认删除</button></div></div></div>
+
+    <!-- Delete Confirm Warehouse -->
+    <div v-if="showWConfirm" class="confirm-overlay" @click.self="showWConfirm = false"><div class="confirm-box"><div class="confirm-icon">⚠️</div><h3>确认删除</h3><p>确定要删除该仓库吗？</p><div class="confirm-actions"><button class="btn btn-outline" @click="showWConfirm = false">取消</button><button class="btn btn-danger" @click="doDeleteW">确认删除</button></div></div></div>
   </div>
 </template>

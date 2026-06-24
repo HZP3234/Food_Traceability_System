@@ -162,11 +162,34 @@ onMounted(loadList)
 
     <!-- 资质管理 tab -->
     <template v-if="tab === 'qual'">
-      <div class="data-table-wrap" style="margin-top:0">
+      <div class="search-bar">
+        <div class="search-field"><label>企业名称</label><input v-model="filters.enterpriseName" placeholder="企业名称" @keyup.enter="loadList" /></div>
+        <div class="search-field"><label>风险等级</label><select v-model="filters.riskLevel"><option value="">全部</option><option value="1">低风险</option><option value="2">中风险</option><option value="3">高风险</option></select></div>
+        <div class="search-field" style="align-self:end"><button class="btn btn-primary" @click="loadList">🔍 查询</button></div>
+      </div>
+      <div class="toolbar">
+        <h3>企业资质一览 <span class="count-note">({{ list.length }} 条)</span></h3>
+        <div class="toolbar-actions">
+          <button class="btn btn-outline" :disabled="statusChecking" @click="doCheckStatus">🔄 资质状态检查</button>
+        </div>
+      </div>
+      <div class="data-table-wrap">
         <table class="data-table">
-          <thead><tr><th>企业名称</th><th>资质类型</th><th>资质编号</th><th>颁发机构</th><th>有效期</th><th>资质状态</th><th>审核状态</th></tr></thead>
+          <thead><tr><th>企业名称</th><th>企业类型</th><th>信用代码</th><th>联系人</th><th>风险等级</th><th>运营状态</th><th>操作</th></tr></thead>
           <tbody>
-            <tr><td colspan="7"><div class="empty-state"><div class="empty-icon">📋</div><p>资质管理功能需对接 qualification 接口，当前展示占位</p><p style="font-size:12px;color:#91a4bc">后端已支持 t_qualification 表 CRUD，前端可后续扩展</p></div></td></tr>
+            <tr v-if="loading"><td colspan="7" style="text-align:center;padding:32px">加载中...</td></tr>
+            <tr v-else-if="!list.length"><td colspan="7"><div class="empty-state"><div class="empty-icon">📋</div><p>暂无企业资质数据</p></div></td></tr>
+            <tr v-for="row in list" :key="row.enterpriseId">
+              <td><strong>{{ row.enterpriseName }}</strong></td>
+              <td><span class="tag tag-info">{{ enterpriseTypeLabels[row.enterpriseType] || '-' }}</span></td>
+              <td><code style="font-size:12px">{{ row.certNo || '-' }}</code></td>
+              <td>{{ row.contactPerson || '-' }}</td>
+              <td><span class="tag" :class="tagClass(riskLevelLabels[row.riskLevel] || '')">{{ riskLevelLabels[row.riskLevel] || '-' }}</span></td>
+              <td><span class="tag" :class="row.status === 1 ? 'tag-success' : 'tag-danger'">{{ statusLabels[row.status] ?? '-' }}</span></td>
+              <td>
+                <button class="btn btn-outline btn-sm" @click="openDetail(row)">📄</button>
+              </td>
+            </tr>
           </tbody>
         </table>
       </div>

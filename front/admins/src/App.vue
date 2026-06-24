@@ -12,15 +12,21 @@ import LandingPage from './pages/LandingPage.vue'
 import AuditLog from './pages/AuditLog.vue'
 import EnterpriseQualification from './pages/EnterpriseQualification.vue'
 import RegulatoryTrace from './pages/RegulatoryTrace.vue'
+import Dashboard from './pages/Dashboard.vue'
+import Warnings from './pages/Warnings.vue'
 
 const currentRole = ref<RoleKey>('manufacturer')
 const activePage = ref('dashboard')
 const screen = ref<'landing' | 'login' | 'admin'>('landing')
+const loginRef = ref<InstanceType<typeof LoginRegister> | null>(null)
+const showPageInfo = ref(false)
+const showLogoutConfirm = ref(false)
 
 // 通过 provide 让子页面感知当前角色
 provide('currentRole', currentRole)
 
 const pageComponents: Record<string, Component> = {
+  'dashboard': markRaw(Dashboard),
   'raw-batch': markRaw(RawMaterials),
   'supplier-raw': markRaw(SupplierRawMaterials),
   'production-batch': markRaw(ProductionBatchManagement),
@@ -31,6 +37,7 @@ const pageComponents: Record<string, Component> = {
   'enterprise-qualification': markRaw(EnterpriseQualification),
   'regulatory-trace': markRaw(RegulatoryTrace),
   'audit-log': markRaw(AuditLog),
+  'warnings': markRaw(Warnings),
 }
 
 const visibleNavigation = computed(() =>
@@ -60,11 +67,23 @@ function handleLogin(data: { username: string; password: string; role: string })
   sessionStorage.setItem('fts-admin-user', data.username)
   screen.value = 'admin'
 }
+
+function handleLogout() {
+  showLogoutConfirm.value = true
+}
+
+function confirmLogout() {
+  sessionStorage.removeItem('fts-admin-authenticated')
+  sessionStorage.removeItem('fts-admin-user')
+  showLogoutConfirm.value = false
+  screen.value = 'landing'
+  activePage.value = 'dashboard'
+}
 </script>
 
 <template>
   <LandingPage v-if="screen === 'landing'" @enter-admin="screen = 'login'" />
-  <LoginRegister v-else-if="screen === 'login'" @login="handleLogin" />
+  <LoginRegister ref="loginRef" v-else-if="screen === 'login'" @login="handleLogin" />
   <main v-else class="admin-shell">
     <aside class="sidebar">
       <div class="brand">
@@ -96,7 +115,10 @@ function handleLogin(data: { username: string; password: string; role: string })
         </section>
       </nav>
 
-      <footer class="sidebar-footer"><span></span>系统运行正常</footer>
+      <footer class="sidebar-footer">
+        <span></span>系统运行正常
+        <button class="logout-btn" type="button" @click="handleLogout">退出</button>
+      </footer>
     </aside>
 
     <section class="workspace">
@@ -115,10 +137,10 @@ function handleLogin(data: { username: string; password: string; role: string })
             <p>{{ pageDesc || '后台管理框架' }}</p>
             <h1>{{ activeItem?.label ?? '系统首页' }}</h1>
           </div>
-          <button type="button" class="ghost-button">页面说明</button>
+          <button type="button" class="ghost-button" @click="showPageInfo = true">页面说明</button>
         </div>
 
-        <component v-if="currentComponent" :is="currentComponent" />
+        <component v-if="currentComponent" :is="currentComponent" @navigate="activePage = $event" />
         <article v-else class="module-placeholder">
           <div class="placeholder-icon">{{ activeItem?.icon ?? '⌂' }}</div>
           <h2>{{ activeItem?.label ?? '系统首页' }} 模块内容区</h2>
@@ -131,4 +153,37 @@ function handleLogin(data: { username: string; password: string; role: string })
       </section>
     </section>
   </main>
+
+  <!-- 页面说明模态框 -->
+  <div v-if="showPageInfo" class="modal-overlay" @click.self="showPageInfo = false">
+    <div class="modal" style="width:520px">
+      <div class="modal-header">
+        <h3>{{ activeItem?.label ?? '系统首页' }} — 模块说明</h3>
+        <button class="modal-close" @click="showPageInfo = false">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="color:#48627e;line-height:1.8;font-size:14px;margin:0 0 16px">{{ pageDesc || '暂无详细说明' }}</p>
+        <div class="handoff-note" style="margin-top:8px">
+          <span>模块标识</span>
+          <code>{{ activePage }}</code>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" @click="showPageInfo = false">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 退出确认 -->
+  <div v-if="showLogoutConfirm" class="confirm-overlay" @click.self="showLogoutConfirm = false">
+    <div class="confirm-box">
+      <div class="confirm-icon">🚪</div>
+      <h3>确认退出</h3>
+      <p>确定要退出管理后台吗？</p>
+      <div class="confirm-actions">
+        <button class="btn btn-outline" @click="showLogoutConfirm = false">取消</button>
+        <button class="btn btn-primary" @click="confirmLogout">确认退出</button>
+      </div>
+    </div>
+  </div>
 </template>

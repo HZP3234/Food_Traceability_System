@@ -16,6 +16,9 @@ const showQcModal = ref(false)
 const showConfirm = ref(false)
 const editing = ref<any>(null)
 const deletingId = ref<number | null>(null)
+const showMatchModal = ref(false)
+const matchPendingItem = ref<any>(null)
+const matchTargetBatch = ref('')
 
 const filters = ref({ supplierName: '', productCategory: '', checkResult: '', warehouse: '', batchStatus: '', detailStatus: '' })
 
@@ -84,10 +87,19 @@ async function doDelete() { try { await rawApi.delete(deletingId.value!); flash(
 function openQc(row: any) { qcForm.value = { batchNo: row.batchNo, checkResult: 1 }; showQcModal.value = true }
 async function submitQc() { try { await rawApi.qualityCheck(qcForm.value.batchNo, qcForm.value.checkResult); flash('success', '质检录入成功'); showQcModal.value = false; loadList() } catch (e: any) { flash('error', '质检失败') } }
 
-async function matchPending(p: any) {
-  const target = prompt('请输入目标批次号：', list[0]?.batchNo || '')
-  if (!target) return
-  try { await rawApi.matchBatch(p.pendingCode, target); flash('success', '匹配成功'); loadList() } catch (e: any) { flash('error', '匹配失败: ' + e.message) }
+function openMatchPending(p: any) {
+  matchPendingItem.value = p
+  matchTargetBatch.value = list.value[0]?.batchNo || ''
+  showMatchModal.value = true
+}
+async function submitMatch() {
+  if (!matchTargetBatch.value) { flash('error', '请选择目标批次号'); return }
+  try {
+    await rawApi.matchBatch(matchPendingItem.value.pendingCode, matchTargetBatch.value)
+    flash('success', '匹配成功')
+    showMatchModal.value = false
+    loadList()
+  } catch (e: any) { flash('error', '匹配失败: ' + e.message) }
 }
 
 onMounted(loadList)
@@ -168,7 +180,7 @@ onMounted(loadList)
         <div v-for="p in pendingList" :key="p.rawPendingId" class="row-card">
           <span class="mini-badge amber-bg">待</span>
           <div style="flex:1"><strong>{{ p.pendingCode }}</strong><div class="muted">{{ p.productName || '未知原料' }} · {{ p.supplierName || '' }} · {{ p.uploadTime }}</div></div>
-          <button class="btn btn-primary btn-sm" @click="matchPending(p)">匹配批次</button>
+          <button class="btn btn-primary btn-sm" @click="openMatchPending(p)">匹配批次</button>
         </div>
       </div>
     </div>
@@ -200,6 +212,29 @@ onMounted(loadList)
       </div>
       <div class="modal-footer"><button class="btn btn-outline" @click="showQcModal = false">取消</button><button class="btn btn-primary" @click="submitQc">确认提交</button></div>
     </div></div>
+
+    <!-- 匹配批次模态框 -->
+    <div v-if="showMatchModal" class="modal-overlay" @click.self="showMatchModal = false">
+      <div class="modal" style="width:480px">
+        <div class="modal-header"><h3>匹配原料批次</h3><button class="modal-close" @click="showMatchModal = false">✕</button></div>
+        <div class="modal-body">
+          <p style="color:#6c84a3;margin:0 0 16px;font-size:13px">
+            将待匹配原料 <code style="color:#2666df">{{ matchPendingItem?.pendingCode }}</code> 关联到已有批次：
+          </p>
+          <div class="form-group">
+            <label>目标批次号 *</label>
+            <select v-model="matchTargetBatch" style="width:100%;padding:10px 12px;border:1px solid #d7e4f0;border-radius:7px">
+              <option value="">-- 请选择目标批次 --</option>
+              <option v-for="r in list" :key="r.rawBatchId" :value="r.batchNo">{{ r.batchNo }} - {{ r.productName }} ({{ r.supplierName }})</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline" @click="showMatchModal = false">取消</button>
+          <button class="btn btn-primary" @click="submitMatch" :disabled="!matchTargetBatch">确认匹配</button>
+        </div>
+      </div>
+    </div>
 
     <!-- 删除确认 -->
     <div v-if="showConfirm" class="confirm-overlay"><div class="confirm-box"><div class="confirm-icon">⚠️</div><h3>确认删除</h3><p>确定要删除该原料批次吗？</p><div class="confirm-actions"><button class="btn btn-outline" @click="showConfirm = false">取消</button><button class="btn btn-danger" @click="doDelete">确认删除</button></div></div></div>

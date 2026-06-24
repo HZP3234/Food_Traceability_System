@@ -49,7 +49,8 @@ function handleSubmit() {
     password: password.value,
     role: role.value,
   })
-  // loading will be reset by parent on result
+  // 防止父组件未重置 loading 的情况
+  setTimeout(() => { loading.value = false }, 5000)
 }
 
 function setLoading(v: boolean) {

@@ -26,8 +26,10 @@ button { cursor: pointer; }
 .nav-item.active { color: #175cde; background: #e6efff; font-weight: 700; }
 .nav-icon { width: 19px; height: 19px; display: grid; place-items: center; flex: 0 0 19px; border-radius: 6px; color: #3778ed; background: #eef4ff; font-size: 12px; font-weight: 800; }
 .nav-item.active .nav-icon { color: #fff; background: #2e6eea; }
-.sidebar-footer { margin: auto 8px 0; padding-top: 14px; border-top: 1px solid #e6eef5; color: #93a5ba; font-size: 12px; }
+.sidebar-footer { margin: auto 8px 0; padding-top: 14px; border-top: 1px solid #e6eef5; color: #93a5ba; font-size: 12px; display: flex; align-items: center; }
 .sidebar-footer span { width: 7px; height: 7px; display: inline-block; margin-right: 6px; border-radius: 50%; background: #22b46d; box-shadow: 0 0 0 4px #dff7e9; }
+.logout-btn { margin-left: auto; padding: 5px 12px; border: 1px solid #d7e4f0; border-radius: 6px; color: #6c84a3; background: #fff; font-size: 12px; cursor: pointer; transition: color .16s, border-color .16s; }
+.logout-btn:hover { color: #c72929; border-color: #f5c6cb; }
 
 .workspace { min-width: 0; flex: 1; }
 .topbar { height: 66px; display: flex; align-items: center; justify-content: space-between; padding: 0 34px; border-bottom: 1px solid #dce7f1; background: #fff; }

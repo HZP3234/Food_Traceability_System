@@ -63,7 +63,7 @@ export const navigation: NavigationGroup[] = [
       { id: 'enterprise-qualification', label: '企业资质管理', icon: '企', roles: ['super-admin', 'regulator'] },
       { id: 'regulatory-trace', label: '监管全链追溯', icon: '监', roles: ['super-admin', 'regulator'] },
       { id: 'audit-log', label: '操作日志审计', icon: '志', roles: ['super-admin', 'regulator'] },
-      { id: 'warnings', label: '异常预警推送', icon: '警', roles: ['super-admin', 'regulator', 'manufacturer'] },
+      { id: 'warnings', label: '异常预警推送', icon: '警', roles: ['super-admin', 'regulator', 'manufacturer'], desc: '汇总冷链温度预警、质检不合格、环境异常等实时预警信息' },
     ],
   },
 ]
