@@ -32,6 +32,10 @@ export default defineConfig({
         target: 'http://localhost:8081',
         changeOrigin: true
       },
+      '/api/consumer': {
+        target: 'http://localhost:8081',
+        changeOrigin: true
+      },
       '/TraceCode': {
         target: 'http://localhost:8082',
         changeOrigin: true

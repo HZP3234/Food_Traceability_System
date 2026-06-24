@@ -88,3 +88,18 @@ export interface ComplaintQueryDTO {
 }
 
 export type ComplaintTypeKey = 1 | 2 | 3 | 4 | 5
+
+export interface UserInfo {
+  consumerId: number
+  consumerUuid: string
+  nickName: string
+  realName: string | null
+  phone: string
+  gender: string
+  region: string | null
+  lastScanTime: string | null
+  totalScans: number
+  complaintCount: number
+  status: number
+  createTime: string
+}

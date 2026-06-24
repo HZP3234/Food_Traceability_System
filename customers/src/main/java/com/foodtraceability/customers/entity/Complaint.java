@@ -7,7 +7,7 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Data
-@TableName("complaint")
+@TableName("t_complaint_record")
 public class Complaint implements Serializable {
 
     @TableId(type = IdType.AUTO)

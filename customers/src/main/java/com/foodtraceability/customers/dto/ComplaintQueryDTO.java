@@ -9,6 +9,8 @@ public class ComplaintQueryDTO {
 
     private String productBatchNo;
 
+    private String productName;
+
     private String consumerPhone;
 
     private Integer complaintType;

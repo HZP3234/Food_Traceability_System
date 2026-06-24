@@ -1,17 +1,19 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { showToast } from 'vant'
 import { queryComplaintPage } from '@/api/complaint'
+import { useAppStore } from '@/store/app'
 import type { Complaint } from '@/types'
 
 const route = useRoute()
 const router = useRouter()
+const store = useAppStore()
 
-// 筛选条件
 const filters = reactive({
   productName: '',
-  complaintType: 0,
-  status: -1
+  complaintType: undefined as number | undefined,
+  status: undefined as number | undefined
 })
 
 const complaintTypes = [
@@ -33,56 +35,62 @@ const statusMap: Record<number, { text: string; color: string }> = {
   2: { text: '已处理', color: '#07c160' }
 }
 
-// 列表
 const list = ref<Complaint[]>([])
 const loading = ref(false)
-const finished = ref(false)
+const hasMore = ref(false)
 const page = reactive({ pageNum: 1, pageSize: 10 })
 
-// 详情弹窗
 const showDetail = ref(false)
 const detailItem = ref<Complaint | null>(null)
 
-// 筛选弹窗
 const showTypeSheet = ref(false)
 const showStatusSheet = ref(false)
 
-function onSearch() {
-  page.pageNum = 1
-  list.value = []
-  finished.value = false
-  loadData()
-}
-
-function onLoad() {
-  page.pageNum++
-  loadData()
-}
-
-function loadData() {
-  loading.value = true
-  queryComplaintPage({
+function buildParams() {
+  return {
     productName: filters.productName || undefined,
-    complaintType: filters.complaintType || undefined,
-    status: filters.status >= 0 ? filters.status : undefined,
+    complaintType: filters.complaintType,
+    status: filters.status,
+    consumerPhone: store.userInfo?.phone || undefined,
     pageNum: page.pageNum,
     pageSize: page.pageSize
-  })
+  }
+}
+
+function fetchData(append: boolean) {
+  if (loading.value) return
+  loading.value = true
+  queryComplaintPage(buildParams())
     .then((res) => {
       if (res.code === 200 && res.data) {
         const { records, current, pages } = res.data
-        list.value = (current === 1 ? records : [...list.value, ...records]) as Complaint[]
-        finished.value = current >= pages
+        list.value = append ? [...list.value, ...(records || [])] : (records || [])
+        hasMore.value = current < pages
+        if (current < pages) page.pageNum = current + 1
       } else {
-        finished.value = true
+        if (!append) list.value = []
+        hasMore.value = false
       }
     })
     .catch(() => {
-      finished.value = true
+      if (!append) list.value = []
+      hasMore.value = false
+      showToast('查询失败，请检查网络')
     })
     .finally(() => {
       loading.value = false
     })
+}
+
+function onSearch() {
+  page.pageNum = 1
+  list.value = []
+  fetchData(false)
+}
+
+function onLoadMore() {
+  page.pageNum++
+  fetchData(true)
 }
 
 function openDetail(item: Complaint) {
@@ -95,28 +103,27 @@ function formatTime(dateStr: string) {
   return dateStr.replace('T', ' ').substring(0, 16)
 }
 
-function onComplaintNoSearch() {
-  const no = (route.query.complaintNo as string) || ''
-  if (!no) return
-  page.pageNum = 1
-  list.value = []
-  finished.value = false
-  loading.value = true
-  queryComplaintPage({ complaintNo: no, pageNum: 1, pageSize: 10 })
-    .then((res) => {
-      if (res.code === 200 && res.data) {
-        list.value = res.data.records as Complaint[]
-        finished.value = true
-      }
-    })
-    .finally(() => {
-      loading.value = false
-    })
-}
-
 onMounted(() => {
   if (route.query.complaintNo) {
-    onComplaintNoSearch()
+    const no = route.query.complaintNo as string
+    if (no) {
+      loading.value = true
+      queryComplaintPage({ complaintNo: no, pageNum: 1, pageSize: 1 })
+        .then((res) => {
+          if (res.code === 200 && res.data) {
+            list.value = (res.data.records || []) as Complaint[]
+            hasMore.value = false
+          }
+        })
+        .catch(() => {
+          showToast('查询失败，请检查网络')
+        })
+        .finally(() => {
+          loading.value = false
+        })
+    }
+  } else {
+    fetchData(false)
   }
 })
 </script>
@@ -152,7 +159,7 @@ onMounted(() => {
           class="filter-half"
         >
           <template #input>
-            <span v-if="filters.complaintType" style="color:#323233">
+            <span v-if="filters.complaintType !== undefined" style="color:#323233">
               {{ typeMap[filters.complaintType] }}
             </span>
           </template>
@@ -167,7 +174,7 @@ onMounted(() => {
           class="filter-half"
         >
           <template #input>
-            <span v-if="filters.status >= 0" style="color:#323233">
+            <span v-if="filters.status !== undefined" style="color:#323233">
               {{ statusMap[filters.status]?.text }}
             </span>
           </template>
@@ -181,52 +188,55 @@ onMounted(() => {
     </div>
 
     <!-- 结果列表 -->
-    <div v-if="list.length" class="result-list">
-      <van-list
-        v-model:loading="loading"
-        :finished="finished"
-        finished-text="没有更多了"
-        @load="onLoad"
-      >
-        <div
-          v-for="item in list"
-          :key="item.id"
-          class="result-card"
-        >
-          <div class="card-top">
-            <div class="card-info">
-              <span class="card-company">{{ item.productName }}</span>
-              <span class="card-type">{{ typeMap[item.complaintType] || '其他' }}</span>
-            </div>
-            <span class="card-status" :style="{ color: statusMap[item.status]?.color }">
-              {{ statusMap[item.status]?.text || '未知' }}
-            </span>
-          </div>
-          <div class="card-mid">
-            <span>投诉编号：{{ item.complaintNo }}</span>
-          </div>
-          <div class="card-bottom">
-            <span class="card-time">处理时间：{{ formatTime(item.createTime) }}</span>
-            <span class="card-detail" @click="openDetail(item)">投诉详情</span>
-          </div>
-          <div class="card-footer">
-            <van-button size="small" plain type="primary" round @click="openDetail(item)">
-              详情
-            </van-button>
-          </div>
-        </div>
-      </van-list>
-    </div>
+    <div class="list-wrapper">
+      <van-loading v-if="loading && list.length === 0" class="loading-center" type="spinner" size="24" />
 
-    <van-empty v-if="!loading && list.length === 0" description="暂无投诉记录">
-      <van-button round type="primary" to="/complaint-submit">去投诉</van-button>
-    </van-empty>
+      <div
+        v-for="item in list"
+        :key="item.id"
+        class="result-card"
+      >
+        <div class="card-top">
+          <div class="card-info">
+            <span class="card-company">{{ item.productName }}</span>
+            <span class="card-type">{{ typeMap[item.complaintType] || '其他' }}</span>
+          </div>
+          <span class="card-status" :style="{ color: statusMap[item.status]?.color }">
+            {{ statusMap[item.status]?.text || '未知' }}
+          </span>
+        </div>
+        <div class="card-mid">
+          <span>投诉编号：{{ item.complaintNo }}</span>
+        </div>
+        <div class="card-bottom">
+          <span class="card-time">提交时间：{{ formatTime(item.createTime) }}</span>
+        </div>
+        <div class="card-footer">
+          <van-button size="small" plain type="primary" round @click="openDetail(item)">
+            详情
+          </van-button>
+        </div>
+      </div>
+
+      <van-empty v-if="!loading && list.length === 0" description="暂无投诉记录">
+        <van-button round type="primary" to="/complaint-submit">去投诉</van-button>
+      </van-empty>
+
+      <div v-if="hasMore && list.length > 0" class="load-more-area">
+        <van-button plain round block :loading="loading" @click="onLoadMore">
+          加载更多
+        </van-button>
+      </div>
+    </div>
 
     <!-- 投诉类型选择 -->
     <van-action-sheet
       v-model:show="showTypeSheet"
       title="选择投诉类型"
-      :actions="complaintTypes.map(t => ({ name: t.label, callback: () => { filters.complaintType = t.value; showTypeSheet = false } }))"
+      :actions="[
+        { name: '全部', callback: () => { filters.complaintType = undefined; showTypeSheet = false } },
+        ...complaintTypes.map(t => ({ name: t.label, callback: () => { filters.complaintType = t.value; showTypeSheet = false } }))
+      ]"
     />
 
     <!-- 处理状态选择 -->
@@ -234,7 +244,7 @@ onMounted(() => {
       v-model:show="showStatusSheet"
       title="选择处理状态"
       :actions="[
-        { name: '全部', callback: () => { filters.status = -1; showStatusSheet = false } },
+        { name: '全部', callback: () => { filters.status = undefined; showStatusSheet = false } },
         ...statusOptions.map(s => ({ name: s.label, callback: () => { filters.status = s.value; showStatusSheet = false } }))
       ]"
     />
@@ -337,9 +347,14 @@ onMounted(() => {
   padding: 8px 16px 12px;
 }
 
-/* 结果列表 */
-.result-list {
-  margin: 0 20px;
+.list-wrapper {
+  margin: 0 16px;
+}
+
+.loading-center {
+  display: flex;
+  justify-content: center;
+  padding: 40px 0;
 }
 
 .result-card {
@@ -396,17 +411,16 @@ onMounted(() => {
   color: #969799;
 }
 
-.card-detail {
-  color: #1989fa;
-  cursor: pointer;
-}
-
 .card-footer {
   margin-top: 10px;
   text-align: right;
 }
 
-/* 详情弹窗 */
+.load-more-area {
+  margin-top: 12px;
+  padding-bottom: 20px;
+}
+
 .detail-popup {
   padding: 0 0 30px;
 }

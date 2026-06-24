@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import { queryComplaintPage } from '@/api/complaint'
+import { getUserInfo } from '@/api/user'
 import { useAppStore } from '@/store/app'
 import headImg from '@/assets/user_head_image.png'
 
@@ -11,17 +12,34 @@ const store = useAppStore()
 
 const complaintCount = ref(0)
 const scanCount = ref(0)
-const userName = ref('消费者用户')
+const loading = ref(true)
 
-onMounted(() => {
+const userName = computed(() => store.userInfo?.nickName || '消费者用户')
+const userId = computed(() => store.userInfo?.consumerUuid || '')
+
+onMounted(async () => {
   scanCount.value = store.searchHistory.length
-  queryComplaintPage({ pageNum: 1, pageSize: 1 })
-    .then((res) => {
+
+  if (store.userInfo?.phone) {
+    // 从后端刷新最新用户数据
+    try {
+      const res = await getUserInfo(store.userInfo.phone)
       if (res.code === 200 && res.data) {
-        complaintCount.value = res.data.total
+        store.setUserInfo(res.data)
       }
-    })
-    .catch(() => {})
+    } catch {}
+
+    // 查询投诉数量
+    queryComplaintPage({ pageNum: 1, pageSize: 1, consumerPhone: store.userInfo.phone })
+      .then((res) => {
+        if (res.code === 200 && res.data) {
+          complaintCount.value = res.data.total
+        }
+      })
+      .catch(() => {})
+  }
+
+  loading.value = false
 })
 
 function goMyComplaints() {
@@ -33,8 +51,8 @@ function goScanHistory() {
 }
 
 function onLogout() {
+  store.logout()
   store.clearHistory()
-  userName.value = '消费者用户'
   showToast('已退出登录')
   router.push('/')
 }
@@ -56,7 +74,7 @@ function onLogout() {
         <img :src="headImg" alt="头像" class="avatar" />
       </div>
       <div class="user-name">{{ userName }}</div>
-      <div class="user-id">ID: FTS{{ Date.now().toString(36).toUpperCase().slice(-6) }}</div>
+      <div class="user-id">UUID: {{ userId || '加载中...' }}</div>
     </div>
 
     <!-- 数据统计 -->

@@ -11,6 +11,15 @@ const store = useAppStore()
 const searchValue = ref('')
 const loading = ref(false)
 
+function requireLogin(action: () => void) {
+  if (!store.isLoggedIn) {
+    showToast('请先登录后再使用此功能')
+    router.push({ name: 'Login', query: { redirect: router.currentRoute.value.fullPath } })
+    return
+  }
+  action()
+}
+
 function onSearch(val: string) {
   if (!val.trim()) return
   goTrace(val.trim())
@@ -37,7 +46,9 @@ function goTrace(batchNo: string) {
 }
 
 function onScan() {
-  router.push({ name: 'Scanner' })
+  requireLogin(() => {
+    router.push({ name: 'Scanner' })
+  })
 }
 
 function onHistoryClick(item: string) {
@@ -50,7 +61,21 @@ function onClearHistory() {
 }
 
 function goUserCenter() {
-  router.push('/user-center')
+  requireLogin(() => {
+    router.push('/user-center')
+  })
+}
+
+function goComplaintSubmit() {
+  requireLogin(() => {
+    router.push('/complaint-submit')
+  })
+}
+
+function goComplaintQuery() {
+  requireLogin(() => {
+    router.push('/complaint-query')
+  })
 }
 </script>
 
@@ -115,14 +140,14 @@ function goUserCenter() {
     <div class="menu-section">
       <div class="menu-title">服务专区</div>
       <div class="menu-grid">
-        <div class="menu-card complaint-card" @click="router.push('/complaint-submit')">
+        <div class="menu-card complaint-card" @click="goComplaintSubmit">
           <div class="menu-icon-wrap icon-danger">
             <van-icon name="warning-o" size="24" color="#f56c6c" />
           </div>
           <span class="menu-label">投诉反馈</span>
           <span class="menu-sub">反馈食品安全问题</span>
         </div>
-        <div class="menu-card query-card" @click="router.push('/complaint-query')">
+        <div class="menu-card query-card" @click="goComplaintQuery">
           <div class="menu-icon-wrap icon-primary">
             <van-icon name="search" size="24" color="#1989fa" />
           </div>

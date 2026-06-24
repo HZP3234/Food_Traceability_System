@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.foodtraceability.customers.mapper.ComplaintMapper">
+
+    <resultMap id="BaseResultMap" type="com.foodtraceability.customers.entity.Complaint">
+        <id column="id" property="id"/>
+        <result column="complaint_no" property="complaintNo"/>
+        <result column="product_batch_no" property="productBatchNo"/>
+        <result column="product_name" property="productName"/>
+        <result column="consumer_name" property="consumerName"/>
+        <result column="consumer_phone" property="consumerPhone"/>
+        <result column="complaint_type" property="complaintType"/>
+        <result column="complaint_title" property="complaintTitle"/>
+        <result column="complaint_content" property="complaintContent"/>
+        <result column="image_urls" property="imageUrls"/>
+        <result column="status" property="status"/>
+        <result column="feedback_content" property="feedbackContent"/>
+        <result column="feedback_time" property="feedbackTime"/>
+        <result column="feedback_by" property="feedbackBy"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="deleted" property="deleted"/>
+    </resultMap>
+
+    <select id="selectComplaintPage" resultMap="BaseResultMap">
+        SELECT *
+        FROM t_complaint_record
+        <where>
+            deleted = 0
+            <if test="complaintNo != null and complaintNo != ''">
+                AND complaint_no = #{complaintNo}
+            </if>
+            <if test="productBatchNo != null and productBatchNo != ''">
+                AND product_batch_no = #{productBatchNo}
+            </if>
+            <if test="productName != null and productName != ''">
+                AND product_name LIKE CONCAT('%', #{productName}, '%')
+            </if>
+            <if test="consumerPhone != null and consumerPhone != ''">
+                AND consumer_phone = #{consumerPhone}
+            </if>
+            <if test="complaintType != null">
+                AND complaint_type = #{complaintType}
+            </if>
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+
+</mapper>

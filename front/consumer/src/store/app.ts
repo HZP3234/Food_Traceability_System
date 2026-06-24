@@ -1,12 +1,15 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+import type { UserInfo } from '@/types'
 
 export const useAppStore = defineStore('app', () => {
-  // 当前查询的批次号
   const currentBatchNo = ref('')
 
-  // 搜索历史（存本地）
   const searchHistory = ref<string[]>(loadHistory())
+
+  const userInfo = ref<UserInfo | null>(loadUser())
+
+  const isLoggedIn = computed(() => !!userInfo.value?.phone)
 
   function setBatchNo(val: string) {
     currentBatchNo.value = val
@@ -38,5 +41,33 @@ export const useAppStore = defineStore('app', () => {
     localStorage.setItem('trace_search_history', JSON.stringify(list))
   }
 
-  return { currentBatchNo, searchHistory, setBatchNo, addHistory, clearHistory }
+  function setUserInfo(info: UserInfo) {
+    userInfo.value = info
+    localStorage.setItem('consumer_user', JSON.stringify(info))
+  }
+
+  function loadUser(): UserInfo | null {
+    try {
+      return JSON.parse(localStorage.getItem('consumer_user') || 'null')
+    } catch {
+      return null
+    }
+  }
+
+  function logout() {
+    userInfo.value = null
+    localStorage.removeItem('consumer_user')
+  }
+
+  return {
+    currentBatchNo,
+    searchHistory,
+    userInfo,
+    isLoggedIn,
+    setBatchNo,
+    addHistory,
+    clearHistory,
+    setUserInfo,
+    logout
+  }
 })
