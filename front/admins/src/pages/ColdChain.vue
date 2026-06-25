@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, inject, type Ref } from 'vue'
 import { Box, Check, Close, Delete, Download, Edit, Plus, Search, Upload, Van, Warning } from '@element-plus/icons-vue'
 import { coldChainApi } from '../services/api'
+import Pagination from '../components/Pagination.vue'
 import type { RoleKey } from '../config/navigation'
 
 const currentRole = inject<Ref<RoleKey>>('currentRole')
@@ -43,6 +44,12 @@ const warehouseStatusLabels = ['', '启用', '停用']
 
 // ==================== Shipping (发运签收) ====================
 const shippingOrders = ref<any[]>([])
+
+// Pagination
+const tPage = ref(1); const vPage = ref(1); const wPage = ref(1); const sPage = ref(1); const pageSize = ref(10)
+const paginatedTransports = computed(() => { const start = (tPage.value - 1) * pageSize.value; return transports.value.slice(start, start + pageSize.value) })
+const paginatedVehicles = computed(() => { const start = (vPage.value - 1) * pageSize.value; return vehicles.value.slice(start, start + pageSize.value) })
+const paginatedWarehouses = computed(() => { const start = (wPage.value - 1) * pageSize.value; return warehouses.value.slice(start, start + pageSize.value) })
 const loadingS = ref(false)
 const showDispatchModal = ref(false)
 const showReceiptModal = ref(false)
@@ -63,7 +70,7 @@ function statusClass(s: string) {
 // ==================== Transport CRUD ====================
 async function loadTransports() {
   loadingT.value = true
-  try { const p: Record<string, any> = {}; if (tFilters.value.transportStatus) p.transportStatus = Number(tFilters.value.transportStatus); if (tFilters.value.prodBatchNo) p.prodBatchNo = tFilters.value.prodBatchNo; if (tFilters.value.plateNo) p.plateNo = tFilters.value.plateNo; const data = await coldChainApi.listTransport(p); transports.value = Array.isArray(data) ? data : [] } catch (e: any) { notify('error', '加载运输订单失败: ' + e.message) } finally { loadingT.value = false }
+  try { const p: Record<string, any> = {}; if (tFilters.value.transportStatus) p.transportStatus = Number(tFilters.value.transportStatus); if (tFilters.value.prodBatchNo) p.prodBatchNo = tFilters.value.prodBatchNo; if (tFilters.value.plateNo) p.plateNo = tFilters.value.plateNo; const data = await coldChainApi.listTransport(p); transports.value = Array.isArray(data) ? data : []; tPage.value = 1 } catch (e: any) { notify('error', '加载运输订单失败: ' + e.message) } finally { loadingT.value = false }
 }
 function openCreateT() {
   editingT.value = null
@@ -95,7 +102,7 @@ async function stateAction(action: string, id: number) {
 }
 
 // ==================== Vehicle CRUD (仅物流商) ====================
-async function loadVehicles() { loadingV.value = true; try { const p: Record<string, any> = {}; if (vFilters.value.vehicleStatus) p.vehicleStatus = Number(vFilters.value.vehicleStatus); if (vFilters.value.ownerName) p.ownerName = vFilters.value.ownerName; if (vFilters.value.coldType) p.coldType = vFilters.value.coldType; const data = await coldChainApi.listVehicle(p); vehicles.value = Array.isArray(data) ? data : [] } catch (e: any) { notify('error', '加载车辆失败') } finally { loadingV.value = false } }
+async function loadVehicles() { loadingV.value = true; try { const p: Record<string, any> = {}; if (vFilters.value.vehicleStatus) p.vehicleStatus = Number(vFilters.value.vehicleStatus); if (vFilters.value.ownerName) p.ownerName = vFilters.value.ownerName; if (vFilters.value.coldType) p.coldType = vFilters.value.coldType; const data = await coldChainApi.listVehicle(p); vehicles.value = Array.isArray(data) ? data : []; vPage.value = 1 } catch (e: any) { notify('error', '加载车辆失败') } finally { loadingV.value = false } }
 function openCreateV() { if (isOtherEnterprise.value) { notify('error', '仅冷链物流商可注册车辆'); return }; editingV.value = null; vForm.value = { plateNo: '', vehicleModel: '', driverName: '', driverPhone: '', ownerName: '', coldType: '', tempRange: '', remark: '' }; showVModal.value = true }
 function openEditV(row: any) { if (isOtherEnterprise.value) { notify('error', '仅冷链物流商可编辑车辆'); return }; editingV.value = row; vForm.value = { plateNo: row.plateNo ?? '', vehicleModel: row.vehicleModel ?? '', driverName: row.driverName ?? '', driverPhone: row.driverPhone ?? '', ownerName: row.ownerName ?? '', coldType: row.coldType ?? '', tempRange: row.tempRange ?? '', remark: row.remark ?? '' }; showVModal.value = true }
 async function submitV() { try { const data: Record<string, any> = { ...vForm.value }; if (editingV.value) { data.vehicleId = editingV.value.vehicleId; await coldChainApi.updateVehicle(data); notify('success', '车辆信息更新成功') } else { await coldChainApi.createVehicle(data); notify('success', '冷链车辆注册成功') } showVModal.value = false; loadVehicles() } catch (e: any) { notify('error', '操作失败') } }
@@ -103,7 +110,7 @@ function confirmDeleteV(id: number) { if (isOtherEnterprise.value) { notify('err
 async function doDeleteV() { try { await coldChainApi.deleteVehicle(deletingVId.value!); notify('success', '车辆删除成功'); showVConfirm.value = false; loadVehicles() } catch (e: any) { notify('error', '删除失败') } }
 
 // ==================== Warehouse CRUD ====================
-async function loadWarehouses() { loadingW.value = true; try { const p: Record<string, any> = {}; if (wFilters.value.warehouseType) p.warehouseType = Number(wFilters.value.warehouseType); if (wFilters.value.warehouseStatus) p.warehouseStatus = Number(wFilters.value.warehouseStatus); const data = await coldChainApi.listWarehouse(p); warehouses.value = Array.isArray(data) ? data : [] } catch (e: any) { notify('error', '加载仓库失败') } finally { loadingW.value = false } }
+async function loadWarehouses() { loadingW.value = true; try { const p: Record<string, any> = {}; if (wFilters.value.warehouseType) p.warehouseType = Number(wFilters.value.warehouseType); if (wFilters.value.warehouseStatus) p.warehouseStatus = Number(wFilters.value.warehouseStatus); const data = await coldChainApi.listWarehouse(p); warehouses.value = Array.isArray(data) ? data : []; wPage.value = 1 } catch (e: any) { notify('error', '加载仓库失败') } finally { loadingW.value = false } }
 function openCreateW() { if (isOtherEnterprise.value) { notify('error', '仅冷链物流商可新增仓库'); return }; editingW.value = null; wForm.value = { warehouseName: '', warehouseType: 0, address: '', capacity: '', manager: '', tempRange: '', humidityRange: '', warehouseStatus: 0, remark: '' }; showWModal.value = true }
 function openEditW(row: any) { if (isOtherEnterprise.value) { notify('error', '仅冷链物流商可编辑仓库'); return }; editingW.value = row; wForm.value = { warehouseName: row.warehouseName ?? '', warehouseType: row.warehouseType ?? 0, address: row.address ?? '', capacity: row.capacity ?? '', manager: row.manager ?? '', tempRange: row.tempRange ?? '', humidityRange: row.humidityRange ?? '', warehouseStatus: row.warehouseStatus ?? 0, remark: row.remark ?? '' }; showWModal.value = true }
 async function submitW() { try { const data: Record<string, any> = { ...wForm.value }; if (editingW.value) { data.warehouseId = editingW.value.warehouseId; await coldChainApi.updateWarehouse(data); notify('success', '仓库更新成功') } else { await coldChainApi.createWarehouse(data); notify('success', '仓库创建成功') } showWModal.value = false; loadWarehouses() } catch (e: any) { notify('error', '操作失败') } }
@@ -194,7 +201,7 @@ onMounted(loadTransports)
           <tbody>
             <tr v-if="loadingT"><td colspan="11" class="empty">加载中...</td></tr>
             <tr v-else-if="!transports.length"><td colspan="11" class="empty">暂无运输订单，点击"新建运输单号"开始</td></tr>
-            <tr v-for="row in transports" :key="row.transportId">
+            <tr v-for="row in paginatedTransports" :key="row.transportId">
               <td><code>{{ row.orderNo }}</code></td>
               <td>{{ row.plateNo || '待分配' }}</td>
               <td>{{ row.productName || '-' }}</td>
@@ -215,6 +222,7 @@ onMounted(loadTransports)
               </td>
             </tr>
           </tbody></table></div>
+      <Pagination v-model="tPage" :total="transports.length" :page-size="pageSize" />
       </section>
 
       <!-- Transport Modal -->
@@ -414,9 +422,10 @@ onMounted(loadTransports)
         <header class="panel-header"><div><p>车辆台账</p><h2>冷链车辆管理</h2></div><button class="primary create" @click="openCreateV"><el-icon><Plus /></el-icon> 注册车辆</button></header>
         <div class="table-wrap"><table><thead><tr><th>车牌号</th><th>车型</th><th>驾驶员</th><th>电话</th><th>企业</th><th>冷链类型</th><th>温控</th><th>状态</th><th>操作</th></tr></thead>
           <tbody><tr v-if="loadingV"><td colspan="9" class="empty">加载中...</td></tr><tr v-else-if="!vehicles.length"><td colspan="9" class="empty">暂无冷链车辆</td></tr>
-            <tr v-for="row in vehicles" :key="row.vehicleId"><td><strong>{{ row.plateNo }}</strong></td><td>{{ row.vehicleModel || '-' }}</td><td>{{ row.driverName }}</td><td>{{ row.driverPhone }}</td><td>{{ row.ownerName }}</td><td>{{ row.coldType }}</td><td>{{ row.tempRange || '-' }}</td>
+            <tr v-for="row in paginatedVehicles" :key="row.vehicleId"><td><strong>{{ row.plateNo }}</strong></td><td>{{ row.vehicleModel || '-' }}</td><td>{{ row.driverName }}</td><td>{{ row.driverPhone }}</td><td>{{ row.ownerName }}</td><td>{{ row.coldType }}</td><td>{{ row.tempRange || '-' }}</td>
               <td><span class="status" :class="statusClass(vehicleStatusLabels[row.vehicleStatus] || '')">{{ vehicleStatusLabels[row.vehicleStatus] || '-' }}</span></td>
               <td class="actions"><button @click="openEditV(row)"><el-icon><Edit /></el-icon> 编辑</button><button class="danger" @click="confirmDeleteV(row.vehicleId)"><el-icon><Delete /></el-icon> 删除</button></td></tr></tbody></table></div>
+      <Pagination v-model="vPage" :total="vehicles.length" :page-size="pageSize" />
       </section>
       <div v-if="showVModal" class="trace-modal-backdrop" @click.self="showVModal = false">
         <section class="trace-modal"><header><div><p>车辆管理</p><h2>{{ editingV ? '编辑车辆' : '注册冷链车辆' }}</h2></div><button @click="showVModal = false"><el-icon><Close /></el-icon></button></header>
@@ -445,9 +454,10 @@ onMounted(loadTransports)
         <header class="panel-header"><div><p>仓储台账</p><h2>仓库列表</h2></div><button class="primary create" @click="openCreateW"><el-icon><Plus /></el-icon> 新增仓库</button></header>
         <div class="table-wrap"><table><thead><tr><th>仓库名称</th><th>类型</th><th>地址</th><th>容量</th><th>管理员</th><th>温控</th><th>湿度</th><th>状态</th><th>操作</th></tr></thead>
           <tbody><tr v-if="loadingW"><td colspan="9" class="empty">加载中...</td></tr><tr v-else-if="!warehouses.length"><td colspan="9" class="empty">暂无仓库</td></tr>
-            <tr v-for="row in warehouses" :key="row.warehouseId"><td><strong>{{ row.warehouseName }}</strong></td><td>{{ warehouseTypeLabels[row.warehouseType] || '-' }}</td><td>{{ row.address }}</td><td>{{ row.capacity }}</td><td>{{ row.manager }}</td><td>{{ row.tempRange || '-' }}</td><td>{{ row.humidityRange || '-' }}</td>
+            <tr v-for="row in paginatedWarehouses" :key="row.warehouseId"><td><strong>{{ row.warehouseName }}</strong></td><td>{{ warehouseTypeLabels[row.warehouseType] || '-' }}</td><td>{{ row.address }}</td><td>{{ row.capacity }}</td><td>{{ row.manager }}</td><td>{{ row.tempRange || '-' }}</td><td>{{ row.humidityRange || '-' }}</td>
               <td><span class="status" :class="row.warehouseStatus === 1 ? 'status-active' : 'status-disabled'">{{ warehouseStatusLabels[row.warehouseStatus] || '-' }}</span></td>
               <td class="actions"><button @click="openEditW(row)"><el-icon><Edit /></el-icon> 编辑</button><button class="danger" @click="confirmDeleteW(row.warehouseId)"><el-icon><Delete /></el-icon> 删除</button></td></tr></tbody></table></div>
+      <Pagination v-model="wPage" :total="warehouses.length" :page-size="pageSize" />
       </section>
       <div v-if="showWModal" class="trace-modal-backdrop" @click.self="showWModal = false">
         <section class="trace-modal"><header><div><p>仓储管理</p><h2>{{ editingW ? '编辑仓库' : '新增仓库' }}</h2></div><button @click="showWModal = false"><el-icon><Close /></el-icon></button></header>

@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { Check, CircleClose, Close, Clock, Connection, Document, Plus, Refresh, Search, View } from '@element-plus/icons-vue'
 import { traceCodeApi } from '../services/api'
+import Pagination from '../components/Pagination.vue'
 
 type TraceCodeRow = {
   traceCode: string
@@ -21,6 +22,12 @@ type TraceCodeRow = {
 
 const loading = ref(false)
 const rows = ref<TraceCodeRow[]>([])
+const currentPage = ref(1)
+const pageSize = ref(10)
+const paginatedRows = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  return rows.value.slice(start, start + pageSize.value)
+})
 const toast = ref<{ type: 'success' | 'error'; text: string } | null>(null)
 const showGenerate = ref(false)
 const showDetail = ref(false)
@@ -69,8 +76,10 @@ async function loadList() {
     })
     const data = await traceCodeApi.list(params)
     rows.value = Array.isArray(data) ? data : []
+    currentPage.value = 1
   } catch (error: any) {
     rows.value = []
+    currentPage.value = 1
     notify('error', `加载失败：${error.message || '请确认企业端服务已启动'}`)
   } finally { loading.value = false }
 }
@@ -177,7 +186,7 @@ onMounted(loadList)
           <tbody>
             <tr v-if="loading"><td colspan="8" class="empty">正在加载数据…</td></tr>
             <tr v-else-if="!rows.length"><td colspan="8" class="empty">暂无数据。请启动企业端后查询，或点击右上角生成溯源码。</td></tr>
-            <tr v-for="row in rows" :key="row.traceCode">
+            <tr v-for="row in paginatedRows" :key="row.traceCode">
               <td><code>{{ row.traceCode }}</code></td>
               <td><strong>{{ row.productName || '—' }}</strong><small>{{ row.batchNo || '未关联批次' }}</small></td>
               <td>{{ row.enterpriseName || '—' }}</td>
@@ -196,6 +205,7 @@ onMounted(loadList)
           </tbody>
         </table>
       </div>
+      <Pagination v-model="currentPage" :total="rows.length" :page-size="pageSize" />
     </section>
 
     <!-- 批量生成模态框 -->

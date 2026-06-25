@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { Box, Check, Close, Delete, Edit, Plus, Refresh, Search, Select, Upload } from '@element-plus/icons-vue'
 import { rawApi } from '../services/api'
+import Pagination from '../components/Pagination.vue'
 
 let currentUser = ''
 try {
@@ -11,6 +12,12 @@ try {
 const loading = ref(false)
 const list = ref<any[]>([])
 const pendingList = ref<any[]>([])
+const currentPage = ref(1)
+const pageSize = ref(10)
+const paginatedList = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  return list.value.slice(start, start + pageSize.value)
+})
 const toast = ref<{ type: 'success' | 'error'; text: string } | null>(null)
 const showBatchModal = ref(false)
 const showQcModal = ref(false)
@@ -48,6 +55,7 @@ async function loadList() {
     if (filters.value.detailStatus) p.detailStatus = Number(filters.value.detailStatus)
     const data = await rawApi.list(p)
     list.value = Array.isArray(data) ? data : []
+    currentPage.value = 1
     const pdata = await rawApi.listPending(undefined, 1)
     pendingList.value = Array.isArray(pdata) ? pdata : []
   } catch (e: any) { notify('error', '加载失败: ' + e.message) }
@@ -129,7 +137,7 @@ onMounted(loadList)
         <tbody>
           <tr v-if="loading"><td colspan="10" class="empty">加载中...</td></tr>
           <tr v-else-if="!list.length"><td colspan="10" class="empty">暂无原料批次，点击"创建原料批次"开始</td></tr>
-          <tr v-for="row in list" :key="row.rawBatchId">
+          <tr v-for="row in paginatedList" :key="row.rawBatchId">
             <td><code>{{ row.batchNo }}</code></td><td>{{ row.productName }}</td><td>{{ row.supplierName }}</td>
             <td>{{ row.amount }}{{ row.unit }}</td><td>{{ row.warehouse }}</td>
             <td><span class="status" :class="row.checkResult === 1 ? 'status-active' : row.checkResult === 2 ? 'status-void' : 'status-pending'">{{ row.checkResult === 1 ? '合格' : row.checkResult === 2 ? '不合格' : '未检测' }}</span></td>
@@ -146,6 +154,7 @@ onMounted(loadList)
             </td>
           </tr>
         </tbody></table></div>
+      <Pagination v-model="currentPage" :total="list.length" :page-size="pageSize" />
     </section>
 
     <!-- 待匹配列表 -->

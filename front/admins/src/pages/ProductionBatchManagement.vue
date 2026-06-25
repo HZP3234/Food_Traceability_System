@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { Check, Close, Connection, Delete, DocumentChecked, Edit, Link, Plus, Search, VideoPlay } from '@element-plus/icons-vue'
 import { productionApi } from '../services/api'
+import Pagination from '../components/Pagination.vue'
 
 const tab = ref<'prod' | 'template' | 'input' | 'env' | 'inspection'>('prod')
 const loading = ref(false)
@@ -14,6 +15,14 @@ const confirmTitle = ref('确认操作'); const confirmMsg = ref(''); const conf
 const confirmCallback = ref<null | (() => void)>(null)
 
 const list = ref<any[]>([]); const templates = ref<any[]>([]); const materialInputs = ref<any[]>([]); const envRecords = ref<any[]>([]); const inspections = ref<any[]>([])
+
+// Pagination
+const prodPage = ref(1); const tplPage = ref(1); const inputPage = ref(1); const envPage = ref(1); const inspPage = ref(1); const pageSize = ref(10)
+const paginatedList = computed(() => { const s = (prodPage.value - 1) * pageSize.value; return list.value.slice(s, s + pageSize.value) })
+const paginatedTemplates = computed(() => { const s = (tplPage.value - 1) * pageSize.value; return templates.value.slice(s, s + pageSize.value) })
+const paginatedInputs = computed(() => { const s = (inputPage.value - 1) * pageSize.value; return materialInputs.value.slice(s, s + pageSize.value) })
+const paginatedEnv = computed(() => { const s = (envPage.value - 1) * pageSize.value; return envRecords.value.slice(s, s + pageSize.value) })
+const paginatedInspections = computed(() => { const s = (inspPage.value - 1) * pageSize.value; return inspections.value.slice(s, s + pageSize.value) })
 const editing = ref<any>(null); const editingTemplate = ref<any>(null); const qcTarget = ref<any>(null); const qcResult = ref(1); const chainData = ref<any>(null)
 
 const filters = ref({ productName: '', productionLine: '', checkResult: '', batchStatus: '', codeStatus: '', rawBatchNo: '' })
@@ -92,7 +101,7 @@ async function loadProdBatch() {
     if (filters.value.batchStatus) p.batchStatus = Number(filters.value.batchStatus);
     if (filters.value.codeStatus) p.codeStatus = Number(filters.value.codeStatus);
     if (filters.value.rawBatchNo) p.rawBatchNo = filters.value.rawBatchNo;
-    const data = await productionApi.listProdBatch(p); list.value = Array.isArray(data) ? data : []
+    const data = await productionApi.listProdBatch(p); list.value = Array.isArray(data) ? data : []; prodPage.value = 1
   } catch (e: any) { notify('error', '加载失败: ' + e.message) } finally { loading.value = false }
 }
 
@@ -160,22 +169,22 @@ function submitQcProd() {
 async function traceChain(batchNo: string) { try { const result = await productionApi.traceProcessChain(batchNo); chainData.value = result; showChainModal.value = true } catch (e: any) { notify('error', '追溯失败: ' + e.message) } }
 
 // Template
-async function loadTemplates() { try { const p: Record<string, any> = {}; if (templateFilters.value.applicableProduct) p.applicableProduct = templateFilters.value.applicableProduct; if (templateFilters.value.templateStatus) p.templateStatus = Number(templateFilters.value.templateStatus); const data = await productionApi.listTemplate(p); templates.value = Array.isArray(data) ? data : [] } catch (e: any) { notify('error', '加载失败') } }
+async function loadTemplates() { try { const p: Record<string, any> = {}; if (templateFilters.value.applicableProduct) p.applicableProduct = templateFilters.value.applicableProduct; if (templateFilters.value.templateStatus) p.templateStatus = Number(templateFilters.value.templateStatus); const data = await productionApi.listTemplate(p); templates.value = Array.isArray(data) ? data : []; tplPage.value = 1 } catch (e: any) { notify('error', '加载失败') } }
 function openCreateTemplate() { editingTemplate.value = null; templateForm.value = { templateName: '', version: '', applicableProduct: '', targetTemp: '', duration: '', pressure: '', coolTemp: '', fillTemp: '', stirSpeed: '', phValue: '', viscosity: '', cleanLevel: 0, templateStatus: 1, remark: '' }; showTemplateModal.value = true }
 function openEditTemplate(row: any) { editingTemplate.value = row; templateForm.value = { templateName: row.templateName ?? '', version: row.version ?? '', applicableProduct: row.applicableProduct ?? '', targetTemp: row.targetTemp ?? '', duration: row.duration ?? '', pressure: row.pressure ?? '', coolTemp: row.coolTemp ?? '', fillTemp: row.fillTemp ?? '', stirSpeed: row.stirSpeed ?? '', phValue: row.phValue ?? '', viscosity: row.viscosity ?? '', cleanLevel: row.cleanLevel ?? 0, templateStatus: row.templateStatus ?? 1, remark: row.remark ?? '' }; showTemplateModal.value = true }
 function submitTemplate() { if (!templateForm.value.templateName.trim()) { notify('error', '请填写模板名称'); return }; const label = editingTemplate.value ? '更新' : '创建'; confirmTitle.value = `确认${label}`; confirmMsg.value = `确认${label}该工艺模板？`; confirmBtnLabel.value = `确认${label}`; confirmBtnClass.value = 'primary'; confirmCallback.value = async () => { try { const data: Record<string, any> = { ...templateForm.value }; if (editingTemplate.value) { data.templateId = editingTemplate.value.templateId; await productionApi.updateTemplate(data); notify('success', '工艺模板更新成功') } else { await productionApi.createTemplate(data); notify('success', '工艺模板创建成功') } showTemplateModal.value = false; showConfirm.value = false; loadTemplates() } catch (e: any) { notify('error', '操作失败: ' + e.message) } }; showConfirm.value = true }
 function confirmDeleteTemplate(id: number) { confirmTitle.value = '确认删除'; confirmMsg.value = '确定要删除该工艺模板吗？'; confirmBtnLabel.value = '确认删除'; confirmBtnClass.value = 'danger-fill'; confirmCallback.value = async () => { try { await productionApi.deleteTemplate(id); notify('success', '工艺模板删除成功'); showConfirm.value = false; loadTemplates() } catch (e: any) { notify('error', '删除失败: ' + e.message) } }; showConfirm.value = true }
 
 // Material Input
-async function loadMaterialInput() { try { const d = await productionApi.listMaterialInput(); materialInputs.value = Array.isArray(d) ? d : [] } catch (e: any) { notify('error', '加载失败') } }
+async function loadMaterialInput() { try { const d = await productionApi.listMaterialInput(); materialInputs.value = Array.isArray(d) ? d : []; inputPage.value = 1 } catch (e: any) { notify('error', '加载失败') } }
 function submitMaterialInput() { confirmTitle.value = '确认投料'; confirmMsg.value = '确认记录该投料信息？'; confirmBtnLabel.value = '确认记录'; confirmBtnClass.value = 'primary'; confirmCallback.value = async () => { try { await productionApi.recordMaterialInput(inputForm.value); notify('success', '投料记录成功'); showInputModal.value = false; showConfirm.value = false; loadMaterialInput() } catch (e: any) { notify('error', '投料失败: ' + e.message) } }; showConfirm.value = true }
 
 // Env Record
-async function loadEnvRecords() { try { if (envLine.value) { const d = await productionApi.listEnvRecord(envLine.value); envRecords.value = Array.isArray(d) ? d : [] } } catch (e: any) { notify('error', '加载失败') } }
+async function loadEnvRecords() { try { if (envLine.value) { const d = await productionApi.listEnvRecord(envLine.value); envRecords.value = Array.isArray(d) ? d : []; envPage.value = 1 } } catch (e: any) { notify('error', '加载失败') } }
 function submitEnv() { confirmTitle.value = '确认采集'; confirmMsg.value = '确认提交该环境监测数据？'; confirmBtnLabel.value = '确认提交'; confirmBtnClass.value = 'primary'; confirmCallback.value = async () => { try { await productionApi.recordEnv(envForm.value); notify('success', '环境数据采集成功'); showEnvModal.value = false; showConfirm.value = false; loadEnvRecords() } catch (e: any) { notify('error', '采集失败: ' + e.message) } }; showConfirm.value = true }
 
 // Inspection
-async function loadInspections() { try { const p: Record<string, any> = {}; if (inspFilters.value.bizType) p.bizType = Number(inspFilters.value.bizType); if (inspFilters.value.bizBatchNo) p.bizBatchNo = inspFilters.value.bizBatchNo; if (inspFilters.value.inspectionResult) p.inspectionResult = Number(inspFilters.value.inspectionResult); const d = await productionApi.listInspection(p); inspections.value = Array.isArray(d) ? d : [] } catch (e: any) { notify('error', '加载失败') } }
+async function loadInspections() { try { const p: Record<string, any> = {}; if (inspFilters.value.bizType) p.bizType = Number(inspFilters.value.bizType); if (inspFilters.value.bizBatchNo) p.bizBatchNo = inspFilters.value.bizBatchNo; if (inspFilters.value.inspectionResult) p.inspectionResult = Number(inspFilters.value.inspectionResult); const d = await productionApi.listInspection(p); inspections.value = Array.isArray(d) ? d : []; inspPage.value = 1 } catch (e: any) { notify('error', '加载失败') } }
 function submitInspection() { confirmTitle.value = '确认提交'; confirmMsg.value = '确认创建该质检记录？'; confirmBtnLabel.value = '确认提交'; confirmBtnClass.value = 'primary'; confirmCallback.value = async () => { try { await productionApi.createInspection(inspectionForm.value); notify('success', '质检记录创建成功'); showInspectionModal.value = false; showConfirm.value = false; loadInspections() } catch (e: any) { notify('error', '创建失败: ' + e.message) } }; showConfirm.value = true }
 
 // Delete
@@ -229,7 +238,7 @@ onMounted(loadProdBatch)
           <tbody>
             <tr v-if="loading"><td colspan="11" class="empty">加载中...</td></tr>
             <tr v-else-if="!list.length"><td colspan="11" class="empty">暂无生产批次数据</td></tr>
-            <tr v-for="row in list" :key="row.prodBatchId">
+            <tr v-for="row in paginatedList" :key="row.prodBatchId">
               <td><code>{{ row.batchNo }}</code></td><td><strong>{{ row.productName }}</strong></td>
               <td><code>{{ row.rawBatchNo || '-' }}</code></td><td>{{ row.templateName || '-' }}</td><td>{{ row.productionLine }}</td>
               <td>{{ row.plannedAmount }}/{{ row.actualAmount }}</td><td>{{ row.productionDate }}</td>
@@ -247,6 +256,7 @@ onMounted(loadProdBatch)
               </td>
             </tr>
           </tbody></table></div>
+      <Pagination v-model="prodPage" :total="list.length" :page-size="pageSize" />
       </section>
     </template>
 
@@ -264,7 +274,7 @@ onMounted(loadProdBatch)
         <div class="table-wrap"><table><thead><tr><th>模板名称</th><th>版本</th><th>适用产品</th><th>目标温度</th><th>时长</th><th>压力</th><th>冷却温度</th><th>灌装温度</th><th>pH值</th><th>状态</th><th>操作</th></tr></thead>
           <tbody>
             <tr v-if="!templates.length"><td colspan="11" class="empty">暂无工艺模板数据</td></tr>
-            <tr v-for="row in templates" :key="row.templateId">
+            <tr v-for="row in paginatedTemplates" :key="row.templateId">
               <td><strong>{{ row.templateName }}</strong></td><td>{{ row.version }}</td><td>{{ row.applicableProduct }}</td><td>{{ row.targetTemp || '-' }}</td><td>{{ row.duration || '-' }}</td><td>{{ row.pressure || '-' }}</td><td>{{ row.coolTemp || '-' }}</td><td>{{ row.fillTemp || '-' }}</td><td>{{ row.phValue || '-' }}</td>
               <td><span class="status" :class="row.templateStatus === 1 ? 'status-active' : 'status-disabled'">{{ row.templateStatus === 1 ? '启用' : '停用' }}</span></td>
               <td class="actions">
@@ -273,6 +283,7 @@ onMounted(loadProdBatch)
               </td>
             </tr>
           </tbody></table></div>
+      <Pagination v-model="tplPage" :total="templates.length" :page-size="pageSize" />
       </section>
     </template>
 
@@ -282,8 +293,9 @@ onMounted(loadProdBatch)
         <header class="panel-header"><div><p>投料台账</p><h2>投料记录</h2></div><button class="primary create" @click="showInputModal = true"><el-icon><Plus /></el-icon> 记录投料</button></header>
         <div class="table-wrap"><table><thead><tr><th>原料批次</th><th>原料名称</th><th>投料数量</th><th>单位</th><th>操作员</th><th>投料时间</th></tr></thead>
           <tbody><tr v-if="!materialInputs.length"><td colspan="6" class="empty">暂无投料记录</td></tr>
-            <tr v-for="row in materialInputs" :key="row.inputId"><td><code>{{ row.rawBatchNo }}</code></td><td>{{ row.materialName }}</td><td>{{ row.inputAmount }}{{ row.unit }}</td><td>{{ row.unit }}</td><td>{{ row.operator }}</td><td>{{ row.inputTime }}</td></tr>
+            <tr v-for="row in paginatedInputs" :key="row.inputId"><td><code>{{ row.rawBatchNo }}</code></td><td>{{ row.materialName }}</td><td>{{ row.inputAmount }}{{ row.unit }}</td><td>{{ row.unit }}</td><td>{{ row.operator }}</td><td>{{ row.inputTime }}</td></tr>
           </tbody></table></div>
+      <Pagination v-model="inputPage" :total="materialInputs.length" :page-size="pageSize" />
       </section>
     </template>
 
@@ -299,9 +311,10 @@ onMounted(loadProdBatch)
         <header class="panel-header"><div><p>环境台账</p><h2>环境记录</h2></div></header>
         <div class="table-wrap"><table><thead><tr><th>生产线</th><th>温度</th><th>湿度</th><th>洁净度</th><th>是否异常</th><th>异常描述</th><th>记录时间</th></tr></thead>
           <tbody><tr v-if="!envRecords.length"><td colspan="7" class="empty">暂无环境记录</td></tr>
-            <tr v-for="row in envRecords" :key="row.recordId"><td>{{ row.productionLine }}</td><td>{{ row.temperature }}</td><td>{{ row.humidity }}</td><td>{{ row.cleanliness }}</td>
+            <tr v-for="row in paginatedEnv" :key="row.recordId"><td>{{ row.productionLine }}</td><td>{{ row.temperature }}</td><td>{{ row.humidity }}</td><td>{{ row.cleanliness }}</td>
               <td><span class="status" :class="row.isAbnormal === 1 ? 'status-void' : 'status-active'">{{ row.isAbnormal === 1 ? '异常' : '正常' }}</span></td><td>{{ row.abnormalDesc || '-' }}</td><td>{{ row.recordTime }}</td></tr>
           </tbody></table></div>
+      <Pagination v-model="envPage" :total="envRecords.length" :page-size="pageSize" />
       </section>
     </template>
 
@@ -319,11 +332,12 @@ onMounted(loadProdBatch)
         <header class="panel-header"><div><p>质检台账</p><h2>质检记录</h2></div></header>
         <div class="table-wrap"><table><thead><tr><th>检验编号</th><th>业务类型</th><th>业务批次</th><th>检验类型</th><th>检验人</th><th>日期</th><th>结果</th><th>描述</th></tr></thead>
           <tbody><tr v-if="!inspections.length"><td colspan="8" class="empty">暂无质检记录</td></tr>
-            <tr v-for="row in inspections" :key="row.inspectionId"><td><code>{{ row.inspectionNo }}</code></td>
+            <tr v-for="row in paginatedInspections" :key="row.inspectionId"><td><code>{{ row.inspectionNo }}</code></td>
               <td>{{ ['','原料','','生产','冷链','销售'][row.bizType] || row.bizType }}</td><td><code>{{ row.bizBatchNo }}</code></td>
               <td>{{ ['','自检','抽检','全检'][row.inspectionType] || '其他' }}</td><td>{{ row.inspector }}</td><td>{{ row.inspectionDate }}</td>
               <td><span class="status" :class="row.inspectionResult === 1 ? 'status-active' : 'status-void'">{{ row.inspectionResult === 1 ? '合格' : '不合格' }}</span></td><td>{{ row.resultDesc || '-' }}</td></tr>
           </tbody></table></div>
+      <Pagination v-model="inspPage" :total="inspections.length" :page-size="pageSize" />
       </section>
     </template>
 

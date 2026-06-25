@@ -2,11 +2,18 @@
 import { ref, computed, onMounted } from 'vue'
 import { Check, Close, Document, Key, Search, View } from '@element-plus/icons-vue'
 import { traceApi } from '../services/api'
+import Pagination from '../components/Pagination.vue'
 
 const searchMode = ref<'code' | 'batch' | 'enterprise'>('code')
 const searchValue = ref('')
 const loading = ref(false)
 const list = ref<any[]>([])
+const currentPage = ref(1)
+const pageSize = ref(10)
+const paginatedList = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  return list.value.slice(start, start + pageSize.value)
+})
 const toast = ref<{ type: 'success' | 'error'; text: string } | null>(null)
 const showDetail = ref(false)
 const showHash = ref(false)
@@ -50,6 +57,7 @@ async function doSearch() {
       list.value = (res as any).data ?? (Array.isArray(res) ? res : [])
     }
     if (!list.value.length) notify('error', '未找到匹配的溯源码')
+    currentPage.value = 1
   } catch (e: any) { notify('error', '查询失败: ' + e.message); list.value = [] }
   finally { loading.value = false }
 }
@@ -119,7 +127,7 @@ onMounted(() => { list.value = [] })
           <tbody>
             <tr v-if="loading"><td colspan="7" class="empty">查询中...</td></tr>
             <tr v-else-if="!list.length"><td colspan="7" class="empty">请选择查询方式并输入条件后点击查询</td></tr>
-            <tr v-for="row in list" :key="row.traceCodeId ?? row.traceCode">
+            <tr v-for="row in paginatedList" :key="row.traceCodeId ?? row.traceCode">
               <td><code>{{ row.traceCode }}</code></td>
               <td>{{ row.productName || '-' }}</td>
               <td>{{ row.enterpriseName || '-' }}</td>
@@ -136,6 +144,7 @@ onMounted(() => { list.value = [] })
           </tbody>
         </table>
       </div>
+      <Pagination v-model="currentPage" :total="list.length" :page-size="pageSize" />
     </section>
 
     <!-- 详情模态框 -->

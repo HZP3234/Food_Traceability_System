@@ -157,39 +157,46 @@ onMounted(loadData)
       </header>
     </section>
 
-    <!-- 待上传批次 -->
-    <section class="trace-panel list-panel" style="margin-bottom:24px">
-      <header class="panel-header">
-        <div><p>等待上传</p><h2>待上传源头信息的批次</h2></div>
-        <span style="color:#a4730a;font-size:13px">({{ stats.needUpload }} 条 — 生产商已创建)</span>
-      </header>
-      <div v-if="!needUploadBatches.length" class="trace-empty-state">
-        <div class="empty-icon"><el-icon><Select /></el-icon></div>
-        <p>✓ 所有批次已完成源头信息上传</p>
-      </div>
-      <div v-else class="trace-row-list" style="padding:0 18px 18px">
-        <div v-for="row in needUploadBatches" :key="row.rawBatchId" class="trace-row-card">
-          <span class="trace-mini-badge amber">待</span>
-          <div style="flex:1"><strong>{{ row.batchNo }}</strong> — {{ row.productName }}<small style="display:block;color:#96a8b9;font-size:11px">供应商：{{ row.supplierName }} · {{ row.amount }}{{ row.unit }} · 入库：{{ row.purchaseDate }}</small></div>
-          <button class="primary btn-sm" @click="openUploadForBatch(row)"><el-icon><Upload /></el-icon> 上传源头信息</button>
+    <!-- 双栏：等待上传 + 等待匹配 -->
+    <div class="two-col">
+      <!-- 左栏：等待上传 -->
+      <section class="trace-panel list-panel">
+        <header class="panel-header">
+          <div><p>等待上传</p><h2>待上传源头信息的批次</h2></div>
+          <span class="col-count amber-count">({{ stats.needUpload }} 条)</span>
+        </header>
+        <div v-if="!needUploadBatches.length" class="trace-empty-state" style="margin:10px">
+          <div class="empty-icon"><el-icon><Select /></el-icon></div>
+          <p>✓ 所有批次已完成源头信息上传</p>
         </div>
-      </div>
-    </section>
+        <div v-else class="trace-row-list" style="padding:0 18px 18px">
+          <div v-for="row in needUploadBatches" :key="row.rawBatchId" class="trace-row-card">
+            <span class="trace-mini-badge amber">待</span>
+            <div style="flex:1"><strong>{{ row.batchNo }}</strong> — {{ row.productName }}<small style="display:block;color:#96a8b9;font-size:11px">供应商：{{ row.supplierName }} · {{ row.amount }}{{ row.unit }} · 入库：{{ row.purchaseDate }}</small></div>
+            <button class="primary btn-sm" @click="openUploadForBatch(row)"><el-icon><Upload /></el-icon> 上传源头信息</button>
+          </div>
+        </div>
+      </section>
 
-    <!-- 待匹配列表 -->
-    <section v-if="pendingList.length" class="trace-panel list-panel" style="margin-bottom:24px">
-      <header class="panel-header">
-        <div><p>等待匹配</p><h2>待匹配原料</h2></div>
-        <span style="color:#a4730a;font-size:13px">({{ pendingList.length }} 条)</span>
-      </header>
-      <div class="trace-row-list" style="padding:0 18px 18px">
-        <div v-for="p in pendingList" :key="p.rawPendingId" class="trace-row-card">
-          <span class="trace-mini-badge amber">待</span>
-          <div style="flex:1"><strong>{{ p.pendingCode }}</strong><small style="display:block;color:#96a8b9;font-size:11px">{{ p.productName || '未知' }} · {{ p.supplierName || '' }} · {{ p.uploadTime }}</small></div>
-          <button class="secondary btn-sm" @click="openMatch(p)"><el-icon><Select /></el-icon> 手动匹配</button>
+      <!-- 右栏：等待匹配 -->
+      <section class="trace-panel list-panel">
+        <header class="panel-header">
+          <div><p>等待匹配</p><h2>待匹配原料</h2></div>
+          <span class="col-count amber-count">({{ pendingList.length }} 条)</span>
+        </header>
+        <div v-if="!pendingList.length" class="trace-empty-state" style="margin:10px">
+          <div class="empty-icon">📤</div>
+          <p>暂无待匹配的记录</p>
         </div>
-      </div>
-    </section>
+        <div v-else class="trace-row-list" style="padding:0 18px 18px">
+          <div v-for="p in pendingList" :key="p.rawPendingId" class="trace-row-card">
+            <span class="trace-mini-badge amber">待</span>
+            <div style="flex:1"><strong>{{ p.pendingCode }}</strong><small style="display:block;color:#96a8b9;font-size:11px">{{ p.productName || '未知' }} · {{ p.supplierName || '' }} · {{ p.uploadTime }}</small></div>
+            <button class="secondary btn-sm" @click="openMatch(p)"><el-icon><Select /></el-icon> 手动匹配</button>
+          </div>
+        </div>
+      </section>
+    </div>
 
     <!-- 已匹配列表 -->
     <section class="trace-panel list-panel">
@@ -452,5 +459,28 @@ onMounted(loadData)
   color: #8195aa;
   font-size: 12px;
   line-height: 1.5;
+}
+
+/* 双栏布局 */
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  margin-bottom: 24px;
+}
+
+.col-count {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.amber-count {
+  color: #a4730a;
+}
+
+@media (max-width: 1250px) {
+  .two-col {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
