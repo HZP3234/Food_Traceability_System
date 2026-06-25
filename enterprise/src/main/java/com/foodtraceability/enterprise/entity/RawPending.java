@@ -12,7 +12,7 @@ public class RawPending {
     private String productName;
     private String productCategory;
     private String supplierName;
-    private int amount;
+    private Integer amount;
     private String rawDetailId;
     private String matchedBatchNo;
     private int pendingStatus;
@@ -40,8 +40,8 @@ public class RawPending {
     public String getSupplierName() { return supplierName; }
     public void setSupplierName(String supplierName) { this.supplierName = supplierName; }
 
-    public int getAmount() { return amount; }
-    public void setAmount(int amount) { this.amount = amount; }
+    public Integer getAmount() { return amount; }
+    public void setAmount(Integer amount) { this.amount = amount; }
 
     public String getRawDetailId() { return rawDetailId; }
     public void setRawDetailId(String rawDetailId) { this.rawDetailId = rawDetailId; }

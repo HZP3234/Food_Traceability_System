@@ -17,7 +17,7 @@ public class RawDetail {
     private String farmType;
     @TableField(insertStrategy = FieldStrategy.IGNORED)
     private String feedType;
-    private int certType;
+    private Integer certType;
     @TableField(insertStrategy = FieldStrategy.IGNORED)
     private String inspectionNo;
     @TableField(insertStrategy = FieldStrategy.IGNORED)
@@ -51,8 +51,8 @@ public class RawDetail {
     public String getFeedType() { return feedType; }
     public void setFeedType(String feedType) { this.feedType = feedType; }
 
-    public int getCertType() { return certType; }
-    public void setCertType(int certType) { this.certType = certType; }
+    public Integer getCertType() { return certType; }
+    public void setCertType(Integer certType) { this.certType = certType; }
 
     public String getInspectionNo() { return inspectionNo; }
     public void setInspectionNo(String inspectionNo) { this.inspectionNo = inspectionNo; }

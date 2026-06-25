@@ -59,7 +59,7 @@ function openNewUpload() {
   uploadForm.value = {
     productName: '', productCategory: '', amount: '',
     uploadTime: new Date().toISOString().slice(0, 16).replace('T', ' '),
-    origin: '', cert: '', inspectionNo: '',
+    origin: '', cert: '0', inspectionNo: '',
     supplierQualNo: '',
     uploader: currentUser || '',
   }
@@ -72,7 +72,7 @@ async function submitProactiveUpload() {
     await rawApi.proactiveUpload(
       {
         origin: uploadForm.value.origin,
-        certType: uploadForm.value.cert,
+        certType: uploadForm.value.cert || '0',
         inspectionNo: uploadForm.value.inspectionNo,
         uploader: currentUser || uploadForm.value.uploader || 'SYSTEM',
         uploadTime: now,
@@ -82,7 +82,7 @@ async function submitProactiveUpload() {
         supplierName: currentUser || uploadForm.value.uploader || '',
         productName: uploadForm.value.productName || '待匹配原料',
         productCategory: uploadForm.value.productCategory || '',
-        amount: uploadForm.value.amount || '0',
+        amount: String(parseInt(uploadForm.value.amount) || 0),
         uploadTime: now,
         pendingStatus: 1,
       }
@@ -215,7 +215,7 @@ onMounted(loadData)
               <label>产地 <span class="required">*</span><input v-model="uploadForm.origin" placeholder="如：河北燕北牧场" /></label>
               <label>认证类型
                 <select v-model="uploadForm.cert">
-                  <option value="">请选择认证类型</option>
+                  <option value="0">无认证</option>
                   <option value="1">绿色食品</option>
                   <option value="2">有机认证</option>
                   <option value="3">无公害</option>
