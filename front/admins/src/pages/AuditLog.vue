@@ -2,9 +2,16 @@
 import { ref, computed, onMounted } from 'vue'
 import { Close, Document, DocumentAdd, Files, Link, Search, Warning } from '@element-plus/icons-vue'
 import { auditApi } from '../services/api'
+import Pagination from '../components/Pagination.vue'
 
 const loading = ref(false)
 const list = ref<any[]>([])
+const currentPage = ref(1)
+const pageSize = ref(10)
+const paginatedList = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  return list.value.slice(start, start + pageSize.value)
+})
 const toast = ref<{ type: 'success' | 'error'; text: string } | null>(null)
 const showDetail = ref(false)
 const showChain = ref(false)
@@ -43,6 +50,7 @@ async function loadList() {
     if (filters.value.endTime) p.endTime = filters.value.endTime
     const res = await auditApi.list(p)
     list.value = (res as any).data?.records ?? (Array.isArray(res) ? res : [])
+    currentPage.value = 1
   } catch (e: any) { notify('error', '加载失败: ' + e.message) }
   finally { loading.value = false }
 }
@@ -136,7 +144,7 @@ onMounted(loadList)
           <tbody>
             <tr v-if="loading"><td colspan="7" class="empty">加载中...</td></tr>
             <tr v-else-if="!list.length"><td colspan="7" class="empty">暂无审计日志</td></tr>
-            <tr v-for="row in list" :key="row.logId">
+            <tr v-for="row in paginatedList" :key="row.logId">
               <td><strong>{{ row.operatorName || '-' }}</strong></td>
               <td><span class="status status-active">{{ actionTypeLabels[row.actionType] || '-' }}</span></td>
               <td>{{ row.targetDesc || '-' }}</td>
@@ -150,6 +158,7 @@ onMounted(loadList)
           </tbody>
         </table>
       </div>
+      <Pagination v-model="currentPage" :total="list.length" :page-size="pageSize" />
     </section>
 
     <!-- 详情模态框 -->

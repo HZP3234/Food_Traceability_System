@@ -2,6 +2,7 @@
 import { ref, computed, inject, onMounted, type Ref } from 'vue'
 import { Close, Plus, Search, Shop, SoldOut } from '@element-plus/icons-vue'
 import { salesApi } from '../services/api'
+import Pagination from '../components/Pagination.vue'
 import type { RoleKey } from '../config/navigation'
 
 const currentRole = inject<Ref<RoleKey>>('currentRole')!
@@ -27,6 +28,12 @@ const stockStatusLabels = ['', '在库', '在售', '下架', '售罄']
 
 // Supplement
 const loadingSup = ref(false); const supplements = ref<any[]>([])
+
+// Pagination
+const tPage = ref(1); const sPage = ref(1); const supPage = ref(1); const pageSize = ref(10)
+const paginatedTerminals = computed(() => { const start = (tPage.value - 1) * pageSize.value; return terminals.value.slice(start, start + pageSize.value) })
+const paginatedStocks = computed(() => { const start = (sPage.value - 1) * pageSize.value; return stocks.value.slice(start, start + pageSize.value) })
+const paginatedSupplements = computed(() => { const start = (supPage.value - 1) * pageSize.value; return supplements.value.slice(start, start + pageSize.value) })
 const supFilters = ref({ traceBatchNo: '', terminalCode: '' })
 const showSupModal = ref(false); const editingSup = ref<any>(null)
 const supForm = ref({ supplementCode: '', traceBatchNo: '', terminalCode: '', terminalName: '', salesCompany: '', salesBatchNo: '', temperature: '', humidity: '', storageMethod: 0, lightCondition: 0, shelfLife: '', locationCode: '', quantity: '', inboundTime: '', operator: '', supplementStatus: 1, remark: '' })
@@ -35,7 +42,7 @@ function notify(type: 'success' | 'error', text: string) { toast.value = { type,
 function tagClass(s: string) { if (['启用', '在售', '已审核', '已补充'].some(x => s.includes(x))) return 'status-active'; if (['装修中', '待', '已提交'].some(x => s.includes(x))) return 'status-pending'; if (['停用', '异常', '售罄'].some(x => s.includes(x))) return 'status-void'; return 'status-active' }
 
 // Terminal CRUD
-async function loadTerminals() { loadingT.value = true; try { const p: Record<string, any> = {}; if (tFilters.value.terminalType) p.terminalType = Number(tFilters.value.terminalType); if (tFilters.value.area) p.area = tFilters.value.area; if (tFilters.value.terminalStatus) p.terminalStatus = Number(tFilters.value.terminalStatus); const data = await salesApi.listTerminal(p); terminals.value = Array.isArray(data) ? data : [] } catch (e: any) { notify('error', '加载失败') } finally { loadingT.value = false } }
+async function loadTerminals() { loadingT.value = true; try { const p: Record<string, any> = {}; if (tFilters.value.terminalType) p.terminalType = Number(tFilters.value.terminalType); if (tFilters.value.area) p.area = tFilters.value.area; if (tFilters.value.terminalStatus) p.terminalStatus = Number(tFilters.value.terminalStatus); const data = await salesApi.listTerminal(p); terminals.value = Array.isArray(data) ? data : []; tPage.value = 1 } catch (e: any) { notify('error', '加载失败') } finally { loadingT.value = false } }
 function openCreateT() { editingT.value = null; tForm.value = { terminalCode: '', terminalName: '', terminalType: 0, area: '', address: '', operatorName: '', remark: '' }; showTModal.value = true }
 function openEditT(row: any) { editingT.value = row; tForm.value = { terminalCode: row.terminalCode ?? '', terminalName: row.terminalName ?? '', terminalType: row.terminalType ?? 0, area: row.area ?? '', address: row.address ?? '', operatorName: row.operatorName ?? '', remark: row.remark ?? '' }; showTModal.value = true }
 async function submitT() { try { const data: Record<string, any> = { ...tForm.value }; if (editingT.value) { data.terminalId = editingT.value.terminalId; await salesApi.updateTerminal(data); notify('success', '终端更新成功') } else { await salesApi.createTerminal(data); notify('success', '终端注册成功') } showTModal.value = false; loadTerminals() } catch (e: any) { notify('error', '操作失败') } }
@@ -43,13 +50,13 @@ function confirmDeleteT(id: number) { deletingTId.value = id; showTConfirm.value
 async function doDeleteT() { try { await salesApi.deleteTerminal(deletingTId.value!); notify('success', '已删除'); showTConfirm.value = false; loadTerminals() } catch (e: any) { notify('error', '删除失败') } }
 
 // Stock
-async function loadStocks() { loadingS.value = true; try { if (sFilters.value.terminalId) { const d = await salesApi.listStock(sFilters.value.terminalId); stocks.value = Array.isArray(d) ? d : [] } else if (sFilters.value.prodBatchNo) { const d = await salesApi.listStockByBatch(sFilters.value.prodBatchNo); stocks.value = Array.isArray(d) ? d : [] } else { const d = await salesApi.listAllStock(); stocks.value = Array.isArray(d) ? d : [] } } catch (e: any) { console.error('Stock load error:', e); notify('error', '加载失败: ' + (e.message || '未知错误')) } finally { loadingS.value = false } }
+async function loadStocks() { loadingS.value = true; try { if (sFilters.value.terminalId) { const d = await salesApi.listStock(sFilters.value.terminalId); stocks.value = Array.isArray(d) ? d : [] } else if (sFilters.value.prodBatchNo) { const d = await salesApi.listStockByBatch(sFilters.value.prodBatchNo); stocks.value = Array.isArray(d) ? d : [] } else { const d = await salesApi.listAllStock(); stocks.value = Array.isArray(d) ? d : [] }; sPage.value = 1 } catch (e: any) { console.error('Stock load error:', e); notify('error', '加载失败: ' + (e.message || '未知错误')) } finally { loadingS.value = false } }
 function openCreateS() { editingS.value = null; sForm.value = { stockCode: '', terminalId: '', terminalName: '', prodBatchNo: '', productName: '', quantity: '', receivedTime: '', stockStatus: 0, remark: '' }; showSModal.value = true }
 function openEditS(row: any) { editingS.value = row; sForm.value = { stockCode: row.stockCode ?? '', terminalId: row.terminalId ?? '', terminalName: row.terminalName ?? '', prodBatchNo: row.prodBatchNo ?? '', productName: row.productName ?? '', quantity: row.quantity ?? '', receivedTime: row.receivedTime ?? '', stockStatus: row.stockStatus ?? 0, remark: row.remark ?? '' }; showSModal.value = true }
 async function submitS() { try { const data: Record<string, any> = { ...sForm.value }; if (editingS.value) { data.stockId = editingS.value.stockId; await salesApi.updateStock(data); notify('success', '库存更新成功') } else { await salesApi.stockIn(data); notify('success', '产品入库成功') } showSModal.value = false; loadStocks() } catch (e: any) { notify('error', '操作失败') } }
 
 // Supplement
-async function loadSupplements() { loadingSup.value = true; try { if (supFilters.value.traceBatchNo) { const d = await salesApi.listSupplement(supFilters.value.traceBatchNo); supplements.value = Array.isArray(d) ? d : [] } else if (supFilters.value.terminalCode) { const d = await salesApi.listSupplementByTerminal(supFilters.value.terminalCode); supplements.value = Array.isArray(d) ? d : [] } else supplements.value = [] } catch (e: any) { notify('error', '加载失败') } finally { loadingSup.value = false } }
+async function loadSupplements() { loadingSup.value = true; try { if (supFilters.value.traceBatchNo) { const d = await salesApi.listSupplement(supFilters.value.traceBatchNo); supplements.value = Array.isArray(d) ? d : [] } else if (supFilters.value.terminalCode) { const d = await salesApi.listSupplementByTerminal(supFilters.value.terminalCode); supplements.value = Array.isArray(d) ? d : [] } else supplements.value = []; supPage.value = 1 } catch (e: any) { notify('error', '加载失败') } finally { loadingSup.value = false } }
 function openCreateSup() { editingSup.value = null; supForm.value = { supplementCode: '', traceBatchNo: '', terminalCode: '', terminalName: '', salesCompany: '', salesBatchNo: '', temperature: '', humidity: '', storageMethod: 0, lightCondition: 0, shelfLife: '', locationCode: '', quantity: '', inboundTime: '', operator: '', supplementStatus: 1, remark: '' }; showSupModal.value = true }
 function openEditSup(row: any) { editingSup.value = row; supForm.value = { supplementCode: row.supplementCode ?? '', traceBatchNo: row.traceBatchNo ?? '', terminalCode: row.terminalCode ?? '', terminalName: row.terminalName ?? '', salesCompany: row.salesCompany ?? '', salesBatchNo: row.salesBatchNo ?? '', temperature: row.temperature ?? '', humidity: row.humidity ?? '', storageMethod: row.storageMethod ?? 0, lightCondition: row.lightCondition ?? 0, shelfLife: row.shelfLife ?? '', locationCode: row.locationCode ?? '', quantity: row.quantity ?? '', inboundTime: row.inboundTime ?? '', operator: row.operator ?? '', supplementStatus: row.supplementStatus ?? 1, remark: row.remark ?? '' }; showSupModal.value = true }
 async function submitSup() { try { const data: Record<string, any> = { ...supForm.value }; if (editingSup.value) { data.supplementId = editingSup.value.supplementId; await salesApi.updateSupplement(data); notify('success', '补充信息更新成功') } else { await salesApi.supplementInfo(data); notify('success', '销售详情补充成功') } showSupModal.value = false; loadSupplements() } catch (e: any) { notify('error', '操作失败') } }
@@ -118,7 +125,7 @@ onMounted(loadTerminals)
         </header>
         <div class="table-wrap"><table><thead><tr><th>终端编码</th><th>终端名称</th><th>类型</th><th>区域</th><th>运营商</th><th>状态</th><th>创建时间</th><th>操作</th></tr></thead>
           <tbody><tr v-if="loadingT"><td colspan="8" class="empty">加载中...</td></tr><tr v-else-if="!terminals.length"><td colspan="8" class="empty">暂无销售终端</td></tr>
-            <tr v-for="row in terminals" :key="row.terminalId">
+            <tr v-for="row in paginatedTerminals" :key="row.terminalId">
               <td><code>{{ row.terminalCode }}</code></td><td><strong>{{ row.terminalName }}</strong></td>
               <td>{{ terminalTypeLabels[row.terminalType] || '-' }}</td><td>{{ row.area }}</td><td>{{ row.operatorName }}</td>
               <td><span class="status" :class="tagClass(['','启用','停用','装修中'][row.terminalStatus] || '')">{{ ['','启用','停用','装修中'][row.terminalStatus] || '-' }}</span></td>
@@ -128,6 +135,7 @@ onMounted(loadTerminals)
                 <button v-if="isManufacturer" class="danger" @click="confirmDeleteT(row.terminalId)"><el-icon><Close /></el-icon> 删除</button>
               </td>
             </tr></tbody></table></div>
+      <Pagination v-model="tPage" :total="terminals.length" :page-size="pageSize" />
       </section>
 
       <!-- Terminal Modal -->
@@ -160,9 +168,10 @@ onMounted(loadTerminals)
         <header class="panel-header"><div><p>库存台账</p><h2>库存列表</h2></div><button class="primary create" @click="openCreateS"><el-icon><Plus /></el-icon> 产品入库</button></header>
         <div class="table-wrap"><table><thead><tr><th>库存编码</th><th>产品</th><th>生产批次</th><th>终端</th><th>数量</th><th>入库时间</th><th>状态</th><th>操作</th></tr></thead>
           <tbody><tr v-if="loadingS"><td colspan="8" class="empty">加载中...</td></tr><tr v-else-if="!stocks.length"><td colspan="8" class="empty">暂无库存</td></tr>
-            <tr v-for="row in stocks" :key="row.stockId"><td><code>{{ row.stockCode }}</code></td><td>{{ row.productName }}</td><td><code>{{ row.prodBatchNo }}</code></td><td>{{ row.terminalName }}</td><td>{{ row.quantity }}</td><td>{{ row.receivedTime }}</td>
+            <tr v-for="row in paginatedStocks" :key="row.stockId"><td><code>{{ row.stockCode }}</code></td><td>{{ row.productName }}</td><td><code>{{ row.prodBatchNo }}</code></td><td>{{ row.terminalName }}</td><td>{{ row.quantity }}</td><td>{{ row.receivedTime }}</td>
               <td><span class="status" :class="tagClass(stockStatusLabels[row.stockStatus] || '')">{{ stockStatusLabels[row.stockStatus] || '-' }}</span></td>
               <td class="actions"><button @click="openEditS(row)"><el-icon><SoldOut /></el-icon> 盘点</button></td></tr></tbody></table></div>
+      <Pagination v-model="sPage" :total="stocks.length" :page-size="pageSize" />
       </section>
 
       <div v-if="showSModal" class="trace-modal-backdrop" @click.self="showSModal = false">
@@ -199,9 +208,10 @@ onMounted(loadTerminals)
         <header class="panel-header"><div><p>销售台账</p><h2>销售补充</h2></div><button v-if="isSeller" class="primary create" @click="openCreateSup"><el-icon><Plus /></el-icon> 补充销售详情</button></header>
         <div class="table-wrap"><table><thead><tr><th>补充编码</th><th>溯源码批次</th><th>销售企业</th><th>销售批次</th><th>温度</th><th>湿度</th><th>储存方式</th><th>保质期</th><th>状态</th><th>操作</th></tr></thead>
           <tbody><tr v-if="loadingSup"><td colspan="10" class="empty">加载中...</td></tr><tr v-else-if="!supplements.length"><td colspan="10" class="empty">暂无补充信息</td></tr>
-            <tr v-for="row in supplements" :key="row.supplementId"><td><code>{{ row.supplementCode }}</code></td><td><code>{{ row.traceBatchNo }}</code></td><td>{{ row.salesCompany }}</td><td>{{ row.salesBatchNo }}</td><td>{{ row.temperature || '-' }}</td><td>{{ row.humidity || '-' }}</td><td>{{ ['','常温','冷藏','冷冻'][row.storageMethod] || row.storageMethod || '-' }}</td><td>{{ row.shelfLife || '-' }}</td>
+            <tr v-for="row in paginatedSupplements" :key="row.supplementId"><td><code>{{ row.supplementCode }}</code></td><td><code>{{ row.traceBatchNo }}</code></td><td>{{ row.salesCompany }}</td><td>{{ row.salesBatchNo }}</td><td>{{ row.temperature || '-' }}</td><td>{{ row.humidity || '-' }}</td><td>{{ ['','常温','冷藏','冷冻'][row.storageMethod] || row.storageMethod || '-' }}</td><td>{{ row.shelfLife || '-' }}</td>
               <td><span class="status" :class="row.supplementStatus === 2 ? 'status-active' : 'status-pending'">{{ row.supplementStatus === 1 ? '已提交' : '已审核' }}</span></td>
               <td class="actions"><button v-if="isSeller" @click="openEditSup(row)"><el-icon><SoldOut /></el-icon> 编辑</button></td></tr></tbody></table></div>
+      <Pagination v-model="supPage" :total="supplements.length" :page-size="pageSize" />
       </section>
 
       <div v-if="showSupModal" class="trace-modal-backdrop" @click.self="showSupModal = false">

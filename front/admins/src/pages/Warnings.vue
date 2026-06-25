@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { Check, Clock, Close, Refresh, Search, Warning, WarningFilled } from '@element-plus/icons-vue'
 import { coldChainApi, productionApi } from '../services/api'
+import Pagination from '../components/Pagination.vue'
 
 const loading = ref(false)
 const toast = ref<{ type: 'success' | 'error'; text: string } | null>(null)
@@ -9,6 +10,22 @@ const toast = ref<{ type: 'success' | 'error'; text: string } | null>(null)
 const coldChainAlerts = ref<any[]>([])
 const qualityFailures = ref<any[]>([])
 const envAbnormals = ref<any[]>([])
+const coldPage = ref(1)
+const qualityPage = ref(1)
+const envPage = ref(1)
+const pageSize = ref(10)
+const paginatedCold = computed(() => {
+  const start = (coldPage.value - 1) * pageSize.value
+  return coldChainAlerts.value.slice(start, start + pageSize.value)
+})
+const paginatedQuality = computed(() => {
+  const start = (qualityPage.value - 1) * pageSize.value
+  return qualityFailures.value.slice(start, start + pageSize.value)
+})
+const paginatedEnv = computed(() => {
+  const start = (envPage.value - 1) * pageSize.value
+  return envAbnormals.value.slice(start, start + pageSize.value)
+})
 
 const tab = ref<'all' | 'cold' | 'quality' | 'env'>('all')
 
@@ -32,6 +49,7 @@ async function loadAlerts() {
     coldChainAlerts.value = cold.status === 'fulfilled' && Array.isArray(cold.value) ? cold.value : []
     qualityFailures.value = quality.status === 'fulfilled' && Array.isArray(quality.value) ? quality.value : []
     envAbnormals.value = env.status === 'fulfilled' && Array.isArray(env.value) ? env.value : []
+    coldPage.value = 1; qualityPage.value = 1; envPage.value = 1
   } catch (e: any) { notify('error', '加载预警数据失败') }
   finally { loading.value = false }
 }
@@ -85,12 +103,13 @@ onMounted(loadAlerts)
           <header class="panel-header"><div><p>冷链预警</p><h2>温度预警记录</h2></div></header>
           <div class="table-wrap"><table><thead><tr><th>订单号</th><th>车牌</th><th>产品</th><th>生产批次</th><th>发运地</th><th>目的地</th><th>预警状态</th></tr></thead>
             <tbody>
-              <tr v-for="row in coldChainAlerts" :key="row.transportId">
+              <tr v-for="row in paginatedCold" :key="row.transportId">
                 <td><code>{{ row.orderNo }}</code></td><td>{{ row.plateNo }}</td><td>{{ row.productName }}</td>
                 <td><code>{{ row.prodBatchNo }}</code></td><td>{{ row.departureName }}</td><td>{{ row.destinationName }}</td>
                 <td><span class="status status-void">⚠ 温度预警</span></td>
               </tr>
             </tbody></table></div>
+        <Pagination v-model="coldPage" :total="coldChainAlerts.length" :page-size="pageSize" />
         </section>
       </div>
 
@@ -100,7 +119,7 @@ onMounted(loadAlerts)
           <header class="panel-header"><div><p>质检异常</p><h2>不合格记录</h2></div></header>
           <div class="table-wrap"><table><thead><tr><th>检验编号</th><th>业务类型</th><th>业务批次</th><th>检验类型</th><th>检验人</th><th>日期</th><th>结果描述</th></tr></thead>
             <tbody>
-              <tr v-for="row in qualityFailures" :key="row.inspectionId">
+              <tr v-for="row in paginatedQuality" :key="row.inspectionId">
                 <td><code>{{ row.inspectionNo }}</code></td>
                 <td>{{ ['','原料','加工','生产','冷链','销售'][row.bizType] || row.bizType }}</td>
                 <td><code>{{ row.bizBatchNo }}</code></td>
@@ -109,6 +128,7 @@ onMounted(loadAlerts)
                 <td><span class="status status-void">{{ row.resultDesc || '不合格' }}</span></td>
               </tr>
             </tbody></table></div>
+        <Pagination v-model="qualityPage" :total="qualityFailures.length" :page-size="pageSize" />
         </section>
       </div>
 
@@ -118,11 +138,12 @@ onMounted(loadAlerts)
           <header class="panel-header"><div><p>环境异常</p><h2>环境监控记录</h2></div></header>
           <div class="table-wrap"><table><thead><tr><th>生产线</th><th>温度</th><th>湿度</th><th>洁净度</th><th>异常描述</th><th>记录时间</th></tr></thead>
             <tbody>
-              <tr v-for="row in envAbnormals" :key="row.recordId">
+              <tr v-for="row in paginatedEnv" :key="row.recordId">
                 <td>{{ row.productionLine }}</td><td>{{ row.temperature }}</td><td>{{ row.humidity }}</td><td>{{ row.cleanliness }}</td>
                 <td style="color:#c72929">{{ row.abnormalDesc || '-' }}</td><td>{{ row.recordTime }}</td>
               </tr>
             </tbody></table></div>
+        <Pagination v-model="envPage" :total="envAbnormals.length" :page-size="pageSize" />
         </section>
       </div>
 

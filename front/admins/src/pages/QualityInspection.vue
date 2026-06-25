@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { Check, Close, DocumentChecked, Edit, Warning } from '@element-plus/icons-vue'
 import { productionApi, rawApi } from '../services/api'
+import Pagination from '../components/Pagination.vue'
 
 const tab = ref<'pending' | 'history'>('pending')
 const toast = ref<{ type: 'success' | 'error'; text: string } | null>(null)
@@ -10,6 +11,17 @@ const loading = ref(false)
 // 所有待处理 / 已处理的质检汇总
 const pendingInspections = ref<any[]>([])
 const historyInspections = ref<any[]>([])
+const pendingPage = ref(1)
+const historyPage = ref(1)
+const pageSize = ref(10)
+const paginatedPending = computed(() => {
+  const start = (pendingPage.value - 1) * pageSize.value
+  return pendingInspections.value.slice(start, start + pageSize.value)
+})
+const paginatedHistory = computed(() => {
+  const start = (historyPage.value - 1) * pageSize.value
+  return historyInspections.value.slice(start, start + pageSize.value)
+})
 const showQcModal = ref(false)
 const qcTarget = ref<any>(null)
 const qcForm = ref({ inspectionResult: 1, resultDesc: '', inspector: '' })
@@ -43,6 +55,8 @@ async function loadAll() {
     // 简单分开待处理(不合格/待复检)和已完成
     pendingInspections.value = allProd.filter((r: any) => !r.inspectionResult || r.inspectionResult === 2)
     historyInspections.value = allProd.filter((r: any) => r.inspectionResult === 1)
+    pendingPage.value = 1
+    historyPage.value = 1
   } catch (e: any) { notify('error', '加载质检数据失败: ' + e.message) }
   finally { loading.value = false }
 }
@@ -115,7 +129,7 @@ onMounted(loadAll)
         </div>
         <div v-else class="table-wrap"><table><thead><tr><th>检验编号</th><th>环节</th><th>业务批次</th><th>检验类型</th><th>检验人</th><th>日期</th><th>结果</th><th>描述</th><th>操作</th></tr></thead>
           <tbody>
-            <tr v-for="row in pendingInspections" :key="row.inspectionId || row.bizBatchNo">
+            <tr v-for="row in paginatedPending" :key="row.inspectionId || row.bizBatchNo">
               <td><code>{{ row.inspectionNo || '-' }}</code></td>
               <td><span class="status status-pending">{{ bizTypeLabels[row.bizType] || '未知' }}</span></td>
               <td><code>{{ row.bizBatchNo || '-' }}</code></td>
@@ -129,6 +143,7 @@ onMounted(loadAll)
               </td>
             </tr>
           </tbody></table></div>
+      <Pagination v-model="pendingPage" :total="pendingInspections.length" :page-size="pageSize" />
       </section>
     </template>
 
@@ -142,7 +157,7 @@ onMounted(loadAll)
         </div>
         <div v-else class="table-wrap"><table><thead><tr><th>检验编号</th><th>环节</th><th>业务批次</th><th>检验类型</th><th>检验人</th><th>日期</th><th>结果</th><th>描述</th></tr></thead>
           <tbody>
-            <tr v-for="row in historyInspections" :key="row.inspectionId">
+            <tr v-for="row in paginatedHistory" :key="row.inspectionId">
               <td><code>{{ row.inspectionNo || '-' }}</code></td>
               <td><span class="status status-active">{{ bizTypeLabels[row.bizType] || '未知' }}</span></td>
               <td><code>{{ row.bizBatchNo || '-' }}</code></td>
@@ -153,6 +168,7 @@ onMounted(loadAll)
               <td>{{ row.resultDesc || '-' }}</td>
             </tr>
           </tbody></table></div>
+      <Pagination v-model="historyPage" :total="historyInspections.length" :page-size="pageSize" />
       </section>
     </template>
 
