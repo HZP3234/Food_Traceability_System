@@ -36,6 +36,10 @@ public class AuditLogServiceImpl extends ServiceImpl<AuditLogMapper, AuditLog> i
 
         String prevHash = lastLog != null ? lastLog.getLogHash() : "0000000000000000000000000000000000000000000000000000000000000000";
         auditLog.setOperationTime(LocalDateTime.now());
+        auditLog.setCreateTime(auditLog.getOperationTime());
+        auditLog.setUpdateTime(auditLog.getOperationTime());
+        if (auditLog.getCreateBy() == null) { auditLog.setCreateBy("SYSTEM"); }
+        if (auditLog.getUpdateBy() == null) { auditLog.setUpdateBy("SYSTEM"); }
 
         // 计算当前日志Hash: SHA-256(prevHash + operatorId + actionType + targetId + afterData + timestamp)
         String raw = prevHash

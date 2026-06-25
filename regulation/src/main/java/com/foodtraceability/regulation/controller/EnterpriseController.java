@@ -79,6 +79,13 @@ public class EnterpriseController {
         return Result.success();
     }
 
+    @Operation(summary = "搜索企业（模糊匹配，开放给所有企业角色用于冷链/销售中选择企业）")
+    @GetMapping("/search")
+    @PreAuthorize("hasAnyRole('ADMIN','REGULATOR','MANUFACTURER','SUPPLIER','LOGISTICS','SELLER')")
+    public List<Enterprise> search(@RequestParam(required = false) String name) {
+        return enterpriseService.searchByName(name);
+    }
+
     @Operation(summary = "手动触发资质状态检查")
     @PostMapping("/check-status")
     @PreAuthorize("hasRole('ADMIN')")

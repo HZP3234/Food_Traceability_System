@@ -14,10 +14,6 @@
         <result column="breed" property="breed"/>
         <result column="scale_desc" property="scaleDesc"/>
         <result column="collect_date" property="collectDate"/>
-        <result column="plate_no" property="plateNo"/>
-        <result column="transport_temp" property="transportTemp"/>
-        <result column="storage_method" property="storageMethod"/>
-        <result column="shelf_life" property="shelfLife"/>
         <result column="uploader" property="uploader"/>
         <result column="upload_time" property="uploadTime"/>
         <result column="remark" property="remark"/>

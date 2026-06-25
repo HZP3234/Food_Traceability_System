@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.foodtraceability.enterprise.entity.Raw;
 import com.foodtraceability.enterprise.entity.RawDetail;
 import com.foodtraceability.enterprise.entity.RawPending;
+import com.foodtraceability.enterprise.entity.RawTransportPending;
 import com.foodtraceability.enterprise.service.RawService;
 
 @RestController
@@ -89,18 +90,6 @@ public class RawController {
         return rawService.getDetailByBatchNo(batchNo);
     }
 
-    // 供应商上传溯源详细信息（自动匹配批次号）
-    @RequestMapping("/uploadDetail")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPPLIER')")
-    public String uploadDetail(String batchNo, RawDetail detail) {
-        int num = rawService.uploadDetail(batchNo, detail);
-        if (num == 1) {
-            return "溯源信息上传成功";
-        } else {
-            return "溯源信息上传失败";
-        }
-    }
-
     // ==================== 供应商主动上传 + 匹配 ====================
 
     // 主动上传原料信息（暂不匹配批次号）
@@ -143,5 +132,24 @@ public class RawController {
     public String qualityCheck(String batchNo, int checkResult) {
         rawService.recordQualityCheck(batchNo, checkResult);
         return "质检结果录入成功";
+    }
+
+    // ==================== 原料运输待匹配 ====================
+
+    // 供应商上传运输单号（等待冷链物流商匹配）
+    @RequestMapping("/uploadTransportInfo")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPPLIER')")
+    public String uploadTransportInfo(String rawDetailId, String transportOrderNo,
+                                      String supplierName) {
+        rawService.uploadTransportPending(rawDetailId, transportOrderNo, supplierName);
+        return "运输单号已保存至待匹配列表";
+    }
+
+    // 查询运输待匹配列表
+    @RequestMapping("/listTransportPending")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPPLIER', 'LOGISTICS')")
+    public List<RawTransportPending> listTransportPending(
+            String supplierName, Integer matchStatus) {
+        return rawService.listTransportPending(supplierName, matchStatus);
     }
 }

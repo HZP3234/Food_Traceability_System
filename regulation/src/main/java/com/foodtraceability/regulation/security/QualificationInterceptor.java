@@ -29,6 +29,7 @@ public class QualificationInterceptor implements HandlerInterceptor {
         "/api/qualification",
         "/api/enterprise",
         "/api/upload",
+        "/api/traceability",
         "/swagger-ui",
         "/api-docs"
     );

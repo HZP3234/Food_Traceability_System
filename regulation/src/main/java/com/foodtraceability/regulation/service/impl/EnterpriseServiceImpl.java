@@ -32,8 +32,13 @@ public class EnterpriseServiceImpl extends ServiceImpl<EnterpriseMapper, Enterpr
     @Override
     public List<Enterprise> searchByName(String name) {
         LambdaQueryWrapper<Enterprise> wrapper = new LambdaQueryWrapper<>();
-        wrapper.like(Enterprise::getEnterpriseName, name)
-               .orderByDesc(Enterprise::getCreateTime);
+        if (name == null || name.isBlank()) {
+            // 空关键字返回所有企业
+            wrapper.orderByDesc(Enterprise::getCreateTime);
+        } else {
+            wrapper.like(Enterprise::getEnterpriseName, name)
+                   .orderByDesc(Enterprise::getCreateTime);
+        }
         return this.list(wrapper);
     }
 

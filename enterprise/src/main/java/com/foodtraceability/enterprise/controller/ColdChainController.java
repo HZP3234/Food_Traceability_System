@@ -184,7 +184,7 @@ public class ColdChainController {
 
     // 创建运输订单
     @RequestMapping("/createTransport")
-    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'MANUFACTURER', 'SUPPLIER')")
     public String createTransport(CcTransport transport) {
         int num = coldChainService.createTransport(transport);
         if (num == 1) {
@@ -385,5 +385,15 @@ public class ColdChainController {
     @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'MANUFACTURER', 'REGULATOR', 'SUPPLIER')")
     public List<CcTransport> traceByProdBatch(String prodBatchNo) {
         return coldChainService.traceByProdBatch(prodBatchNo);
+    }
+
+    // ==================== 原料运输待匹配 ====================
+
+    // 冷链物流商匹配供应商预先上传的运输单号
+    @RequestMapping("/matchTransportPending")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS')")
+    public String matchTransportPending(String transportOrderNo, String rawBatchNo) {
+        coldChainService.matchTransportPending(transportOrderNo, rawBatchNo);
+        return "运输单号匹配成功";
     }
 }

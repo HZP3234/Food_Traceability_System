@@ -15,6 +15,8 @@ import com.foodtraceability.enterprise.entity.RawPending;
 import com.foodtraceability.enterprise.mapper.RawMapper;
 import com.foodtraceability.enterprise.mapper.RawDetailMapper;
 import com.foodtraceability.enterprise.mapper.RawPendingMapper;
+import com.foodtraceability.enterprise.mapper.RawTransportPendingMapper;
+import com.foodtraceability.enterprise.entity.RawTransportPending;
 
 @Service
 public class RawService {
@@ -24,6 +26,8 @@ public class RawService {
     private RawDetailMapper rawDetailMapper;
     @Autowired
     private RawPendingMapper rawPendingMapper;
+    @Autowired
+    private RawTransportPendingMapper rawTransportPendingMapper;
 
     // 生成原料批次号 RB + yyyyMMdd + 4位序号
     public String generateBatchNo() {
@@ -169,42 +173,6 @@ public class RawService {
         return rawDetailMapper.selectOne(qw);
     }
 
-    // 供应商上传溯源详细信息（自动匹配批次号）
-    @Transactional
-    public int uploadDetail(String batchNo, RawDetail detail) {
-        String now = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-        detail.setBatchNo(batchNo);
-        detail.setUploadTime(now);
-        detail.setCreateTime(now);
-        detail.setUpdateTime(now);
-        detail.setCreateBy(detail.getCreateBy() != null ? detail.getCreateBy() : "SYSTEM");
-        detail.setUpdateBy(detail.getUpdateBy() != null ? detail.getUpdateBy() : "SYSTEM");
-        // 可为空的字段设默认值，避免数据库报错产生乱码
-        if (detail.getOrigin() == null || detail.getOrigin().isBlank()) detail.setOrigin("未填写");
-        if (detail.getFarmType() == null || detail.getFarmType().isBlank()) detail.setFarmType("未填写");
-        if (detail.getFeedType() == null || detail.getFeedType().isBlank()) detail.setFeedType("未填写");
-        if (detail.getInspectionNo() == null || detail.getInspectionNo().isBlank()) detail.setInspectionNo("未填写");
-        if (detail.getBreed() == null || detail.getBreed().isBlank()) detail.setBreed("未填写");
-        if (detail.getScaleDesc() == null || detail.getScaleDesc().isBlank()) detail.setScaleDesc("未填写");
-        if (detail.getCollectDate() == null || detail.getCollectDate().isBlank())
-            detail.setCollectDate(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
-        if (detail.getPlateNo() == null || detail.getPlateNo().isBlank()) detail.setPlateNo("未填写");
-        if (detail.getTransportTemp() == null || detail.getTransportTemp().isBlank()) detail.setTransportTemp("未填写");
-        if (detail.getShelfLife() == null || detail.getShelfLife().isBlank())
-            detail.setShelfLife("2099-12-31");
-        if (detail.getRemark() == null) detail.setRemark("");
-        int num = rawDetailMapper.insert(detail);
-
-        // 回写原料批次表
-        Raw raw = getByBatchNo(batchNo);
-        if (raw != null) {
-            raw.setDetailId(String.valueOf(detail.getRawDetailId()));
-            raw.setDetailStatus(1);
-            updateRaw(raw);
-        }
-        return num;
-    }
-
     // 供应商主动上传原料信息（自动匹配批次号）
     @Transactional
     public int proactiveUpload(RawDetail detail, RawPending pending) {
@@ -227,10 +195,6 @@ public class RawService {
         if (detail.getScaleDesc() == null || detail.getScaleDesc().isBlank()) detail.setScaleDesc("未填写");
         if (detail.getCollectDate() == null || detail.getCollectDate().isBlank())
             detail.setCollectDate(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
-        if (detail.getPlateNo() == null || detail.getPlateNo().isBlank()) detail.setPlateNo("未填写");
-        if (detail.getTransportTemp() == null || detail.getTransportTemp().isBlank()) detail.setTransportTemp("未填写");
-        if (detail.getShelfLife() == null || detail.getShelfLife().isBlank())
-            detail.setShelfLife("2099-12-31");
         if (detail.getRemark() == null) detail.setRemark("");
         rawDetailMapper.insert(detail);
 
@@ -239,11 +203,13 @@ public class RawService {
         }
         pending.setRawDetailId(String.valueOf(detail.getRawDetailId()));
         pending.setPendingStatus(1);
+        pending.setMatchedBatchNo("");  // 未匹配时置空，数据库NOT NULL无默认值；match_time 为 DATETIME 类型，不设值让 MyBatis-Plus 跳过 null
         pending.setUploadTime(now);
         pending.setCreateTime(now);
         pending.setUpdateTime(now);
         pending.setCreateBy(operator);
         pending.setUpdateBy(operator);
+        if (pending.getRemark() == null) pending.setRemark("");
         int result = rawPendingMapper.insert(pending);
 
         // ====== 自动匹配：按 产品名称 + 供应商名称 查找已有原料批次 ======
@@ -357,5 +323,62 @@ public class RawService {
         }
         qw.orderByDesc("upload_time");
         return rawPendingMapper.selectList(qw);
+    }
+
+    // ==================== t_raw_transport_pending ====================
+
+    // 供应商上传运输单号供冷链匹配
+    @Transactional
+    public void uploadTransportPending(String rawDetailId, String transportOrderNo,
+                                       String supplierName) {
+        RawTransportPending tp = new RawTransportPending();
+        String now = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        tp.setRawDetailId(rawDetailId);
+        tp.setTransportOrderNo(transportOrderNo);
+        tp.setSupplierName(supplierName);
+        tp.setMatchStatus(1);
+        tp.setCreateTime(now);
+        tp.setUpdateTime(now);
+        tp.setCreateBy(supplierName != null ? supplierName : "SYSTEM");
+        tp.setUpdateBy(supplierName != null ? supplierName : "SYSTEM");
+        if (tp.getRemark() == null) tp.setRemark("");
+        rawTransportPendingMapper.insert(tp);
+    }
+
+    // 查询运输待匹配列表
+    public List<RawTransportPending> listTransportPending(
+            String supplierName, Integer matchStatus) {
+        if (supplierName != null && !supplierName.isBlank()) {
+            QueryWrapper<RawTransportPending> qw = new QueryWrapper<>();
+            qw.eq("supplier_name", supplierName);
+            qw.eq("is_deleted", 0);
+            if (matchStatus != null) qw.eq("match_status", matchStatus);
+            qw.orderByDesc("create_time");
+            return rawTransportPendingMapper.selectList(qw);
+        }
+        if (matchStatus != null) {
+            return rawTransportPendingMapper.selectByMatchStatus(matchStatus);
+        }
+        QueryWrapper<RawTransportPending> qw = new QueryWrapper<>();
+        qw.eq("is_deleted", 0);
+        qw.orderByDesc("create_time");
+        return rawTransportPendingMapper.selectList(qw);
+    }
+
+    // 冷链模块匹配运输单号（由 ColdChainService 调用）
+    public void matchTransportPending(String transportOrderNo, String rawBatchNo) {
+        List<RawTransportPending> list =
+                rawTransportPendingMapper.selectByTransportOrderNo(transportOrderNo);
+        if (list != null && !list.isEmpty()) {
+            String now = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            for (RawTransportPending tp : list) {
+                if (tp.getMatchStatus() == 1) {
+                    tp.setMatchStatus(2);
+                    tp.setRawBatchNo(rawBatchNo);
+                    tp.setMatchTime(now);
+                    rawTransportPendingMapper.updateById(tp);
+                }
+            }
+        }
     }
 }

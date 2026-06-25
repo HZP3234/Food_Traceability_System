@@ -23,6 +23,8 @@ import com.foodtraceability.enterprise.mapper.EnterpriseCcTransportMapper;
 import com.foodtraceability.enterprise.mapper.CcTempHumidityMapper;
 import com.foodtraceability.enterprise.mapper.CcTransportNodeMapper;
 import com.foodtraceability.enterprise.mapper.CcReceiptMapper;
+import com.foodtraceability.enterprise.entity.RawTransportPending;
+import com.foodtraceability.enterprise.mapper.RawTransportPendingMapper;
 //
 @Service
 public class ColdChainService {
@@ -38,6 +40,8 @@ public class ColdChainService {
     private CcTransportNodeMapper ccTransportNodeMapper;
     @Autowired
     private CcReceiptMapper ccReceiptMapper;
+    @Autowired
+    private RawTransportPendingMapper rawTransportPendingMapper;
 
     // 生成运输订单号 LO + yyyyMMdd + 4位序号
     public String generateTransportOrderNo() {
@@ -547,5 +551,25 @@ public class ColdChainService {
     // 根据生产批次号追溯冷链运输链路
     public List<CcTransport> traceByProdBatch(String prodBatchNo) {
         return listByProdBatchNo(prodBatchNo);
+    }
+
+    // ==================== 原料运输待匹配 ====================
+
+    // 冷链物流商匹配供应商预先上传的运输单号
+    @Transactional
+    public void matchTransportPending(String transportOrderNo, String rawBatchNo) {
+        RawTransportPending entity =
+                rawTransportPendingMapper.selectByTransportOrderNo(transportOrderNo)
+                        .stream()
+                        .filter(tp -> tp.getMatchStatus() == 1)
+                        .findFirst()
+                        .orElse(null);
+        if (entity != null) {
+            String now = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            entity.setMatchStatus(2);
+            entity.setRawBatchNo(rawBatchNo);
+            entity.setMatchTime(now);
+            rawTransportPendingMapper.updateById(entity);
+        }
     }
 }

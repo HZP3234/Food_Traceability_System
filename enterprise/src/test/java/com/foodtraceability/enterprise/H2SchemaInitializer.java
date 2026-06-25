@@ -24,7 +24,7 @@ class H2SchemaInitializer {
             entity("CcReceipt"), entity("CcTempHumidity"), entity("CcTransport"), entity("CcTransportNode"),
             entity("CcVehicle"), entity("ProcessBatch"), entity("ProdBatch"), entity("ProdEnvRecord"),
             entity("ProdMaterialInput"), entity("QualityInspection"), entity("Raw"), entity("RawDetail"),
-            entity("RawPending"), entity("SalesStock"), entity("SalesStorage"), entity("SalesSupplement"),
+            entity("RawPending"), entity("RawTransportPending"), entity("SalesStock"), entity("SalesStorage"), entity("SalesSupplement"),
             entity("SalesTerminal"), entity("TechTemplate"), entity("TraceCode"), entity("TraceCodeBind"), entity("Warehouse")
         );
         for (Class<?> type : entities) createTable(type);

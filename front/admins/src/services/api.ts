@@ -19,10 +19,17 @@ function authHeaders(extra?: Record<string, string>): Record<string, string> {
   return headers
 }
 
-/** 检查后端业务异常：GlobalExceptionHandler 返回 success=false 但 HTTP 200 */
+/** 检查后端业务异常 (Result false / non-200 status) */
 function checkBizError(json: any) {
-  if (json && typeof json === 'object' && json.success === false) {
-    throw new Error(json.errorMessage || json.errorCode || '服务器业务异常')
+  if (json && typeof json === 'object') {
+    // 检查 Result 格式 { code: 非200, message: ... }
+    if (json.code && json.code !== 200) {
+      throw new Error(json.message || '服务器业务异常')
+    }
+    // 检查 success=false 的包装格式
+    if (json.success === false) {
+      throw new Error(json.errorMessage || json.errorCode || '服务器业务异常')
+    }
   }
 }
 
@@ -146,13 +153,17 @@ export const rawApi = {
   update: (data: Record<string, any>) => post('/Raw/updateRaw', data),
   delete: (rawBatchId: number) => post('/Raw/deleteRaw', { rawBatchId }),
   queryDetail: (batchNo: string) => get('/Raw/queryDetail', { batchNo }),
-  uploadDetail: (batchNo: string, detail: Record<string, any>) => post('/Raw/uploadDetail', { batchNo, ...detail }),
   proactiveUpload: (detail: Record<string, any>, pending: Record<string, any>) =>
     post('/Raw/proactiveUpload', { ...detail, ...pending }),
   matchBatch: (pendingCode: string, targetBatchNo: string) => post('/Raw/matchBatch', { pendingCode, targetBatchNo }),
   listPending: (supplierName?: string, pendingStatus?: number) =>
     get('/Raw/listPending', { supplierName, pendingStatus }),
   qualityCheck: (batchNo: string, checkResult: number) => post('/Raw/qualityCheck', { batchNo, checkResult }),
+  // 运输待匹配
+  uploadTransportInfo: (rawDetailId: string, transportOrderNo: string, supplierName: string) =>
+    post('/Raw/uploadTransportInfo', { rawDetailId, transportOrderNo, supplierName }),
+  listTransportPending: (supplierName?: string, matchStatus?: number) =>
+    get('/Raw/listTransportPending', { supplierName, matchStatus }),
 }
 
 // ==================== Production (生产管理 — 加工已合并) ====================
@@ -262,6 +273,10 @@ export const coldChainApi = {
   // Trace
   traceColdChain: (orderNo: string) => get('/ColdChain/traceColdChain', { orderNo }),
   traceByProdBatch: (prodBatchNo: string) => get('/ColdChain/traceByProdBatch', { prodBatchNo }),
+
+  // Transport pending matching (by logistics)
+  matchTransportPending: (transportOrderNo: string, rawBatchNo: string) =>
+    post('/ColdChain/matchTransportPending', { transportOrderNo, rawBatchNo }),
 }
 
 // ==================== Sales (销售) ====================
@@ -314,6 +329,13 @@ export const enterpriseApi = {
   update: (enterpriseId: number, data: Record<string, any>) => put(`/api/enterprise/${enterpriseId}`, data),
   delete: (enterpriseId: number) => del(`/api/enterprise/${enterpriseId}`),
   checkStatus: () => post('/api/enterprise/check-status'),
+  /** 按企业名模糊搜索（所有企业角色可用） */
+  search: (name?: string) => {
+    // URLSearchParams ensures proper UTF-8 encoding for Chinese characters
+    const params = new URLSearchParams()
+    if (name) params.set('name', name)
+    return get<any[]>('/api/enterprise/search' + (params.toString() ? '?' + params.toString() : ''))
+  },
 }
 
 // ==================== Qualification (资质提交+审核，regulation 后端 :8081) ====================

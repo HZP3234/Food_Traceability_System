@@ -5,7 +5,6 @@ import { rawApi } from '../services/api'
 import type { RoleKey } from '../config/navigation'
 
 const currentRole = inject<Ref<RoleKey>>('currentRole')
-// 解析 sessionStorage 中的用户 JSON
 let currentUser = ''
 try {
   const raw = sessionStorage.getItem('fts-admin-user')
@@ -16,25 +15,21 @@ try {
 } catch { currentUser = sessionStorage.getItem('fts-admin-user') || '' }
 
 const loading = ref(false)
-const needUploadBatches = ref<any[]>([])
-const matchedBatches = ref<any[]>([])
 const pendingList = ref<any[]>([])
+const matchedBatches = ref<any[]>([])
+const allBatches = ref<any[]>([])
 const toast = ref<{ type: 'success' | 'error'; text: string } | null>(null)
 const showUploadModal = ref(false)
 const showMatchModal = ref(false)
-const viewingBatchNo = ref('')
-const isNewUpload = ref(false)
 
 const stats = computed(() => ({
-  needUpload: needUploadBatches.value.length,
-  matched: matchedBatches.value.length,
   pending: pendingList.value.length,
+  matched: matchedBatches.value.length,
 }))
 
 const uploadForm = ref({
   productName: '', productCategory: '', amount: '', uploadTime: '',
   origin: '', cert: '', inspectionNo: '',
-  transportOrderNo: '',
   supplierQualNo: '',
   uploader: '',
 })
@@ -48,69 +43,71 @@ async function loadData() {
   try {
     const isSupplier = currentRole?.value === 'supplier'
     const supplierFilter = isSupplier && currentUser ? currentUser : undefined
+    // 加载所有批次，分离待匹配和已匹配
     const data = await rawApi.list(supplierFilter ? { supplierName: supplierFilter } : {})
     const all = Array.isArray(data) ? data : []
-    needUploadBatches.value = all.filter((r: any) => !r.detailStatus || r.detailStatus < 1)
+    allBatches.value = all
     matchedBatches.value = all.filter((r: any) => r.detailStatus === 1 || r.detailStatus === 2)
+    // 加载待匹配记录
     const pdata = await rawApi.listPending(supplierFilter, 1)
     pendingList.value = Array.isArray(pdata) ? pdata : []
   } catch (e: any) { notify('error', '加载失败: ' + e.message) }
   finally { loading.value = false }
 }
 
-function openUploadForBatch(row: any) {
-  isNewUpload.value = false
-  viewingBatchNo.value = row.batchNo
-  uploadForm.value = { productName: row.productName || '', productCategory: '', amount: row.amount ? String(row.amount) + (row.unit || '') : '', uploadTime: new Date().toISOString().slice(0, 16).replace('T', ' '), origin: '', cert: '', inspectionNo: '', transportOrderNo: '', supplierQualNo: '', uploader: currentUser || '' }
-  showUploadModal.value = true
-}
 function openNewUpload() {
-  isNewUpload.value = true
-  viewingBatchNo.value = ''
-  uploadForm.value = { productName: '', productCategory: '', amount: '', uploadTime: new Date().toISOString().slice(0, 16).replace('T', ' '), origin: '', cert: '', inspectionNo: '', transportOrderNo: '', supplierQualNo: '', uploader: currentUser || '' }
+  uploadForm.value = {
+    productName: '', productCategory: '', amount: '',
+    uploadTime: new Date().toISOString().slice(0, 16).replace('T', ' '),
+    origin: '', cert: '', inspectionNo: '',
+    supplierQualNo: '',
+    uploader: currentUser || '',
+  }
   showUploadModal.value = true
 }
 
-async function submitUploadForBatch() {
-  try {
-    await rawApi.uploadDetail(viewingBatchNo.value, {
-      origin: uploadForm.value.origin,
-      certType: uploadForm.value.cert, inspectionNo: uploadForm.value.inspectionNo,
-      transportOrderNo: uploadForm.value.transportOrderNo,
-      supplierQualNo: uploadForm.value.supplierQualNo,
-      productCategory: uploadForm.value.productCategory,
-      uploader: uploadForm.value.uploader || 'SYSTEM',
-    })
-    notify('success', '源头信息上传成功，已自动匹配到批次 ' + viewingBatchNo.value)
-    showUploadModal.value = false; loadData()
-  } catch (e: any) { notify('error', '上传失败: ' + e.message) }
-}
 async function submitProactiveUpload() {
   try {
     const now = new Date().toISOString().slice(0, 19).replace('T', ' ')
     await rawApi.proactiveUpload(
       {
         origin: uploadForm.value.origin,
-        certType: uploadForm.value.cert, inspectionNo: uploadForm.value.inspectionNo,
-        transportOrderNo: uploadForm.value.transportOrderNo,
-        supplierQualNo: uploadForm.value.supplierQualNo,
-        productCategory: uploadForm.value.productCategory,
-        uploader: currentUser || uploadForm.value.uploader || 'SYSTEM', uploadTime: now
+        certType: uploadForm.value.cert,
+        inspectionNo: uploadForm.value.inspectionNo,
+        uploader: currentUser || uploadForm.value.uploader || 'SYSTEM',
+        uploadTime: now,
       },
       {
-        pendingCode: '', supplierName: currentUser || uploadForm.value.uploader || '',
+        pendingCode: '',
+        supplierName: currentUser || uploadForm.value.uploader || '',
         productName: uploadForm.value.productName || '待匹配原料',
         productCategory: uploadForm.value.productCategory || '',
-        amount: uploadForm.value.amount || '0', uploadTime: now, pendingStatus: 1
+        amount: uploadForm.value.amount || '0',
+        uploadTime: now,
+        pendingStatus: 1,
       }
     )
     notify('success', '原料信息已保存至待匹配列表')
-    showUploadModal.value = false; loadData()
+    showUploadModal.value = false
+    loadData()
   } catch (e: any) { notify('error', '上传失败: ' + e.message) }
 }
 
-function openMatch(p: any) { matchForm.value = { pendingCode: p.pendingCode, targetBatchNo: '' }; showMatchModal.value = true }
-async function submitMatch() { try { await rawApi.matchBatch(matchForm.value.pendingCode, matchForm.value.targetBatchNo); notify('success', '匹配成功'); showMatchModal.value = false; loadData() } catch (e: any) { notify('error', '匹配失败: ' + e.message) } }
+function openMatch(p: any) {
+  matchForm.value = { pendingCode: p.pendingCode, targetBatchNo: '' }
+  showMatchModal.value = true
+}
+async function submitMatch() {
+  try {
+    await rawApi.matchBatch(matchForm.value.pendingCode, matchForm.value.targetBatchNo)
+    notify('success', '匹配成功')
+    showMatchModal.value = false
+    loadData()
+  } catch (e: any) { notify('error', '匹配失败: ' + e.message) }
+}
+
+// 获取待匹配记录可选的目标批次（所有 detailStatus < 1 的批次或当前所有批次都可匹配）
+const matchableBatches = computed(() => allBatches.value)
 
 onMounted(loadData)
 </script>
@@ -121,14 +118,13 @@ onMounted(loadData)
 
     <div class="trace-role-banner supplier">
       <span class="trace-role-badge">原料供应商</span>
-      <span>生产商创建批次 → <strong>您为批次上传源头详情</strong> → 自动匹配。也可以<strong>先上传信息</strong>，等生产商创建批次后再匹配。</span>
+      <span>主动上传原料溯源信息，等待生产商创建批次后自动或手动匹配。运输信息请前往<strong>冷链物流管理</strong>页面单独上传。</span>
     </div>
 
     <section class="trace-stats">
-      <article class="amber"><span><el-icon><Upload /></el-icon> 待我上传</span><b>{{ stats.needUpload }}</b><em>个批次等待</em></article>
+      <article class="amber"><span><el-icon><Plus /></el-icon> 待匹配</span><b>{{ stats.pending }}</b><em>等待关联批次</em></article>
       <article class="green"><span><el-icon><Select /></el-icon> 已匹配</span><b>{{ stats.matched }}</b><em>已完成溯源</em></article>
-      <article class="amber"><span><el-icon><Plus /></el-icon> 待匹配</span><b>{{ stats.pending }}</b><em>等待关联</em></article>
-      <article><span><el-icon><DocumentAdd /></el-icon> 匹配率</span><b>{{ stats.needUpload + stats.matched > 0 ? Math.round(stats.matched / (stats.needUpload + stats.matched) * 100) : 0 }}%</b><em>完成度</em></article>
+      <article><span><el-icon><DocumentAdd /></el-icon> 匹配率</span><b>{{ stats.pending + stats.matched > 0 ? Math.round(stats.matched / (stats.pending + stats.matched) * 100) : 0 }}%</b><em>完成度</em></article>
     </section>
 
     <section class="trace-panel list-panel" style="margin-bottom:24px">
@@ -138,46 +134,27 @@ onMounted(loadData)
       </header>
     </section>
 
-    <!-- 双栏：等待上传 + 等待匹配 -->
-    <div class="two-col">
-      <!-- 左栏：等待上传 -->
-      <section class="trace-panel list-panel">
-        <header class="panel-header">
-          <div><p>等待上传</p><h2>待上传源头信息的批次</h2></div>
-          <span class="col-count amber-count">({{ stats.needUpload }} 条)</span>
-        </header>
-        <div v-if="!needUploadBatches.length" class="trace-empty-state" style="margin:10px">
-          <div class="empty-icon"><el-icon><Select /></el-icon></div>
-          <p>✓ 所有批次已完成源头信息上传</p>
-        </div>
-        <div v-else class="trace-row-list" style="padding:0 18px 18px">
-          <div v-for="row in needUploadBatches" :key="row.rawBatchId" class="trace-row-card">
-            <span class="trace-mini-badge amber">待</span>
-            <div style="flex:1"><strong>{{ row.batchNo }}</strong> — {{ row.productName }}<small style="display:block;color:#96a8b9;font-size:11px">供应商：{{ row.supplierName }} · {{ row.amount }}{{ row.unit }} · 入库：{{ row.purchaseDate }}</small></div>
-            <button class="primary btn-sm" @click="openUploadForBatch(row)"><el-icon><Upload /></el-icon> 上传源头信息</button>
+    <!-- 待匹配列表 -->
+    <section class="trace-panel list-panel" style="margin-bottom:24px">
+      <header class="panel-header">
+        <div><p>等待匹配</p><h2>待匹配原料</h2></div>
+        <span class="col-count amber-count">({{ pendingList.length }} 条)</span>
+      </header>
+      <div v-if="!pendingList.length" class="trace-empty-state" style="margin:18px">
+        <div class="empty-icon">📤</div>
+        <p>暂无待匹配的记录，点击上方按钮主动上传原料信息</p>
+      </div>
+      <div v-else class="trace-row-list" style="padding:0 18px 18px">
+        <div v-for="p in pendingList" :key="p.rawPendingId" class="trace-row-card">
+          <span class="trace-mini-badge amber">待</span>
+          <div style="flex:1">
+            <strong>{{ p.pendingCode }}</strong>
+            <small style="display:block;color:#96a8b9;font-size:11px">{{ p.productName || '未知' }} · {{ p.supplierName || '' }} · {{ p.uploadTime }}</small>
           </div>
+          <button class="secondary btn-sm" @click="openMatch(p)"><el-icon><Select /></el-icon> 手动匹配</button>
         </div>
-      </section>
-
-      <!-- 右栏：等待匹配 -->
-      <section class="trace-panel list-panel">
-        <header class="panel-header">
-          <div><p>等待匹配</p><h2>待匹配原料</h2></div>
-          <span class="col-count amber-count">({{ pendingList.length }} 条)</span>
-        </header>
-        <div v-if="!pendingList.length" class="trace-empty-state" style="margin:10px">
-          <div class="empty-icon">📤</div>
-          <p>暂无待匹配的记录</p>
-        </div>
-        <div v-else class="trace-row-list" style="padding:0 18px 18px">
-          <div v-for="p in pendingList" :key="p.rawPendingId" class="trace-row-card">
-            <span class="trace-mini-badge amber">待</span>
-            <div style="flex:1"><strong>{{ p.pendingCode }}</strong><small style="display:block;color:#96a8b9;font-size:11px">{{ p.productName || '未知' }} · {{ p.supplierName || '' }} · {{ p.uploadTime }}</small></div>
-            <button class="secondary btn-sm" @click="openMatch(p)"><el-icon><Select /></el-icon> 手动匹配</button>
-          </div>
-        </div>
-      </section>
-    </div>
+      </div>
+    </section>
 
     <!-- 已匹配列表 -->
     <section class="trace-panel list-panel">
@@ -192,48 +169,28 @@ onMounted(loadData)
       <div v-else class="trace-row-list" style="padding:0 18px 18px">
         <div v-for="row in matchedBatches" :key="row.rawBatchId" class="trace-row-card">
           <span class="trace-mini-badge green">✓</span>
-          <div style="flex:1"><strong>{{ row.batchNo }}</strong> — {{ row.productName }}<small style="display:block;color:#96a8b9;font-size:11px">{{ row.supplierName }} · 状态：{{ ['','待入库','已入库','已启用'][row.batchStatus] || '-' }}</small></div>
+          <div style="flex:1">
+            <strong>{{ row.batchNo }}</strong> — {{ row.productName }}
+            <small style="display:block;color:#96a8b9;font-size:11px">{{ row.supplierName }} · 状态：{{ ['','待入库','已入库','已启用'][row.batchStatus] || '-' }}</small>
+          </div>
           <span class="status status-active">已匹配</span>
         </div>
       </div>
     </section>
 
-    <!-- 上传模态框 -->
+    <!-- 上传模态框 — 只有主动上传 -->
     <div v-if="showUploadModal" class="trace-modal-backdrop" @click.self="showUploadModal = false">
-      <section class="trace-modal" style="width:780px">
+      <section class="trace-modal" style="width:680px">
         <header>
-          <div><p>源头上传</p><h2>{{ isNewUpload ? '主动上传原料信息' : '为批次 ' + viewingBatchNo + ' 上传源头信息' }}</h2></div>
+          <div><p>源头上传</p><h2>主动上传原料溯源信息</h2></div>
           <button @click="showUploadModal = false"><el-icon><Close /></el-icon></button>
         </header>
         <div class="modal-body">
-          <!-- 提示信息 -->
-          <div v-if="isNewUpload" class="trace-hint info">💡 您可以先上传原料详细信息，批次号可<strong>稍后匹配</strong>。上传后信息将进入"待匹配"列表。</div>
-          <div v-else class="trace-hint success">✓ 为批次 <strong>{{ viewingBatchNo }}</strong> 上传源头信息，提交后自动匹配到该批次号。</div>
+          <div class="trace-hint info">💡 上传原料源头信息后，将进入<strong>待匹配列表</strong>。当生产商创建对应原料批次后，系统会自动匹配或由您手动关联。</div>
 
-          <!-- Section: 批次匹配信息（已有批次上传） -->
-          <div v-if="!isNewUpload" class="form-section">
-            <div class="form-section-title"><span class="section-ico">匹</span>批次自动匹配</div>
-            <div class="grid-form">
-              <label>选择批次号（自动匹配）<input :value="viewingBatchNo" readonly style="background:#f8fafc" /></label>
-              <label>供应商名称<input :value="currentUser" readonly style="background:#f8fafc;color:#8195aa" /></label>
-              <label>原料名称<input v-model="uploadForm.productName" placeholder="如：生牛乳" /></label>
-              <label>原料类别
-                <select v-model="uploadForm.productCategory">
-                  <option value="">请选择</option>
-                  <option value="乳制品原料">乳制品原料</option>
-                  <option value="果蔬原料">果蔬原料</option>
-                  <option value="肉禽原料">肉禽原料</option>
-                  <option value="粮油原料">粮油原料</option>
-                </select>
-              </label>
-              <label>数量<input v-model="uploadForm.amount" placeholder="如：8.6t" /></label>
-              <label>上传时间<input v-model="uploadForm.uploadTime" type="datetime-local" /></label>
-            </div>
-          </div>
-
-          <!-- Section: 主动上传原料信息 -->
-          <div v-if="isNewUpload" class="form-section">
-            <div class="form-section-title"><span class="section-ico">主</span>主动上传原料信息</div>
+          <!-- Section: 原料基本信息 -->
+          <div class="form-section">
+            <div class="form-section-title"><span class="section-ico">基</span>原料基本信息</div>
             <div class="grid-form">
               <label>原料名称 <span class="required">*</span><input v-model="uploadForm.productName" placeholder="如：有机牧草" /></label>
               <label>原料类别
@@ -247,19 +204,13 @@ onMounted(loadData)
               </label>
               <label>供应商名称 <span class="required">*</span><input :value="currentUser" readonly style="background:#f8fafc;color:#8195aa" /></label>
               <label>数量<input v-model="uploadForm.amount" placeholder="如：12t" /></label>
-              <label>批次号（可选）
-                <select v-model="viewingBatchNo">
-                  <option value="">-- 暂不匹配，稍后处理 --</option>
-                  <option v-for="r in needUploadBatches" :key="r.rawBatchId" :value="r.batchNo">{{ r.batchNo }} - {{ r.productName }}</option>
-                </select>
-              </label>
               <label>上传日期<input v-model="uploadForm.uploadTime" type="datetime-local" /></label>
             </div>
           </div>
 
-          <!-- Section: 源头信息 -->
+          <!-- Section: 源头溯源信息 -->
           <div class="form-section">
-            <div class="form-section-title"><span class="section-ico">源</span>源头信息</div>
+            <div class="form-section-title"><span class="section-ico">源</span>源头溯源信息</div>
             <div class="grid-form">
               <label>产地 <span class="required">*</span><input v-model="uploadForm.origin" placeholder="如：河北燕北牧场" /></label>
               <label>认证类型
@@ -276,22 +227,11 @@ onMounted(loadData)
             </div>
           </div>
 
-          <!-- Section: 运输单号 -->
-          <div class="form-section">
-            <div class="form-section-title"><span class="section-ico">运</span>运输单号</div>
-            <div class="trace-hint info">🚚 请在此录入运输单号，用于后续冷链物流跟踪。运输详情（车辆、温度、储存等）由冷链物流商在"冷链运输"模块中完善。</div>
-            <div class="grid-form">
-              <label>运输单号<input v-model="uploadForm.transportOrderNo" placeholder="如：TO20260625001" /></label>
-            </div>
-          </div>
-
           <label style="display:grid;gap:6px;color:#718ba6;font-size:12px;font-weight:700;margin-top:10px">备注<textarea style="width:100%;padding:9px;border:1px solid #d7e4f0;border-radius:7px;min-height:60px" placeholder="请输入原料相关补充说明。" /></label>
         </div>
         <footer>
           <button class="secondary" @click="showUploadModal = false"><el-icon><Close /></el-icon> 取消</button>
-          <button class="secondary" @click="showUploadModal = false"><el-icon><Upload /></el-icon> 保存草稿</button>
-          <button v-if="isNewUpload" class="primary" @click="submitProactiveUpload"><el-icon><Upload /></el-icon> 上传并进入待匹配</button>
-          <button v-else class="primary" @click="submitUploadForBatch"><el-icon><Upload /></el-icon> 确认上传并自动匹配</button>
+          <button class="primary" @click="submitProactiveUpload"><el-icon><Upload /></el-icon> 上传并进入待匹配</button>
         </footer>
       </section>
     </div>
@@ -302,7 +242,12 @@ onMounted(loadData)
         <header><div><p>批次匹配</p><h2>手动匹配批次</h2></div><button @click="showMatchModal = false"><el-icon><Close /></el-icon></button></header>
         <div class="modal-body">
           <label style="display:grid;gap:6px;color:#718ba6;font-size:12px;font-weight:700;margin-bottom:16px">待匹配编码<input v-model="matchForm.pendingCode" readonly style="background:#f8fafc;width:100%;padding:9px;border:1px solid #d7e4f0;border-radius:7px" /></label>
-          <label style="display:grid;gap:6px;color:#718ba6;font-size:12px;font-weight:700">目标批次号<select v-model="matchForm.targetBatchNo" style="width:100%;padding:9px;border:1px solid #d7e4f0;border-radius:7px"><option value="">-- 选择批次 --</option><option v-for="r in needUploadBatches" :key="r.rawBatchId" :value="r.batchNo">{{ r.batchNo }} - {{ r.productName }}</option></select></label>
+          <label style="display:grid;gap:6px;color:#718ba6;font-size:12px;font-weight:700">目标批次号
+            <select v-model="matchForm.targetBatchNo" style="width:100%;padding:9px;border:1px solid #d7e4f0;border-radius:7px">
+              <option value="">-- 选择批次 --</option>
+              <option v-for="r in matchableBatches" :key="r.rawBatchId" :value="r.batchNo">{{ r.batchNo }} - {{ r.productName }}</option>
+            </select>
+          </label>
         </div>
         <footer><button class="secondary" @click="showMatchModal = false"><el-icon><Close /></el-icon> 取消</button><button class="primary" @click="submitMatch"><el-icon><Select /></el-icon> 确认匹配</button></footer>
       </section>
@@ -344,14 +289,6 @@ onMounted(loadData)
   flex-shrink: 0;
 }
 
-/* 双栏布局 */
-.two-col {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 18px;
-  margin-bottom: 24px;
-}
-
 .col-count {
   font-size: 13px;
   font-weight: 700;
@@ -359,11 +296,5 @@ onMounted(loadData)
 
 .amber-count {
   color: #a4730a;
-}
-
-@media (max-width: 1250px) {
-  .two-col {
-    grid-template-columns: 1fr;
-  }
 }
 </style>

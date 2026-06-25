@@ -87,7 +87,7 @@ async function submitBatch() {
   try {
     const data: Record<string, any> = { ...batchForm.value, productCategory: finalCategory }
     if (editing.value) { data.rawBatchId = editing.value.rawBatchId; await rawApi.update(data); notify('success', '批次更新成功') }
-    else { await rawApi.create(data); notify('success', '批次创建成功，等待供应商上传源头信息') }
+    else { await rawApi.create(data); notify('success', '批次创建成功，供应商可在"原料信息上传"页面主动上传源头信息') }
     showBatchModal.value = false; loadList()
   } catch (e: any) { notify('error', '操作失败: ' + e.message) }
 }
@@ -110,13 +110,13 @@ onMounted(loadList)
 
     <div class="trace-role-banner manufacturer">
       <span class="trace-role-badge">加工生产商</span>
-      <span>您创建批次 → <strong>供应商上传源头详情</strong> → 自动匹配</span>
+      <span>您创建批次 → <strong>供应商主动上传源头详情</strong> → 系统自动匹配或手动匹配</span>
     </div>
 
     <section class="trace-stats">
       <article><span><el-icon><Box /></el-icon> 批次总数</span><b>{{ stats.total }}</b><em>个原料批次</em></article>
       <article class="green"><span><el-icon><Check /></el-icon> 已匹配溯源</span><b>{{ stats.matched }}</b><em>源头已关联</em></article>
-      <article class="amber"><span><el-icon><Upload /></el-icon> 待供应商上传</span><b>{{ stats.unmatched }}</b><em>等待源头信息</em></article>
+      <article class="amber"><span><el-icon><Upload /></el-icon> 待匹配溯源</span><b>{{ stats.unmatched }}</b><em>等待源头信息</em></article>
       <article :class="stats.unchecked > 0 ? 'amber' : ''"><span><el-icon><Search /></el-icon> 待质检</span><b>{{ stats.unchecked }}</b><em>需检验</em></article>
     </section>
 
