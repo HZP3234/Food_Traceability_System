@@ -26,13 +26,17 @@ const complaintTypes = [
 
 const statusOptions = [
   { value: 0, label: '待处理' },
-  { value: 2, label: '已处理' }
+  { value: 1, label: '处理中' },
+  { value: 2, label: '已处理' },
+  { value: 3, label: '已关闭' }
 ]
 
 const typeMap: Record<number, string> = { 1: '质量问题', 2: '包装问题', 3: '保质期异常', 4: '假冒伪劣', 5: '其他问题' }
 const statusMap: Record<number, { text: string; color: string }> = {
   0: { text: '待处理', color: '#f90' },
-  2: { text: '已处理', color: '#07c160' }
+  1: { text: '处理中', color: '#1989fa' },
+  2: { text: '已处理', color: '#07c160' },
+  3: { text: '已关闭', color: '#969799' }
 }
 
 const list = ref<Complaint[]>([])
@@ -62,7 +66,9 @@ function fetchData(append: boolean) {
   loading.value = true
   queryComplaintPage(buildParams())
     .then((res) => {
+      console.log('complaint page response:', res)
       if (res.code === 200 && res.data) {
+        console.log('records count:', res.data.records?.length, 'total:', res.data.total)
         const { records, current, pages } = res.data
         list.value = append ? [...list.value, ...(records || [])] : (records || [])
         hasMore.value = current < pages
@@ -89,7 +95,6 @@ function onSearch() {
 }
 
 function onLoadMore() {
-  page.pageNum++
   fetchData(true)
 }
 

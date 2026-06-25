@@ -25,6 +25,14 @@ public class TraceabilityController {
         return Result.success(vo);
     }
 
+    @GetMapping("/query-by-code")
+    public Result<TraceabilityVO> queryByCode(@RequestParam String traceCode,
+                                              HttpServletRequest request) {
+        TraceabilityVO vo = traceabilityService.queryByTraceCode(traceCode);
+        traceabilityService.recordScan(vo.getProductBatchNo(), getClientIp(request), null);
+        return Result.success(vo);
+    }
+
     @PostMapping("/scan")
     public Result<Void> scan(@Valid @RequestBody ScanRecordDTO dto,
                              HttpServletRequest request) {

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.foodtraceability.enterprise.mapper.EnterpriseTraceCodeMapper">
+
+    <resultMap id="BaseResultMap" type="com.foodtraceability.enterprise.entity.TraceCode">
+        <id column="trace_code_id" property="traceCodeId"/>
+        <result column="trace_code_uuid" property="traceCodeUuid"/>
+        <result column="trace_code" property="traceCode"/>
+        <result column="code_type" property="codeType"/>
+        <result column="package_level" property="packageLevel"/>
+        <result column="product_id" property="productId"/>
+        <result column="product_name" property="productName"/>
+        <result column="enterprise_uuid" property="enterpriseId"/>
+        <result column="enterprise_name" property="enterpriseName"/>
+        <result column="trace_code_status" property="traceCodeStatus"/>
+        <result column="batch_no" property="batchNo"/>
+        <result column="content_hash" property="contentHash"/>
+        <result column="proof_id" property="proofId"/>
+        <result column="tx_hash" property="txHash"/>
+        <result column="generate_count" property="generateCount"/>
+        <result column="disable_reason" property="disableReason"/>
+        <result column="void_reason" property="voidReason"/>
+        <result column="expire_time" property="expireTime"/>
+        <result column="create_by" property="createBy"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_by" property="updateBy"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="is_deleted" property="isDeleted"/>
+    </resultMap>
+
+    <select id="selectByTraceCode" resultMap="BaseResultMap">
+        SELECT * FROM t_trace_code WHERE trace_code = #{code} AND is_deleted = 0 LIMIT 1
+    </select>
+
+    <select id="selectByBatchNo" resultMap="BaseResultMap">
+        SELECT * FROM t_trace_code WHERE batch_no = #{batchNo} AND is_deleted = 0 ORDER BY create_time DESC
+    </select>
+
+    <select id="selectByEnterpriseId" resultMap="BaseResultMap">
+        SELECT * FROM t_trace_code WHERE enterprise_uuid = #{enterpriseId} AND is_deleted = 0 ORDER BY create_time DESC
+    </select>
+
+    <select id="selectByTraceCodeStatus" resultMap="BaseResultMap">
+        SELECT * FROM t_trace_code WHERE trace_code_status = #{status} AND is_deleted = 0 ORDER BY create_time DESC
+    </select>
+
+    <select id="countByTraceCode" resultType="int">
+        SELECT COUNT(*) FROM t_trace_code WHERE trace_code = #{code} AND is_deleted = 0
+    </select>
+
+</mapper>

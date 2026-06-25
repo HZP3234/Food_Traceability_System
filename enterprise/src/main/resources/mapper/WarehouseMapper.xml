@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.foodtraceability.enterprise.mapper.WarehouseMapper">
+
+    <resultMap id="BaseResultMap" type="com.foodtraceability.enterprise.entity.Warehouse">
+        <id column="warehouse_id" property="warehouseId"/>
+        <result column="warehouse_uuid" property="warehouseUuid"/>
+        <result column="warehouse_name" property="warehouseName"/>
+        <result column="warehouse_type" property="warehouseType"/>
+        <result column="address" property="address"/>
+        <result column="capacity" property="capacity"/>
+        <result column="manager" property="manager"/>
+        <result column="temp_range" property="tempRange"/>
+        <result column="humidity_range" property="humidityRange"/>
+        <result column="warehouse_status" property="warehouseStatus"/>
+        <result column="remark" property="remark"/>
+        <result column="create_by" property="createBy"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_by" property="updateBy"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="is_deleted" property="isDeleted"/>
+    </resultMap>
+
+    <select id="selectByWarehouseName" resultMap="BaseResultMap">
+        SELECT * FROM t_warehouse WHERE warehouse_name = #{name} AND is_deleted = 0 LIMIT 1
+    </select>
+
+    <select id="selectByWarehouseUuid" resultMap="BaseResultMap">
+        SELECT * FROM t_warehouse WHERE warehouse_uuid = #{uuid} AND is_deleted = 0 LIMIT 1
+    </select>
+
+    <select id="selectByWarehouseType" resultMap="BaseResultMap">
+        SELECT * FROM t_warehouse WHERE warehouse_type = #{type} AND is_deleted = 0 ORDER BY create_time DESC
+    </select>
+
+    <select id="selectByWarehouseStatus" resultMap="BaseResultMap">
+        SELECT * FROM t_warehouse WHERE warehouse_status = #{status} AND is_deleted = 0 ORDER BY create_time DESC
+    </select>
+
+</mapper>

@@ -35,6 +35,12 @@ const router = createRouter({
       meta: { title: '投诉查询', needLogin: true }
     },
     {
+      path: '/profile-edit',
+      name: 'ProfileEdit',
+      component: () => import('@/views/ProfileEdit.vue'),
+      meta: { title: '编辑资料', needLogin: true }
+    },
+    {
       path: '/user-center',
       name: 'UserCenter',
       component: () => import('@/views/UserCenter.vue'),

@@ -13,6 +13,8 @@ public class ComplaintQueryDTO {
 
     private String consumerPhone;
 
+    private Long consumerId;
+
     private Integer complaintType;
 
     private Integer status;

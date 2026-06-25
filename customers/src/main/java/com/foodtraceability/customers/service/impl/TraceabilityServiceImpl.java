@@ -5,8 +5,10 @@ import com.foodtraceability.customers.dto.TraceabilityVO;
 import com.foodtraceability.customers.entity.ProductTraceability;
 import com.foodtraceability.customers.entity.ScanRecord;
 import com.foodtraceability.customers.entity.TraceabilityNode;
+import com.foodtraceability.customers.entity.TraceCode;
 import com.foodtraceability.customers.mapper.ProductTraceabilityMapper;
 import com.foodtraceability.customers.mapper.ScanRecordMapper;
+import com.foodtraceability.customers.mapper.TraceCodeMapper;
 import com.foodtraceability.customers.mapper.TraceabilityNodeMapper;
 import com.foodtraceability.customers.service.TraceabilityService;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +25,7 @@ public class TraceabilityServiceImpl implements TraceabilityService {
     private final ProductTraceabilityMapper productTraceabilityMapper;
     private final TraceabilityNodeMapper traceabilityNodeMapper;
     private final ScanRecordMapper scanRecordMapper;
+    private final TraceCodeMapper traceCodeMapper;
 
     @Override
     public TraceabilityVO queryByBatchNo(String productBatchNo) {
@@ -48,6 +51,18 @@ public class TraceabilityServiceImpl implements TraceabilityService {
         vo.setExpirationDate(product.getExpirationDate());
         vo.setNodes(nodes);
         return vo;
+    }
+
+    @Override
+    public TraceabilityVO queryByTraceCode(String traceCode) {
+        TraceCode tc = traceCodeMapper.selectByTraceCode(traceCode);
+        if (tc == null) {
+            throw new RuntimeException("未找到该溯源码对应的产品信息");
+        }
+        if (tc.getTraceCodeStatus() != null && tc.getTraceCodeStatus() != 0) {
+            throw new RuntimeException("该溯源码已失效");
+        }
+        return queryByBatchNo(tc.getBatchNo());
     }
 
     @Override

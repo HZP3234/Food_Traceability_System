@@ -1,5 +1,6 @@
 package com.foodtraceability.customers.controller;
 
+import com.foodtraceability.customers.dto.ConsumerUpdateDTO;
 import com.foodtraceability.customers.dto.LoginDTO;
 import com.foodtraceability.customers.dto.Result;
 import com.foodtraceability.customers.dto.SendCodeDTO;
@@ -35,6 +36,12 @@ public class ConsumerController {
         if (consumer == null) {
             return Result.fail(404, "用户不存在");
         }
+        return Result.success(consumer);
+    }
+
+    @PutMapping("/update")
+    public Result<Consumer> update(@Valid @RequestBody ConsumerUpdateDTO dto) {
+        Consumer consumer = consumerService.updateConsumer(dto);
         return Result.success(consumer);
     }
 }

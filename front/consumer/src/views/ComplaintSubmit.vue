@@ -88,6 +88,10 @@ function onTypeSelect(type: ComplaintTypeKey) {
 }
 
 function onSubmit() {
+  if (!form.complaintType) {
+    showToast('请选择投诉类型')
+    return
+  }
   formRef.value?.validate().then(() => {
     showConfirmDialog({
       title: '确认提交',
@@ -107,6 +111,7 @@ function doSubmit() {
     productName: form.productName,
     consumerName: form.consumerName || '匿名',
     consumerPhone: form.consumerPhone,
+    consumerId: store.userInfo?.consumerId || undefined,
     complaintType: form.complaintType,
     complaintTitle: `${complaintTypes.find(t => t.value === form.complaintType)?.label || ''}投诉`,
     complaintContent: form.complaintContent,

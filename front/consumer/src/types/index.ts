@@ -54,6 +54,7 @@ export interface Complaint {
   productName: string
   consumerName: string
   consumerPhone: string
+  consumerId?: number
   complaintType: number
   complaintTitle: string
   complaintContent: string
@@ -70,6 +71,7 @@ export interface ComplaintSubmitDTO {
   productName: string
   consumerName: string
   consumerPhone: string
+  consumerId?: number
   complaintType: number
   complaintTitle: string
   complaintContent: string
@@ -81,6 +83,7 @@ export interface ComplaintQueryDTO {
   productBatchNo?: string
   productName?: string
   consumerPhone?: string
+  consumerId?: number
   complaintType?: number
   status?: number
   pageNum?: number
@@ -102,4 +105,12 @@ export interface UserInfo {
   complaintCount: number
   status: number
   createTime: string
+}
+
+export interface UserInfoUpdateDTO {
+  phone: string
+  nickName?: string
+  realName?: string
+  gender?: string
+  region?: string
 }

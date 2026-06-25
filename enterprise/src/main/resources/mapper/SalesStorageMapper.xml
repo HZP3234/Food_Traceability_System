@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.foodtraceability.enterprise.mapper.SalesStorageMapper">
+
+    <resultMap id="BaseResultMap" type="com.foodtraceability.enterprise.entity.SalesStorage">
+        <id column="storage_id" property="storageId"/>
+        <result column="terminal_code" property="terminalCode"/>
+        <result column="terminal_type" property="terminalType"/>
+        <result column="product_type" property="productType"/>
+        <result column="temperature" property="temperature"/>
+        <result column="humidity" property="humidity"/>
+        <result column="storage_method" property="storageMethod"/>
+        <result column="light_condition" property="lightCondition"/>
+        <result column="shelf_life" property="shelfLife"/>
+        <result column="location_code" property="locationCode"/>
+        <result column="operator" property="operator"/>
+        <result column="is_auto_filled" property="isAutoFilled"/>
+        <result column="remark" property="remark"/>
+        <result column="create_by" property="createBy"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_by" property="updateBy"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="is_deleted" property="isDeleted"/>
+    </resultMap>
+
+    <select id="selectByTerminalCode" resultMap="BaseResultMap">
+        SELECT * FROM t_sales_storage WHERE terminal_code = #{code} AND is_deleted = 0 LIMIT 1
+    </select>
+
+    <select id="selectByProductType" resultMap="BaseResultMap">
+        SELECT * FROM t_sales_storage WHERE product_type = #{type} AND is_deleted = 0 ORDER BY create_time DESC
+    </select>
+
+</mapper>

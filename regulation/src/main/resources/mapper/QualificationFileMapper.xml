@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.foodtraceability.regulation.mapper.QualificationFileMapper">
+
+    <resultMap id="BaseResultMap" type="com.foodtraceability.regulation.entity.QualificationFile">
+        <id column="qualification_id" property="qualificationId"/>
+        <result column="qualification_uuid" property="qualificationUuid"/>
+        <result column="enterprise_uuid" property="enterpriseUuid"/>
+        <result column="qualification_type" property="qualificationType"/>
+        <result column="qualification_no" property="qualificationNo"/>
+        <result column="issue_authority" property="issueAuthority"/>
+        <result column="valid_from" property="validFrom"/>
+        <result column="valid_to" property="validTo"/>
+        <result column="file_path" property="filePath"/>
+        <result column="file_hash" property="fileHash"/>
+        <result column="qualification_state" property="qualificationState"/>
+        <result column="audit_state" property="auditState"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="create_by" property="createBy"/>
+        <result column="update_by" property="updateBy"/>
+        <result column="is_deleted" property="isDeleted"/>
+    </resultMap>
+
+    <select id="selectByEnterpriseUuid" resultMap="BaseResultMap">
+        SELECT * FROM t_qualification WHERE enterprise_uuid = #{uuid} AND is_deleted = 0 ORDER BY create_time DESC
+    </select>
+
+    <select id="selectByQualificationType" resultMap="BaseResultMap">
+        SELECT * FROM t_qualification WHERE qualification_type = #{type} AND is_deleted = 0 ORDER BY create_time DESC
+    </select>
+
+    <select id="selectByAuditState" resultMap="BaseResultMap">
+        SELECT * FROM t_qualification WHERE audit_state = #{state} AND is_deleted = 0 ORDER BY create_time DESC
+    </select>
+
+    <select id="selectByQualificationState" resultMap="BaseResultMap">
+        SELECT * FROM t_qualification WHERE qualification_state = #{state} AND is_deleted = 0 ORDER BY create_time DESC
+    </select>
+
+</mapper>

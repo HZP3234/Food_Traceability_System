@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.foodtraceability.enterprise.mapper.RawMapper">
+
+    <resultMap id="BaseResultMap" type="com.foodtraceability.enterprise.entity.Raw">
+        <id column="raw_batch_id" property="rawBatchId"/>
+        <result column="batch_no" property="batchNo"/>
+        <result column="product_name" property="productName"/>
+        <result column="product_category" property="productCategory"/>
+        <result column="amount" property="amount"/>
+        <result column="unit" property="unit"/>
+        <result column="supplier_id" property="supplierId"/>
+        <result column="supplier_name" property="supplierName"/>
+        <result column="warehouse" property="warehouse"/>
+        <result column="storage_method" property="storageMethod"/>
+        <result column="shelf_life" property="shelfLife"/>
+        <result column="purchase_date" property="purchaseDate"/>
+        <result column="check_result" property="checkResult"/>
+        <result column="batch_status" property="batchStatus"/>
+        <result column="detail_id" property="detailId"/>
+        <result column="detail_status" property="detailStatus"/>
+        <result column="data_hash" property="dataHash"/>
+        <result column="remark" property="remark"/>
+        <result column="create_by" property="createBy"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_by" property="updateBy"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="is_deleted" property="isDeleted"/>
+    </resultMap>
+
+    <select id="selectByBatchNo" resultMap="BaseResultMap">
+        SELECT * FROM t_raw_batch WHERE batch_no = #{batchNo} AND is_deleted = 0 LIMIT 1
+    </select>
+
+    <select id="selectBySupplierId" resultMap="BaseResultMap">
+        SELECT * FROM t_raw_batch WHERE supplier_id = #{supplierId} AND is_deleted = 0 ORDER BY create_time DESC
+    </select>
+
+    <select id="selectByProductName" resultMap="BaseResultMap">
+        SELECT * FROM t_raw_batch WHERE product_name LIKE CONCAT('%', #{productName}, '%') AND is_deleted = 0 ORDER BY create_time DESC
+    </select>
+
+    <select id="selectByBatchStatus" resultMap="BaseResultMap">
+        SELECT * FROM t_raw_batch WHERE batch_status = #{batchStatus} AND is_deleted = 0 ORDER BY create_time DESC
+    </select>
+
+</mapper>

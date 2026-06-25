@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.foodtraceability.enterprise.mapper.CcTransportNodeMapper">
+
+    <resultMap id="BaseResultMap" type="com.foodtraceability.enterprise.entity.CcTransportNode">
+        <id column="node_id" property="nodeId"/>
+        <result column="order_no" property="orderNo"/>
+        <result column="node_type" property="nodeType"/>
+        <result column="node_time" property="nodeTime"/>
+        <result column="location" property="location"/>
+        <result column="operator" property="operator"/>
+        <result column="node_status" property="nodeStatus"/>
+        <result column="remark" property="remark"/>
+        <result column="create_by" property="createBy"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_by" property="updateBy"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="is_deleted" property="isDeleted"/>
+    </resultMap>
+
+    <select id="selectByOrderNo" resultMap="BaseResultMap">
+        SELECT * FROM t_cc_transport_node WHERE order_no = #{orderNo} AND is_deleted = 0 ORDER BY node_time ASC
+    </select>
+
+    <select id="selectByNodeType" resultMap="BaseResultMap">
+        SELECT * FROM t_cc_transport_node WHERE node_type = #{nodeType} AND is_deleted = 0 ORDER BY node_time DESC
+    </select>
+
+</mapper>

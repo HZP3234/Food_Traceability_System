@@ -3,13 +3,14 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import { useAppStore } from '@/store/app'
-import { queryTraceability } from '@/api/traceability'
+import { queryByTraceCode } from '@/api/traceability'
 import headImg from '@/assets/user_head_image.png'
 
 const router = useRouter()
 const store = useAppStore()
-const searchValue = ref('')
-const loading = ref(false)
+const showCodeDialog = ref(false)
+const traceCodeInput = ref('')
+const codeLoading = ref(false)
 
 function requireLogin(action: () => void) {
   if (!store.isLoggedIn) {
@@ -20,44 +21,10 @@ function requireLogin(action: () => void) {
   action()
 }
 
-function onSearch(val: string) {
-  if (!val.trim()) return
-  goTrace(val.trim())
-}
-
-function goTrace(batchNo: string) {
-  loading.value = true
-  queryTraceability({ productBatchNo: batchNo })
-    .then((res) => {
-      if (res.code === 200 && res.data) {
-        store.setBatchNo(batchNo)
-        store.addHistory(batchNo)
-        router.push({ name: 'TraceResult', query: { batchNo } })
-      } else {
-        showToast(res.message || '未查到该批次信息')
-      }
-    })
-    .catch((err) => {
-      showToast(err.message || '查询失败')
-    })
-    .finally(() => {
-      loading.value = false
-    })
-}
-
 function onScan() {
   requireLogin(() => {
     router.push({ name: 'Scanner' })
   })
-}
-
-function onHistoryClick(item: string) {
-  searchValue.value = item
-  goTrace(item)
-}
-
-function onClearHistory() {
-  store.clearHistory()
 }
 
 function goUserCenter() {
@@ -76,6 +43,37 @@ function goComplaintQuery() {
   requireLogin(() => {
     router.push('/complaint-query')
   })
+}
+
+function openCodeDialog() {
+  traceCodeInput.value = ''
+  showCodeDialog.value = true
+}
+
+function onCodeSearch() {
+  const code = traceCodeInput.value.trim()
+  if (!code) {
+    showToast('请输入溯源码')
+    return
+  }
+  codeLoading.value = true
+  queryByTraceCode(code)
+    .then((res) => {
+      if (res.code === 200 && res.data) {
+        store.setBatchNo(res.data.productBatchNo)
+        store.addHistory(code)
+        showCodeDialog.value = false
+        router.push({ name: 'TraceResult', query: { batchNo: res.data.productBatchNo } })
+      } else {
+        showToast(res.message || '未查到该溯源码信息')
+      }
+    })
+    .catch((err) => {
+      showToast(err.message || '查询失败')
+    })
+    .finally(() => {
+      codeLoading.value = false
+    })
 }
 </script>
 
@@ -98,16 +96,6 @@ function goComplaintQuery() {
       </div>
     </div>
 
-    <!-- 搜索区 -->
-    <div class="search-area">
-      <van-search
-        v-model="searchValue"
-        placeholder="请输入溯源码/批次号"
-        shape="round"
-        @search="onSearch"
-      />
-    </div>
-
     <!-- 扫码区 -->
     <div class="scan-area">
       <div class="scan-btn" @click="onScan">
@@ -116,25 +104,31 @@ function goComplaintQuery() {
         </div>
         <span>扫一扫溯源码</span>
       </div>
+      <div class="scan-btn" @click="openCodeDialog">
+        <div class="scan-icon code-icon">
+          <van-icon name="label-o" size="28" />
+        </div>
+        <span>输入溯源码</span>
+      </div>
     </div>
 
-    <!-- 搜索历史 -->
-    <div v-if="store.searchHistory.length" class="history-section">
-      <div class="section-title">
-        <span>搜索历史</span>
-        <span class="clear-btn" @click="onClearHistory">清除</span>
+    <!-- 溯源码输入弹窗 -->
+    <van-dialog
+      v-model:show="showCodeDialog"
+      title="输入溯源码"
+      show-cancel-button
+      :confirm-loading="codeLoading"
+      @confirm="onCodeSearch"
+    >
+      <div class="code-dialog-body">
+        <van-field
+          v-model="traceCodeInput"
+          placeholder="请输入溯源码"
+          clearable
+          autofocus
+        />
       </div>
-      <div class="history-list">
-        <span
-          v-for="item in store.searchHistory"
-          :key="item"
-          class="history-item"
-          @click="onHistoryClick(item)"
-        >
-          {{ item }}
-        </span>
-      </div>
-    </div>
+    </van-dialog>
 
     <!-- 功能入口 -->
     <div class="menu-section">
@@ -233,21 +227,13 @@ function goComplaintQuery() {
   margin: 0;
 }
 
-/* 搜索 */
-.search-area {
-  margin: 12px 20px 0;
-}
-
-.search-area :deep(.van-search__content) {
-  border-radius: 24px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-}
-
 /* 扫码 */
 .scan-area {
   display: flex;
   justify-content: center;
+  gap: 20px;
   margin: 32px 0;
+  flex-wrap: wrap;
 }
 
 .scan-btn {
@@ -272,50 +258,19 @@ function goComplaintQuery() {
   color: #07c160;
 }
 
+.code-icon {
+  background: rgba(25, 137, 250, 0.08);
+  color: #1989fa;
+}
+
+.code-dialog-body {
+  padding: 16px 0;
+}
+
 .scan-btn span {
   font-size: 16px;
   color: #323233;
   font-weight: 500;
-}
-
-/* 搜索历史 */
-.history-section {
-  margin: 0 20px 28px;
-  padding: 16px;
-  background: #fff;
-  border-radius: 12px;
-}
-
-.section-title {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 15px;
-  font-weight: 600;
-  color: #323233;
-  margin-bottom: 12px;
-}
-
-.clear-btn {
-  font-size: 12px;
-  color: #999;
-  font-weight: 400;
-  cursor: pointer;
-}
-
-.history-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.history-item {
-  padding: 8px 16px;
-  background: #f5f5f5;
-  border-radius: 16px;
-  font-size: 13px;
-  color: #666;
-  cursor: pointer;
 }
 
 /* 功能菜单 */

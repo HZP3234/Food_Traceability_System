@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.foodtraceability.enterprise.mapper.ProdMaterialInputMapper">
+
+    <resultMap id="BaseResultMap" type="com.foodtraceability.enterprise.entity.ProdMaterialInput">
+        <id column="input_id" property="inputId"/>
+        <result column="raw_batch_no" property="rawBatchNo"/>
+        <result column="material_name" property="materialName"/>
+        <result column="input_amount" property="inputAmount"/>
+        <result column="input_status" property="inputStatus"/>
+        <result column="create_by" property="createBy"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_by" property="updateBy"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="is_deleted" property="isDeleted"/>
+    </resultMap>
+
+    <select id="selectByRawBatchNo" resultMap="BaseResultMap">
+        SELECT * FROM t_prod_material_input WHERE raw_batch_no = #{batchNo} AND is_deleted = 0 LIMIT 1
+    </select>
+
+    <select id="selectByMaterialName" resultMap="BaseResultMap">
+        SELECT * FROM t_prod_material_input WHERE material_name LIKE CONCAT('%', #{materialName}, '%') AND is_deleted = 0 ORDER BY create_time DESC
+    </select>
+
+</mapper>

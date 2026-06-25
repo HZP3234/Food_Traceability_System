@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.foodtraceability.enterprise.mapper.CcTransportMapper">
+
+    <resultMap id="BaseResultMap" type="com.foodtraceability.enterprise.entity.CcTransport">
+        <id column="transport_id" property="transportId"/>
+        <result column="order_no" property="orderNo"/>
+        <result column="plate_no" property="plateNo"/>
+        <result column="driver_name" property="driverName"/>
+        <result column="driver_phone" property="driverPhone"/>
+        <result column="product_name" property="productName"/>
+        <result column="prod_batch_no" property="prodBatchNo"/>
+        <result column="departure_id" property="departureId"/>
+        <result column="departure_name" property="departureName"/>
+        <result column="destination_id" property="destinationId"/>
+        <result column="destination_name" property="destinationName"/>
+        <result column="loading_temp" property="loadingTemp"/>
+        <result column="depart_time" property="departTime"/>
+        <result column="estimated_arrival" property="estimatedArrival"/>
+        <result column="actual_arrival" property="actualArrival"/>
+        <result column="transport_method" property="transportMethod"/>
+        <result column="collect_interval" property="collectInterval"/>
+        <result column="temp_upper" property="tempUpper"/>
+        <result column="temp_lower" property="tempLower"/>
+        <result column="humid_upper" property="humidUpper"/>
+        <result column="humid_lower" property="humidLower"/>
+        <result column="alert_method" property="alertMethod"/>
+        <result column="transport_status" property="transportStatus"/>
+        <result column="data_hash" property="dataHash"/>
+        <result column="chain_hash" property="chainHash"/>
+        <result column="remark" property="remark"/>
+        <result column="create_by" property="createBy"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_by" property="updateBy"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="is_deleted" property="isDeleted"/>
+    </resultMap>
+
+    <select id="selectByOrderNo" resultMap="BaseResultMap">
+        SELECT * FROM t_cc_transport WHERE order_no = #{orderNo} AND is_deleted = 0 LIMIT 1
+    </select>
+
+    <select id="selectByProdBatchNo" resultMap="BaseResultMap">
+        SELECT * FROM t_cc_transport WHERE prod_batch_no = #{batchNo} AND is_deleted = 0 ORDER BY create_time DESC
+    </select>
+
+    <select id="selectByPlateNo" resultMap="BaseResultMap">
+        SELECT * FROM t_cc_transport WHERE plate_no = #{plateNo} AND is_deleted = 0 ORDER BY create_time DESC
+    </select>
+
+    <select id="selectByTransportStatus" resultMap="BaseResultMap">
+        SELECT * FROM t_cc_transport WHERE transport_status = #{status} AND is_deleted = 0 ORDER BY create_time DESC
+    </select>
+
+</mapper>
