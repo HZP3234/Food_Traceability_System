@@ -112,6 +112,9 @@ replay_pid*
 **/.vite/
 **/.vite/**/*
 
+# SSL 证书（本地开发）
+**/.cert/
+
 # Vue 相关
 **/coverage/
 **/*.swp
