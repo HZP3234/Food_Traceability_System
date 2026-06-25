@@ -29,6 +29,7 @@ const stats = computed(() => ({
 const batchForm = ref({ batchNo: '', productName: '', productCategory: '', amount: '', unit: '', supplierId: '', supplierName: '', warehouse: '', storageMethod: 0, shelfLife: '', purchaseDate: '', remark: '' })
 const qcForm = ref({ batchNo: '', checkResult: 1 })
 const storageMethods = ['常温', '冷藏', '冷冻']
+const customProductCategory = ref('')
 
 function notify(type: 'success' | 'error', text: string) { toast.value = { type, text }; setTimeout(() => (toast.value = null), 2600) }
 
@@ -55,16 +56,25 @@ function resetFilters() {
   loadList()
 }
 
-function openCreate() { editing.value = null; batchForm.value = { batchNo: '', productName: '', productCategory: '', amount: '', unit: '', supplierId: '', supplierName: '', warehouse: '', storageMethod: 0, shelfLife: '', purchaseDate: '', remark: '' }; showBatchModal.value = true }
-function openEdit(row: any) { editing.value = row; batchForm.value = { batchNo: row.batchNo ?? '', productName: row.productName ?? '', productCategory: row.productCategory ?? '', amount: row.amount ?? '', unit: row.unit ?? '', supplierId: row.supplierId ?? '', supplierName: row.supplierName ?? '', warehouse: row.warehouse ?? '', storageMethod: row.storageMethod ?? 0, shelfLife: row.shelfLife ?? '', purchaseDate: row.purchaseDate ?? '', remark: row.remark ?? '' }; showBatchModal.value = true }
+function openCreate() { editing.value = null; batchForm.value = { batchNo: '', productName: '', productCategory: '', amount: '', unit: '', supplierId: '', supplierName: '', warehouse: '', storageMethod: 0, shelfLife: '', purchaseDate: '', remark: '' }; customProductCategory.value = ''; showBatchModal.value = true }
+function openEdit(row: any) { editing.value = row; batchForm.value = { batchNo: row.batchNo ?? '', productName: row.productName ?? '', productCategory: row.productCategory ?? '', amount: row.amount ?? '', unit: row.unit ?? '', supplierId: row.supplierId ?? '', supplierName: row.supplierName ?? '', warehouse: row.warehouse ?? '', storageMethod: row.storageMethod ?? 0, shelfLife: row.shelfLife ?? '', purchaseDate: row.purchaseDate ?? '', remark: row.remark ?? '' }; customProductCategory.value = ''; showBatchModal.value = true }
+
+// 原料类别切换到非"其他"时清空自定义值
+function onCategoryChange() {
+  if (batchForm.value.productCategory !== '其他') {
+    customProductCategory.value = ''
+  }
+}
 async function submitBatch() {
   if (!batchForm.value.productName.trim()) { notify('error', '请填写产品名称'); return }
-  if (!batchForm.value.productCategory.trim()) { notify('error', '请填写产品类别'); return }
+  // 如果选了"其他"则使用自定义类别
+  const finalCategory = batchForm.value.productCategory === '其他' ? customProductCategory.value.trim() : batchForm.value.productCategory
+  if (!finalCategory) { notify('error', '请选择或填写产品类别'); return }
   if (!batchForm.value.supplierName.trim()) { notify('error', '请填写供应商名称'); return }
   if (!batchForm.value.supplierId.trim()) { notify('error', '请填写供应商编码'); return }
   if (!batchForm.value.warehouse.trim()) { notify('error', '请填写仓库'); return }
   try {
-    const data: Record<string, any> = { ...batchForm.value }
+    const data: Record<string, any> = { ...batchForm.value, productCategory: finalCategory }
     if (editing.value) { data.rawBatchId = editing.value.rawBatchId; await rawApi.update(data); notify('success', '批次更新成功') }
     else { await rawApi.create(data); notify('success', '批次创建成功，等待供应商上传源头信息') }
     showBatchModal.value = false; loadList()
@@ -149,23 +159,47 @@ onMounted(loadList)
 
     <!-- 批次模态框 -->
     <div v-if="showBatchModal" class="trace-modal-backdrop" @click.self="showBatchModal = false">
-      <section class="trace-modal"><header><div><p>批次管理</p><h2>{{ editing ? '编辑原料批次' : '创建原料批次' }}</h2></div><button @click="showBatchModal = false"><el-icon><Close /></el-icon></button></header>
+      <section class="trace-modal" style="width:760px"><header><div><p>批次管理</p><h2>{{ editing ? '编辑原料批次' : '创建原料批次' }}</h2></div><button @click="showBatchModal = false"><el-icon><Close /></el-icon></button></header>
         <div class="modal-body">
-          <div class="trace-hint info">💡 填写批次号、产品、供应商。创建后，原料供应商将补充源头详情。</div>
-          <div class="grid-form">
-            <label>批次号<input v-model="batchForm.batchNo" placeholder="留空自动生成" /></label>
-            <label>产品名称 *<input v-model="batchForm.productName" placeholder="如：生牛乳" /></label>
-            <label>产品类别 *<input v-model="batchForm.productCategory" placeholder="如：乳制品原料" /></label>
-            <label>供应商名称 *<input v-model="batchForm.supplierName" placeholder="哪家公司供货" /></label>
-            <label>数量<input v-model="batchForm.amount" type="number" placeholder="0.00" /></label>
-            <label>单位<input v-model="batchForm.unit" placeholder="kg / t" /></label>
-            <label>仓库 *<input v-model="batchForm.warehouse" placeholder="如：A1-03" /></label>
-            <label>储存方式<select v-model.number="batchForm.storageMethod"><option v-for="(m,i) in storageMethods" :key="i" :value="i">{{ m }}</option></select></label>
-            <label>保质期<input v-model="batchForm.shelfLife" type="date" /></label>
-            <label>采购日期<input v-model="batchForm.purchaseDate" type="date" /></label>
+          <!-- Section: 基础信息 -->
+          <div class="form-section">
+            <div class="form-section-title"><span class="section-ico">基</span>基础信息（生产商录入）</div>
+            <div class="trace-hint info">💡 生产商只需录入<strong>供应商名称</strong>和<strong>原料批次号</strong>即可入库。原料详细信息由原料供应商上传后自动关联。</div>
+            <div class="grid-form">
+              <label>原料名称 *<input v-model="batchForm.productName" placeholder="如：生牛乳" /></label>
+              <label>原料类别 *
+                <select v-model="batchForm.productCategory" @change="onCategoryChange">
+                  <option value="">请选择原料类别</option>
+                  <option value="乳制品原料">乳制品原料</option>
+                  <option value="果蔬原料">果蔬原料</option>
+                  <option value="肉禽原料">肉禽原料</option>
+                  <option value="粮油原料">粮油原料</option>
+                  <option value="其他">其他</option>
+                </select>
+              </label>
+              <!-- 选择"其他"时出现自定义填写框 -->
+              <label v-if="batchForm.productCategory === '其他'">自定义类别 *<input v-model="customProductCategory" placeholder="请输入自定义原料类别" /></label>
+              <label>原料供应商 *<input v-model="batchForm.supplierName" placeholder="哪家公司供货" /></label>
+              <label>原料批次号<input v-model="batchForm.batchNo" placeholder="填写批次号，留空自动生成" /></label>
+              <label>数量<input v-model="batchForm.amount" type="number" placeholder="0.00" /></label>
+              <label>单位<input v-model="batchForm.unit" placeholder="kg / t" /></label>
+              <label>采购日期<input v-model="batchForm.purchaseDate" type="date" /></label>
+            </div>
           </div>
-          <label style="display:grid;gap:6px;color:#718ba6;font-size:12px;font-weight:700;margin-top:15px">供应商编码 *<input v-model="batchForm.supplierId" placeholder="如：SUP2026001" style="width:100%;padding:9px;border:1px solid #d7e4f0;border-radius:7px" /></label>
-          <label style="display:grid;gap:6px;color:#718ba6;font-size:12px;font-weight:700;margin-top:15px">备注<textarea v-model="batchForm.remark" style="width:100%;padding:9px;border:1px solid #d7e4f0;border-radius:7px;min-height:60px" /></label>
+
+          <!-- Section: 入库信息 -->
+          <div class="form-section">
+            <div class="form-section-title"><span class="section-ico">库</span>入库信息</div>
+            <div class="grid-form">
+              <label>入库仓库 *<input v-model="batchForm.warehouse" placeholder="如：华北一号冷库" /></label>
+              <label>保质期至<input v-model="batchForm.shelfLife" type="date" /></label>
+            </div>
+          </div>
+
+          <div class="trace-hint info" style="background:#fff8ed;border-color:#f5d78b;color:#a45f00;">⚡ 入库后，<strong>原料供应商</strong>将收到提醒并上传原料详细信息（产地、种养、认证、检验报告、运输等），上传后将自动匹配到该批次号。<br/>储存条件与质检状态请在列表<strong>操作列</strong>中单独设置。</div>
+
+          <label style="display:grid;gap:6px;color:#718ba6;font-size:12px;font-weight:700;margin-top:10px">供应商编码 *<input v-model="batchForm.supplierId" placeholder="如：SUP2026001" style="width:100%;padding:9px;border:1px solid #d7e4f0;border-radius:7px" /></label>
+          <label style="display:grid;gap:6px;color:#718ba6;font-size:12px;font-weight:700;margin-top:15px">备注<textarea v-model="batchForm.remark" placeholder="请输入原料采购相关说明。" style="width:100%;padding:9px;border:1px solid #d7e4f0;border-radius:7px;min-height:60px" /></label>
         </div>
         <footer><button class="secondary" @click="showBatchModal = false"><el-icon><Close /></el-icon> 取消</button><button class="primary" @click="submitBatch"><el-icon><Check /></el-icon> {{ editing ? '保存' : '创建批次' }}</button></footer>
       </section>
@@ -203,4 +237,33 @@ onMounted(loadList)
 
 <style scoped>
 @import '../styles/trace-page.css';
+
+.form-section {
+  margin-bottom: 18px;
+}
+
+.form-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #eaf2ff;
+  font-size: 14px;
+  font-weight: 800;
+  color: #2467df;
+}
+
+.section-ico {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  display: inline-grid;
+  place-items: center;
+  background: #eaf2ff;
+  color: #2467df;
+  font-size: 12px;
+  font-weight: 900;
+  flex-shrink: 0;
+}
 </style>

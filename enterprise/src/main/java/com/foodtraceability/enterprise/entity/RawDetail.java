@@ -1,6 +1,8 @@
 package com.foodtraceability.enterprise.entity;
 
+import com.baomidou.mybatisplus.annotation.FieldStrategy;
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 
@@ -9,20 +11,31 @@ public class RawDetail {
     @TableId(type = IdType.AUTO)
     private Long rawDetailId;
     private String batchNo;
+    @TableField(insertStrategy = FieldStrategy.IGNORED)
     private String origin;
+    @TableField(insertStrategy = FieldStrategy.IGNORED)
     private String farmType;
+    @TableField(insertStrategy = FieldStrategy.IGNORED)
     private String feedType;
     private int certType;
+    @TableField(insertStrategy = FieldStrategy.IGNORED)
     private String inspectionNo;
+    @TableField(insertStrategy = FieldStrategy.IGNORED)
     private String breed;
+    @TableField(insertStrategy = FieldStrategy.IGNORED)
     private String scaleDesc;
+    @TableField(insertStrategy = FieldStrategy.IGNORED)
     private String collectDate;
+    @TableField(insertStrategy = FieldStrategy.IGNORED)
     private String plateNo;
+    @TableField(insertStrategy = FieldStrategy.IGNORED)
     private String transportTemp;
     private int storageMethod;
+    @TableField(insertStrategy = FieldStrategy.IGNORED)
     private String shelfLife;
     private String uploader;
     private String uploadTime;
+    @TableField(insertStrategy = FieldStrategy.IGNORED)
     private String remark;
     private String createBy;
     private String createTime;

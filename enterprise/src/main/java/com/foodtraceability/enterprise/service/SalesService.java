@@ -121,6 +121,14 @@ public class SalesService {
         return salesStockMapper.selectList(qw);
     }
 
+    // 查询全部库存列表（无需筛选条件）
+    public List<SalesStock> listAllStock() {
+        QueryWrapper<SalesStock> qw = new QueryWrapper<>();
+        qw.eq("is_deleted", 0);
+        qw.orderByDesc("create_time");
+        return salesStockMapper.selectList(qw);
+    }
+
     // 按生产批次查询库存
     public List<SalesStock> listStockByProdBatchNo(String prodBatchNo) {
         QueryWrapper<SalesStock> qw = new QueryWrapper<>();

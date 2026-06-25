@@ -87,6 +87,13 @@ public class SalesController {
         return salesService.listStockByTerminalId(terminalId);
     }
 
+    // 查询全部库存列表（无需筛选条件）
+    @RequestMapping("/listAllStock")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SELLER', 'MANUFACTURER', 'REGULATOR')")
+    public List<SalesStock> listAllStock() {
+        return salesService.listAllStock();
+    }
+
     // 按生产批次查询库存分布
     @RequestMapping("/listStockByBatch")
     @PreAuthorize("hasAnyRole('ADMIN', 'SELLER', 'MANUFACTURER', 'REGULATOR')")

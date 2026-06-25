@@ -155,7 +155,7 @@ export const rawApi = {
   qualityCheck: (batchNo: string, checkResult: number) => post('/Raw/qualityCheck', { batchNo, checkResult }),
 }
 
-// ==================== Production (生产/加工) ====================
+// ==================== Production (生产管理 — 加工已合并) ====================
 export const productionApi = {
   // Tech Template
   queryTemplate: (templateName: string) => get('/Production/queryTemplate', { templateName }),
@@ -165,18 +165,9 @@ export const productionApi = {
   updateTemplate: (data: Record<string, any>) => post('/Production/updateTemplate', data),
   deleteTemplate: (templateId: number) => post('/Production/deleteTemplate', { templateId }),
 
-  // Process Batch (加工批次)
-  queryProcessBatch: (batchNo: string) => get('/Production/queryProcessBatch', { batchNo }),
-  listProcessByRaw: (rawBatchNo: string) => get('/Production/listProcessByRaw', { rawBatchNo }),
-  listProcessBatch: (params: Record<string, any>) => get('/Production/listProcessBatch', params),
-  createProcessBatch: (data: Record<string, any>) => post('/Production/createProcessBatch', data),
-  updateProcessBatch: (data: Record<string, any>) => post('/Production/updateProcessBatch', data),
-  completeProcessBatch: (processBatchId: number) => post('/Production/completeProcessBatch', { processBatchId }),
-  deleteProcessBatch: (processBatchId: number) => post('/Production/deleteProcessBatch', { processBatchId }),
-
-  // Prod Batch (生产批次)
+  // Prod Batch (生产批次 — 含加工参数)
   queryProdBatch: (batchNo: string) => get('/Production/queryProdBatch', { batchNo }),
-  listProdByProcess: (processBatchNo: string) => get('/Production/listProdByProcess', { processBatchNo }),
+  listProdByRaw: (rawBatchNo: string) => get('/Production/listProdByRaw', { rawBatchNo }),
   listProdBatch: (params: Record<string, any>) => get('/Production/listProdBatch', params),
   createProdBatch: (data: Record<string, any>) => post('/Production/createProdBatch', data),
   updateProdBatch: (data: Record<string, any>) => post('/Production/updateProdBatch', data),
@@ -207,8 +198,6 @@ export const productionApi = {
   updateInspection: (data: Record<string, any>) => post('/Production/updateInspection', data),
   qualityCheckProd: (prodBatchNo: string, checkResult: number) =>
     post('/Production/qualityCheckProd', { prodBatchNo, checkResult }),
-  qualityCheckProcess: (processBatchNo: string, checkResult: number) =>
-    post('/Production/qualityCheckProcess', { processBatchNo, checkResult }),
   traceProcessChain: (prodBatchNo: string) => get('/Production/traceProcessChain', { prodBatchNo }),
 }
 
@@ -288,6 +277,7 @@ export const salesApi = {
   // Stock
   listStock: (terminalId: string) => get('/Sales/listStock', { terminalId }),
   listStockByBatch: (prodBatchNo: string) => get('/Sales/listStockByBatch', { prodBatchNo }),
+  listAllStock: () => get('/Sales/listAllStock'),
   stockIn: (data: Record<string, any>) => post('/Sales/stockIn', data),
   updateStock: (data: Record<string, any>) => post('/Sales/updateStock', data),
 

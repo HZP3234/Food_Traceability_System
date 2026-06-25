@@ -24,10 +24,12 @@ const stats = computed(() => ({
 }))
 
 const uploadForm = ref({
+  productName: '', productCategory: '', amount: '', uploadTime: '',
   origin: '', lngLat: '', farmType: '', feed: '', cert: '',
   inspectionNo: '', breed: '', scale: '', collectDate: '',
   transportCar: '', transportTemp: '', storage: '', shelfLife: '',
-  uploader: '', productName: '',
+  supplierQualNo: '', sourceInspectionNo: '',
+  uploader: '',
 })
 
 const matchForm = ref({ pendingCode: '', targetBatchNo: '' })
@@ -52,24 +54,30 @@ async function loadData() {
 function openUploadForBatch(row: any) {
   isNewUpload.value = false
   viewingBatchNo.value = row.batchNo
-  uploadForm.value = { origin: '', lngLat: '', farmType: '', feed: '', cert: '', inspectionNo: '', breed: '', scale: '', collectDate: '', transportCar: '', transportTemp: '', storage: '', shelfLife: '', uploader: row.supplierName || '', productName: row.productName || '' }
+  uploadForm.value = { productName: row.productName || '', productCategory: '', amount: row.amount ? String(row.amount) + (row.unit || '') : '', uploadTime: new Date().toISOString().slice(0, 16).replace('T', ' '), origin: '', lngLat: '', farmType: '', feed: '', cert: '', inspectionNo: '', breed: '', scale: '', collectDate: '', transportCar: '', transportTemp: '', storage: '', shelfLife: '', supplierQualNo: '', sourceInspectionNo: '', uploader: row.supplierName || currentUser || '' }
   showUploadModal.value = true
 }
 function openNewUpload() {
   isNewUpload.value = true
   viewingBatchNo.value = ''
-  uploadForm.value = { origin: '', lngLat: '', farmType: '', feed: '', cert: '', inspectionNo: '', breed: '', scale: '', collectDate: '', transportCar: '', transportTemp: '', storage: '', shelfLife: '', uploader: currentUser, productName: '' }
+  uploadForm.value = { productName: '', productCategory: '', amount: '', uploadTime: new Date().toISOString().slice(0, 16).replace('T', ' '), origin: '', lngLat: '', farmType: '', feed: '', cert: '', inspectionNo: '', breed: '', scale: '', collectDate: '', transportCar: '', transportTemp: '', storage: '', shelfLife: '', supplierQualNo: '', sourceInspectionNo: '', uploader: currentUser || '' }
   showUploadModal.value = true
 }
 
 async function submitUploadForBatch() {
   try {
     await rawApi.uploadDetail(viewingBatchNo.value, {
-      origin: uploadForm.value.origin, lngLat: uploadForm.value.lngLat, farmType: uploadForm.value.farmType,
-      feed: uploadForm.value.feed, cert: uploadForm.value.cert, inspectionNo: uploadForm.value.inspectionNo,
-      breed: uploadForm.value.breed, scale: uploadForm.value.scale, collectDate: uploadForm.value.collectDate,
-      transportCar: uploadForm.value.transportCar, transportTemp: uploadForm.value.transportTemp,
-      storage: uploadForm.value.storage, shelfLife: uploadForm.value.shelfLife, uploader: uploadForm.value.uploader || 'SYSTEM',
+      origin: uploadForm.value.origin, lngLat: uploadForm.value.lngLat,
+      farmType: uploadForm.value.farmType, feedType: uploadForm.value.feed,
+      certType: uploadForm.value.cert, inspectionNo: uploadForm.value.inspectionNo,
+      breed: uploadForm.value.breed, scaleDesc: uploadForm.value.scale,
+      collectDate: uploadForm.value.collectDate,
+      plateNo: uploadForm.value.transportCar, transportTemp: uploadForm.value.transportTemp,
+      storageMethod: uploadForm.value.storage, shelfLife: uploadForm.value.shelfLife,
+      sourceInspectionNo: uploadForm.value.sourceInspectionNo,
+      supplierQualNo: uploadForm.value.supplierQualNo,
+      productCategory: uploadForm.value.productCategory,
+      uploader: uploadForm.value.uploader || 'SYSTEM',
     })
     notify('success', '源头信息上传成功，已自动匹配到批次 ' + viewingBatchNo.value)
     showUploadModal.value = false; loadData()
@@ -79,8 +87,25 @@ async function submitProactiveUpload() {
   try {
     const now = new Date().toISOString().slice(0, 19).replace('T', ' ')
     await rawApi.proactiveUpload(
-      { origin: uploadForm.value.origin, lngLat: uploadForm.value.lngLat, farmType: uploadForm.value.farmType, feed: uploadForm.value.feed, cert: uploadForm.value.cert, inspectionNo: uploadForm.value.inspectionNo, breed: uploadForm.value.breed, scale: uploadForm.value.scale, collectDate: uploadForm.value.collectDate, transportCar: uploadForm.value.transportCar, transportTemp: uploadForm.value.transportTemp, storage: uploadForm.value.storage, uploader: currentUser || uploadForm.value.uploader || 'SYSTEM', uploadTime: now },
-      { pendingCode: '', supplierName: currentUser || uploadForm.value.uploader || '', productName: uploadForm.value.productName || '待匹配原料', amount: '0', uploadTime: now, pendingStatus: 1 }
+      {
+        origin: uploadForm.value.origin, lngLat: uploadForm.value.lngLat,
+        farmType: uploadForm.value.farmType, feedType: uploadForm.value.feed,
+        certType: uploadForm.value.cert, inspectionNo: uploadForm.value.inspectionNo,
+        breed: uploadForm.value.breed, scaleDesc: uploadForm.value.scale,
+        collectDate: uploadForm.value.collectDate,
+        plateNo: uploadForm.value.transportCar, transportTemp: uploadForm.value.transportTemp,
+        storageMethod: uploadForm.value.storage,
+        sourceInspectionNo: uploadForm.value.sourceInspectionNo,
+        supplierQualNo: uploadForm.value.supplierQualNo,
+        productCategory: uploadForm.value.productCategory,
+        uploader: currentUser || uploadForm.value.uploader || 'SYSTEM', uploadTime: now
+      },
+      {
+        pendingCode: '', supplierName: currentUser || uploadForm.value.uploader || '',
+        productName: uploadForm.value.productName || '待匹配原料',
+        productCategory: uploadForm.value.productCategory || '',
+        amount: uploadForm.value.amount || '0', uploadTime: now, pendingStatus: 1
+      }
     )
     notify('success', '原料信息已保存至待匹配列表')
     showUploadModal.value = false; loadData()
@@ -171,36 +196,118 @@ onMounted(loadData)
 
     <!-- 上传模态框 -->
     <div v-if="showUploadModal" class="trace-modal-backdrop" @click.self="showUploadModal = false">
-      <section class="trace-modal" style="width:760px">
+      <section class="trace-modal" style="width:780px">
         <header>
           <div><p>源头上传</p><h2>{{ isNewUpload ? '主动上传原料信息' : '为批次 ' + viewingBatchNo + ' 上传源头信息' }}</h2></div>
           <button @click="showUploadModal = false"><el-icon><Close /></el-icon></button>
         </header>
         <div class="modal-body">
-          <div v-if="isNewUpload" class="trace-hint info">⚡ 信息先保存至待匹配列表，等生产商创建批次后自动匹配。</div>
-          <div v-else class="trace-hint success">✓ 为批次 <strong>{{ viewingBatchNo }}</strong> 上传源头信息，提交后自动匹配。</div>
-          <div v-if="isNewUpload" class="grid-form" style="margin-bottom:12px">
-            <label>原料名称<input v-model="uploadForm.productName" placeholder="如：有机牧草" /></label>
-            <label>供应商<input v-model="uploadForm.uploader" placeholder="供应商名称" /></label>
+          <!-- 提示信息 -->
+          <div v-if="isNewUpload" class="trace-hint info">💡 您可以先上传原料详细信息，批次号可<strong>稍后匹配</strong>。上传后信息将进入"待匹配"列表。</div>
+          <div v-else class="trace-hint success">✓ 为批次 <strong>{{ viewingBatchNo }}</strong> 上传源头信息，提交后自动匹配到该批次号。</div>
+
+          <!-- Section: 批次匹配信息（已有批次上传） -->
+          <div v-if="!isNewUpload" class="form-section">
+            <div class="form-section-title"><span class="section-ico">匹</span>批次自动匹配</div>
+            <div class="grid-form">
+              <label>选择批次号（自动匹配）<input :value="viewingBatchNo" readonly style="background:#f8fafc" /></label>
+              <label>供应商名称<input v-model="uploadForm.uploader" readonly style="background:#f8fafc" /></label>
+              <label>原料名称<input v-model="uploadForm.productName" placeholder="如：生牛乳" /></label>
+              <label>原料类别
+                <select v-model="uploadForm.productCategory">
+                  <option value="">请选择</option>
+                  <option value="乳制品原料">乳制品原料</option>
+                  <option value="果蔬原料">果蔬原料</option>
+                  <option value="肉禽原料">肉禽原料</option>
+                  <option value="粮油原料">粮油原料</option>
+                </select>
+              </label>
+              <label>数量<input v-model="uploadForm.amount" placeholder="如：8.6t" /></label>
+              <label>上传时间<input :value="uploadForm.uploadTime" readonly style="background:#f8fafc;color:#718ba6" /></label>
+            </div>
           </div>
-          <div class="grid-form">
-            <label>产地/牧场<input v-model="uploadForm.origin" placeholder="河北燕北牧场" /></label>
-            <label>经纬度<input v-model="uploadForm.lngLat" placeholder="39.9289, 116.3883" /></label>
-            <label>种养类型<input v-model="uploadForm.farmType" placeholder="规模化牧场/合作社/散养" /></label>
-            <label>饲料/肥料<input v-model="uploadForm.feed" placeholder="有机牧草+精饲料" /></label>
-            <label>品种/品系<input v-model="uploadForm.breed" placeholder="荷斯坦奶牛" /></label>
-            <label>规模/面积<input v-model="uploadForm.scale" placeholder="5000头" /></label>
-            <label>采收日期<input v-model="uploadForm.collectDate" type="date" /></label>
-            <label>产地认证<input v-model="uploadForm.cert" placeholder="有机认证/绿色食品/无公害" /></label>
-            <label>检验报告编号<input v-model="uploadForm.inspectionNo" placeholder="JC20260610001" /></label>
-            <label>运输车辆<input v-model="uploadForm.transportCar" placeholder="冀C·B9180" /></label>
-            <label>运输温度<input v-model="uploadForm.transportTemp" placeholder="3.5℃" /></label>
-            <label>储存条件<input v-model="uploadForm.storage" placeholder="冷藏 0-4℃" /></label>
-            <label>保质期至<input v-model="uploadForm.shelfLife" type="date" /></label>
+
+          <!-- Section: 主动上传原料信息 -->
+          <div v-if="isNewUpload" class="form-section">
+            <div class="form-section-title"><span class="section-ico">主</span>主动上传原料信息</div>
+            <div class="grid-form">
+              <label>原料名称 <span class="required">*</span><input v-model="uploadForm.productName" placeholder="如：有机牧草" /></label>
+              <label>原料类别
+                <select v-model="uploadForm.productCategory">
+                  <option value="">请选择</option>
+                  <option value="乳制品原料">乳制品原料</option>
+                  <option value="果蔬原料">果蔬原料</option>
+                  <option value="肉禽原料">肉禽原料</option>
+                  <option value="粮油原料">粮油原料</option>
+                </select>
+              </label>
+              <label>供应商名称 <span class="required">*</span><input v-model="uploadForm.uploader" placeholder="供应商名称" /></label>
+              <label>数量<input v-model="uploadForm.amount" placeholder="如：12t" /></label>
+              <label>批次号（可选）
+                <select v-model="viewingBatchNo">
+                  <option value="">-- 暂不匹配，稍后处理 --</option>
+                  <option v-for="r in needUploadBatches" :key="r.rawBatchId" :value="r.batchNo">{{ r.batchNo }} - {{ r.productName }}</option>
+                </select>
+              </label>
+              <label>上传日期<input :value="uploadForm.uploadTime" readonly style="background:#f8fafc;color:#718ba6" /></label>
+            </div>
           </div>
+
+          <!-- Section: 源头详细信息 -->
+          <div class="form-section">
+            <div class="form-section-title"><span class="section-ico">源</span>源头详细信息</div>
+            <div class="grid-form">
+              <label>产地/牧场 <span class="required">*</span><input v-model="uploadForm.origin" placeholder="河北燕北牧场" /></label>
+              <label>产地经纬度<input v-model="uploadForm.lngLat" placeholder="39.9289, 116.3883" /></label>
+              <label>种养类型 <span class="required">*</span>
+                <select v-model="uploadForm.farmType">
+                  <option value="">请选择种养类型</option>
+                  <option value="规模化牧场">规模化牧场</option>
+                  <option value="农户散养">农户散养</option>
+                  <option value="合作社">合作社</option>
+                </select>
+              </label>
+              <label>饲料/肥料类型<input v-model="uploadForm.feed" placeholder="有机牧草+精饲料" /></label>
+              <label>品种/品系<input v-model="uploadForm.breed" placeholder="荷斯坦奶牛" /></label>
+              <label>规模/面积<input v-model="uploadForm.scale" placeholder="5000头" /></label>
+              <label>采收/收集日期<input v-model="uploadForm.collectDate" type="date" /></label>
+              <label>产地认证
+                <select v-model="uploadForm.cert">
+                  <option value="">请选择认证类型</option>
+                  <option value="有机认证">有机认证</option>
+                  <option value="绿色食品">绿色食品</option>
+                  <option value="无公害">无公害</option>
+                </select>
+              </label>
+              <label>检验报告编号<input v-model="uploadForm.inspectionNo" placeholder="JC20260610001" /></label>
+            </div>
+          </div>
+
+          <!-- Section: 运输与储存信息 -->
+          <div class="form-section">
+            <div class="form-section-title"><span class="section-ico">运</span>运输与储存信息</div>
+            <div class="grid-form">
+              <label>运输车辆<input v-model="uploadForm.transportCar" placeholder="冀C·B9180" /></label>
+              <label>运输温度<input v-model="uploadForm.transportTemp" placeholder="3.5℃" /></label>
+              <label>储存条件
+                <select v-model="uploadForm.storage">
+                  <option value="">请选择储存条件</option>
+                  <option value="冷藏 0-4℃">冷藏 0-4℃</option>
+                  <option value="冷冻 -18℃以下">冷冻 -18℃以下</option>
+                  <option value="常温避光">常温避光</option>
+                </select>
+              </label>
+              <label>保质期至<input v-model="uploadForm.shelfLife" type="date" /></label>
+              <label>源头检测报告<input v-model="uploadForm.sourceInspectionNo" placeholder="JC20260610001" /></label>
+              <label>供应商资质编号<input v-model="uploadForm.supplierQualNo" placeholder="QF20260611001" /></label>
+            </div>
+          </div>
+
+          <label style="display:grid;gap:6px;color:#718ba6;font-size:12px;font-weight:700;margin-top:10px">备注<textarea style="width:100%;padding:9px;border:1px solid #d7e4f0;border-radius:7px;min-height:60px" placeholder="请输入原料相关补充说明。" /></label>
         </div>
         <footer>
           <button class="secondary" @click="showUploadModal = false"><el-icon><Close /></el-icon> 取消</button>
+          <button class="secondary" @click="showUploadModal = false"><el-icon><Upload /></el-icon> 保存草稿</button>
           <button v-if="isNewUpload" class="primary" @click="submitProactiveUpload"><el-icon><Upload /></el-icon> 上传并进入待匹配</button>
           <button v-else class="primary" @click="submitUploadForBatch"><el-icon><Upload /></el-icon> 确认上传并自动匹配</button>
         </footer>
@@ -223,4 +330,35 @@ onMounted(loadData)
 
 <style scoped>
 @import '../styles/trace-page.css';
+
+.required { color: #e74c3c; font-weight: bold; margin-left: 2px; }
+
+.form-section {
+  margin-bottom: 18px;
+}
+
+.form-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #eaf2ff;
+  font-size: 14px;
+  font-weight: 800;
+  color: #2467df;
+}
+
+.section-ico {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  display: inline-grid;
+  place-items: center;
+  background: #eaf2ff;
+  color: #2467df;
+  font-size: 12px;
+  font-weight: 900;
+  flex-shrink: 0;
+}
 </style>

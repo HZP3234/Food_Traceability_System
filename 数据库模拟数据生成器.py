@@ -66,7 +66,7 @@ tables = [
     't_cc_receipt', 't_cc_temp_humidity', 't_cc_transport_node', 't_cc_transport', 't_cc_vehicle',
     't_quality_inspection', 't_prod_material_input', 't_prod_env_record',
     't_trace_code',
-    't_prod_batch', 't_process_batch', 't_tech_template',
+    't_prod_batch', 't_tech_template',
     't_purchase_order', 't_raw_pending', 't_raw_detail', 't_raw_batch',
     't_warehouse', 't_qualification', 't_enterprise',
 ]
@@ -262,53 +262,38 @@ for i in range(8):
 bulk_insert('t_purchase_order', ['order_no','supplier_id','supplier_name','product_category','import_method','warehouse_name','purchase_date','file_path','order_status','remark','create_by','create_time','update_by','update_time','is_deleted'], order_rows)
 
 # ---- 3.7 Tech Template ----
-print("[3] Tech Template, Process Batch, Prod Batch")
+print("[3] Tech Template, Prod Batch (加工参数已合并)")
 tmpl_rows = [(t[0], t[1], t[2], t[3], t[4], t[5], t[6], t[7], t[8], t[9], t[10], t[11], 1, None, 'admin', now_str(), 'admin', now_str(), 0) for t in TEMPLATES]
 bulk_insert('t_tech_template', ['template_name','version','applicable_product','target_temp','duration','pressure','cool_temp','fill_temp','stir_speed','ph_value','viscosity','clean_level','template_status','remark','create_by','create_time','update_by','update_time','is_deleted'], tmpl_rows)
 
-# ---- 3.8 Process Batch ----
-process_batch_nos = []
-process_rows = []
-prod_names = ['有机西红柿', '鲜牛肉(冷鲜)', '原味酸奶', '冷冻鸡胸肉', '精选猪五花肉', '有机生菜', '纯牛奶(巴氏杀菌)', '鲜鸡蛋(散养)']
-for i in range(10):
-    dt = random_datetime_s(60)
-    batch_no = f"PCB{datetime.strptime(dt, '%Y-%m-%d %H:%M:%S').strftime('%Y%m%d')}{i+1:04d}"
-    process_batch_nos.append(batch_no)
-    product = prod_names[i % len(prod_names)]
-    tmpl = TEMPLATES[i % len(TEMPLATES)]
-    process_rows.append((batch_no, product, tmpl[0], random.choice(raw_batch_nos),
-                         random.randint(100, 2000), dt[:10], random.choice(OPERATORS),
-                         random.choice(LINES), random.randint(1, 3),
-                         f'{random.randint(2,75)}℃', f'{random.randint(10,240)}min',
-                         f'{random.uniform(0.1,0.5):.1f}MPa', f'{random.randint(-5,8)}℃',
-                         f'{random.randint(2,15)}℃', f'{random.uniform(4.0,7.5):.1f}',
-                         f'{random.randint(500,2000)}cP',
-                         random.choice([1, 1, 1, 2, 3]),
-                         gen_hash(f"proc_{batch_no}"), gen_hash(f"chain_proc_{batch_no}"),
-                         None, 'SYSTEM', dt, 'SYSTEM', dt, 0))
-bulk_insert('t_process_batch', ['batch_no','product_name','template_name','raw_batch_no','planned_amount','process_date','operator','production_line','shift','actual_temp','actual_duration','actual_pressure','actual_cool_temp','actual_fill_temp','actual_ph','actual_viscosity','batch_status','data_hash','chain_hash','remark','create_by','create_time','update_by','update_time','is_deleted'], process_rows)
-
-# ---- 3.9 Prod Batch ----
-# Use a counter to ensure unique batch_no for prod batches
+# ---- 3.8 Prod Batch（加工批次已合并） ----
 prod_batch_nos = []
 prod_rows = []
-# Use fixed date offsets to avoid collisions
+prod_names = ['有机西红柿', '鲜牛肉(冷鲜)', '原味酸奶', '冷冻鸡胸肉', '精选猪五花肉', '有机生菜', '纯牛奶(巴氏杀菌)', '鲜鸡蛋(散养)']
 for i in range(10):
-    dt_offset = 60 - i * 5  # spread dates apart
+    dt_offset = 60 - i * 5
     dt = random_datetime_s(dt_offset)
     batch_no = f"PB{datetime.strptime(dt, '%Y-%m-%d %H:%M:%S').strftime('%Y%m%d')}{i+1:04d}"
     prod_batch_nos.append(batch_no)
     product = prod_names[i % len(prod_names)]
+    tmpl = TEMPLATES[i % len(TEMPLATES)]
     planned = random.randint(100, 2000)
     actual = int(planned * random.uniform(0.95, 1.05))
-    prod_rows.append((batch_no, product, process_batch_nos[i],
-                      random.choice(LINES), planned, actual, dt[:10],
+    raw_batch = random.choice(raw_batch_nos) if raw_batch_nos else ''
+    prod_rows.append((batch_no, product,
+                      tmpl[0], raw_batch, dt[:10], random.choice(OPERATORS),
+                      random.choice(LINES), random.randint(1, 3),
+                      f'{random.randint(2,75)}℃', f'{random.randint(10,240)}min',
+                      f'{random.uniform(0.1,0.5):.1f}MPa', f'{random.randint(-5,8)}℃',
+                      f'{random.randint(2,15)}℃', f'{random.uniform(4.0,7.5):.1f}',
+                      f'{random.randint(500,2000)}cP',
+                      planned, actual, dt[:10],
                       random.choice([1, 1, 1, 2]),
                       random.choice([0, 1, 1]),
                       random.choice([1, 1, 2, 3]),
                       gen_hash(f"prod_{batch_no}"), gen_hash(f"chain_prod_{batch_no}"),
                       None, 'SYSTEM', dt, 'SYSTEM', dt, 0))
-bulk_insert('t_prod_batch', ['batch_no','product_name','process_batch_no','production_line','planned_amount','actual_amount','production_date','check_result','code_status','batch_status','data_hash','chain_hash','remark','create_by','create_time','update_by','update_time','is_deleted'], prod_rows)
+bulk_insert('t_prod_batch', ['batch_no','product_name','template_name','raw_batch_no','process_date','operator','production_line','shift','actual_temp','actual_duration','actual_pressure','actual_cool_temp','actual_fill_temp','actual_ph','actual_viscosity','planned_amount','actual_amount','production_date','check_result','code_status','batch_status','data_hash','chain_hash','remark','create_by','create_time','update_by','update_time','is_deleted'], prod_rows)
 
 # ---- 3.10 Trace Code ----
 print("[4] Trace Code, Env Record, Material Input, Quality Inspection")
@@ -364,10 +349,8 @@ for i in range(20):
     biz_type = (i % 3) + 1
     if biz_type == 1:
         biz_no = raw_batch_nos[i % len(raw_batch_nos)]
-    elif biz_type == 2:
-        biz_no = prod_batch_nos[i % len(prod_batch_nos)]
     else:
-        biz_no = process_batch_nos[i % len(process_batch_nos)]
+        biz_no = prod_batch_nos[i % len(prod_batch_nos)]
     inspection_no = f"INSP{datetime.strptime(dt, '%Y-%m-%d %H:%M:%S').strftime('%Y%m%d')}{i+1:04d}"
     result = random.choice([1, 1, 1, 1, 2, 3])
     inspection_rows.append((inspection_no, biz_type, biz_no, random.randint(1, 4), result,
@@ -572,7 +555,7 @@ print("[8] Audit Log, Rectify Task, Regulatory Trace")
 audit_rows = []
 actions = [(1, '创建'), (2, '更新'), (3, '删除'), (4, '查询'), (5, '导出')]
 targets = ['t_trace_code', 't_raw_batch', 't_prod_batch', 't_enterprise', 't_qualification',
-           't_cc_transport', 't_complaint_record', 't_process_batch', 't_sales_stock']
+           't_cc_transport', 't_complaint_record', 't_sales_stock']
 op_list = [('OP001', '张明远'), ('OP002', '李建国'), ('OP003', 'admin')]
 for i in range(25):
     dt = random_datetime_s(30)

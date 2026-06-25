@@ -142,6 +142,20 @@ public class RawService {
         detail.setUpdateTime(now);
         detail.setCreateBy(detail.getCreateBy() != null ? detail.getCreateBy() : "SYSTEM");
         detail.setUpdateBy(detail.getUpdateBy() != null ? detail.getUpdateBy() : "SYSTEM");
+        // 可为空的字段设默认值，避免数据库报错产生乱码
+        if (detail.getOrigin() == null || detail.getOrigin().isBlank()) detail.setOrigin("未填写");
+        if (detail.getFarmType() == null || detail.getFarmType().isBlank()) detail.setFarmType("未填写");
+        if (detail.getFeedType() == null || detail.getFeedType().isBlank()) detail.setFeedType("未填写");
+        if (detail.getInspectionNo() == null || detail.getInspectionNo().isBlank()) detail.setInspectionNo("未填写");
+        if (detail.getBreed() == null || detail.getBreed().isBlank()) detail.setBreed("未填写");
+        if (detail.getScaleDesc() == null || detail.getScaleDesc().isBlank()) detail.setScaleDesc("未填写");
+        if (detail.getCollectDate() == null || detail.getCollectDate().isBlank())
+            detail.setCollectDate(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+        if (detail.getPlateNo() == null || detail.getPlateNo().isBlank()) detail.setPlateNo("未填写");
+        if (detail.getTransportTemp() == null || detail.getTransportTemp().isBlank()) detail.setTransportTemp("未填写");
+        if (detail.getShelfLife() == null || detail.getShelfLife().isBlank())
+            detail.setShelfLife("2099-12-31");
+        if (detail.getRemark() == null) detail.setRemark("");
         int num = rawDetailMapper.insert(detail);
 
         // 回写原料批次表
@@ -167,6 +181,20 @@ public class RawService {
         detail.setUpdateTime(now);
         detail.setCreateBy(operator);
         detail.setUpdateBy(operator);
+        // 可为空的字段设默认值，避免数据库报错产生乱码
+        if (detail.getOrigin() == null || detail.getOrigin().isBlank()) detail.setOrigin("未填写");
+        if (detail.getFarmType() == null || detail.getFarmType().isBlank()) detail.setFarmType("未填写");
+        if (detail.getFeedType() == null || detail.getFeedType().isBlank()) detail.setFeedType("未填写");
+        if (detail.getInspectionNo() == null || detail.getInspectionNo().isBlank()) detail.setInspectionNo("未填写");
+        if (detail.getBreed() == null || detail.getBreed().isBlank()) detail.setBreed("未填写");
+        if (detail.getScaleDesc() == null || detail.getScaleDesc().isBlank()) detail.setScaleDesc("未填写");
+        if (detail.getCollectDate() == null || detail.getCollectDate().isBlank())
+            detail.setCollectDate(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+        if (detail.getPlateNo() == null || detail.getPlateNo().isBlank()) detail.setPlateNo("未填写");
+        if (detail.getTransportTemp() == null || detail.getTransportTemp().isBlank()) detail.setTransportTemp("未填写");
+        if (detail.getShelfLife() == null || detail.getShelfLife().isBlank())
+            detail.setShelfLife("2099-12-31");
+        if (detail.getRemark() == null) detail.setRemark("");
         rawDetailMapper.insert(detail);
 
         if (pending.getPendingCode() == null || pending.getPendingCode().isBlank()) {

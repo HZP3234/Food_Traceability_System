@@ -883,7 +883,6 @@ public class TraceCodeService {
         switch (bizType) {
             case "RAW_BATCH":      return "原料批次";
             case "PROD_BATCH":     return "生产批次";
-            case "PROCESS_BATCH":  return "加工批次";
             case "INSPECTION":     return "质检记录";
             case "LOGISTICS":      return "物流运输";
             case "SALES_TERMINAL": return "销售终端";
