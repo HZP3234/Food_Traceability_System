@@ -16,10 +16,10 @@ import com.foodtraceability.enterprise.entity.ProdEnvRecord;
 import com.foodtraceability.enterprise.entity.QualityInspection;
 import com.foodtraceability.enterprise.entity.Raw;
 import com.foodtraceability.enterprise.mapper.TechTemplateMapper;
-import com.foodtraceability.enterprise.mapper.ProdBatchMapper;
+import com.foodtraceability.enterprise.mapper.EnterpriseProdBatchMapper;
 import com.foodtraceability.enterprise.mapper.ProdMaterialInputMapper;
 import com.foodtraceability.enterprise.mapper.ProdEnvRecordMapper;
-import com.foodtraceability.enterprise.mapper.QualityInspectionMapper;
+import com.foodtraceability.enterprise.mapper.EnterpriseQualityInspectionMapper;
 import com.foodtraceability.enterprise.mapper.RawMapper;
 
 /**
@@ -31,13 +31,13 @@ public class ProductionService {
     @Autowired
     private TechTemplateMapper techTemplateMapper;
     @Autowired
-    private ProdBatchMapper prodBatchMapper;
+    private EnterpriseProdBatchMapper prodBatchMapper;
     @Autowired
     private ProdMaterialInputMapper prodMaterialInputMapper;
     @Autowired
     private ProdEnvRecordMapper prodEnvRecordMapper;
     @Autowired
-    private QualityInspectionMapper qualityInspectionMapper;
+    private EnterpriseQualityInspectionMapper qualityInspectionMapper;
     @Autowired
     private RawMapper rawMapper;
 

@@ -8,7 +8,7 @@ import java.util.List;
 import org.apache.ibatis.annotations.Param;
 
 @Mapper
-public interface ProcessBatchMapper extends BaseMapper<ProcessBatch> {
+public interface EnterpriseProcessBatchMapper extends BaseMapper<ProcessBatch> {
 
     ProcessBatch selectByBatchNo(@Param("batchNo") String batchNo);
 

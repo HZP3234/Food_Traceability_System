@@ -19,7 +19,7 @@ import com.foodtraceability.enterprise.entity.CcTransportNode;
 import com.foodtraceability.enterprise.entity.CcReceipt;
 import com.foodtraceability.enterprise.mapper.WarehouseMapper;
 import com.foodtraceability.enterprise.mapper.CcVehicleMapper;
-import com.foodtraceability.enterprise.mapper.CcTransportMapper;
+import com.foodtraceability.enterprise.mapper.EnterpriseCcTransportMapper;
 import com.foodtraceability.enterprise.mapper.CcTempHumidityMapper;
 import com.foodtraceability.enterprise.mapper.CcTransportNodeMapper;
 import com.foodtraceability.enterprise.mapper.CcReceiptMapper;
@@ -31,7 +31,7 @@ public class ColdChainService {
     @Autowired
     private CcVehicleMapper ccVehicleMapper;
     @Autowired
-    private CcTransportMapper ccTransportMapper;
+    private EnterpriseCcTransportMapper ccTransportMapper;
     @Autowired
     private CcTempHumidityMapper ccTempHumidityMapper;
     @Autowired

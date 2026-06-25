@@ -8,7 +8,7 @@ import java.util.List;
 import org.apache.ibatis.annotations.Param;
 
 @Mapper
-public interface ProdBatchMapper extends BaseMapper<ProdBatch> {
+public interface EnterpriseProdBatchMapper extends BaseMapper<ProdBatch> {
 
     ProdBatch selectByBatchNo(@Param("batchNo") String batchNo);
 

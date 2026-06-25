@@ -8,7 +8,7 @@ import java.util.List;
 import org.apache.ibatis.annotations.Param;
 
 @Mapper
-public interface CcTransportMapper extends BaseMapper<CcTransport> {
+public interface EnterpriseCcTransportMapper extends BaseMapper<CcTransport> {
 
     CcTransport selectByOrderNo(@Param("orderNo") String orderNo);
 

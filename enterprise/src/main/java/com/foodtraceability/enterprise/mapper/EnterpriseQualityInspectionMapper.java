@@ -8,7 +8,7 @@ import java.util.List;
 import org.apache.ibatis.annotations.Param;
 
 @Mapper
-public interface QualityInspectionMapper extends BaseMapper<QualityInspection> {
+public interface EnterpriseQualityInspectionMapper extends BaseMapper<QualityInspection> {
 
     QualityInspection selectByInspectionNo(@Param("inspectionNo") String inspectionNo);
 
