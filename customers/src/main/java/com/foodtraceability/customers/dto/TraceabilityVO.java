@@ -14,11 +14,20 @@ public class TraceabilityVO {
     /** 商品名称 */
     private String productName;
 
+    /** 商品规格 */
+    private String productSpec;
+
     /** 生产企业 */
     private String manufacturer;
 
+    /** 产地 */
+    private String origin;
+
     /** 生产日期 */
     private String productionDate;
+
+    /** 保质期至 */
+    private String expirationDate;
 
     /** 生产线 */
     private String productionLine;

@@ -18,7 +18,6 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 
@@ -82,8 +81,8 @@ class TraceabilityControllerTest {
         mockVO.setProductSpec("800g/罐");
         mockVO.setManufacturer("XX乳业有限公司");
         mockVO.setOrigin("内蒙古");
-        mockVO.setProductionDate(LocalDate.of(2026, 6, 5));
-        mockVO.setExpirationDate(LocalDate.of(2028, 6, 4));
+        mockVO.setProductionDate("2026-06-05");
+        mockVO.setExpirationDate("2028-06-04");
         mockVO.setNodes(Arrays.asList(node1, node2));
     }
 

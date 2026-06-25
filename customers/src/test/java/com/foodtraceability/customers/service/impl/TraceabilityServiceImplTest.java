@@ -102,8 +102,8 @@ class TraceabilityServiceImplTest {
             assertEquals("800g/罐", result.getProductSpec());
             assertEquals("XX乳业有限公司", result.getManufacturer());
             assertEquals("内蒙古", result.getOrigin());
-            assertEquals(LocalDate.of(2026, 6, 5), result.getProductionDate());
-            assertEquals(LocalDate.of(2028, 6, 4), result.getExpirationDate());
+            assertEquals("2026-06-05", result.getProductionDate());
+            assertEquals("2028-06-04", result.getExpirationDate());
             assertNotNull(result.getNodes());
             assertEquals(2, result.getNodes().size());
             assertEquals("原材料采购", result.getNodes().get(0).getNodeName());
