@@ -10,6 +10,7 @@
         <result column="product_name" property="productName"/>
         <result column="consumer_name" property="consumerName"/>
         <result column="consumer_phone" property="consumerPhone"/>
+        <result column="consumer_id" property="consumerId"/>
         <result column="complaint_type" property="complaintType"/>
         <result column="complaint_title" property="complaintTitle"/>
         <result column="complaint_content" property="complaintContent"/>
@@ -20,33 +21,55 @@
         <result column="feedback_by" property="feedbackBy"/>
         <result column="create_time" property="createTime"/>
         <result column="update_time" property="updateTime"/>
-        <result column="deleted" property="deleted"/>
+        <result column="is_deleted" property="isDeleted"/>
     </resultMap>
 
-    <select id="selectComplaintPage" resultMap="BaseResultMap">
-        SELECT *
-        FROM t_complaint_record
-        <where>
-            deleted = 0
-            <if test="complaintNo != null and complaintNo != ''">
-                AND complaint_no = #{complaintNo}
-            </if>
-            <if test="productBatchNo != null and productBatchNo != ''">
-                AND product_batch_no = #{productBatchNo}
-            </if>
-            <if test="productName != null and productName != ''">
-                AND product_name LIKE CONCAT('%', #{productName}, '%')
-            </if>
-            <if test="consumerPhone != null and consumerPhone != ''">
-                AND consumer_phone = #{consumerPhone}
-            </if>
-            <if test="complaintType != null">
-                AND complaint_type = #{complaintType}
-            </if>
-            <if test="status != null">
-                AND status = #{status}
-            </if>
-        </where>
+    <select id="selectByComplaintNo" resultMap="BaseResultMap">
+        SELECT * FROM t_complaint_record
+        WHERE complaint_no = #{complaintNo}
+          AND is_deleted = 0
+        LIMIT 1
+    </select>
+
+    <select id="selectByConsumerId" resultMap="BaseResultMap">
+        SELECT * FROM t_complaint_record
+        WHERE consumer_id = #{consumerId}
+          AND is_deleted = 0
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="selectByProductBatchNo" resultMap="BaseResultMap">
+        SELECT * FROM t_complaint_record
+        WHERE product_batch_no = #{batchNo}
+          AND is_deleted = 0
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="selectByStatus" resultMap="BaseResultMap">
+        SELECT * FROM t_complaint_record
+        WHERE status = #{status}
+          AND is_deleted = 0
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="selectPageByConditions" resultMap="BaseResultMap">
+        SELECT * FROM t_complaint_record
+        WHERE is_deleted = 0
+        <if test="complaintNo != null and complaintNo != ''">
+            AND complaint_no LIKE CONCAT('%', #{complaintNo}, '%')
+        </if>
+        <if test="complaintType != null">
+            AND complaint_type = #{complaintType}
+        </if>
+        <if test="status != null">
+            AND status = #{status}
+        </if>
+        <if test="consumerPhone != null and consumerPhone != ''">
+            AND consumer_phone LIKE CONCAT('%', #{consumerPhone}, '%')
+        </if>
+        <if test="productName != null and productName != ''">
+            AND product_name LIKE CONCAT('%', #{productName}, '%')
+        </if>
         ORDER BY create_time DESC
     </select>
 

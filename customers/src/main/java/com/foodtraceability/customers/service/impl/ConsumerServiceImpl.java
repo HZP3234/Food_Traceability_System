@@ -1,6 +1,7 @@
 package com.foodtraceability.customers.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.foodtraceability.customers.dto.ConsumerUpdateDTO;
 import com.foodtraceability.customers.entity.Consumer;
 import com.foodtraceability.customers.mapper.ConsumerMapper;
 import com.foodtraceability.customers.service.ConsumerService;
@@ -48,5 +49,29 @@ public class ConsumerServiceImpl implements ConsumerService {
     public Consumer getByPhone(String phone) {
         return consumerMapper.selectOne(
                 new LambdaQueryWrapper<Consumer>().eq(Consumer::getPhone, phone));
+    }
+
+    @Override
+    public Consumer updateConsumer(ConsumerUpdateDTO dto) {
+        Consumer consumer = consumerMapper.selectOne(
+                new LambdaQueryWrapper<Consumer>().eq(Consumer::getPhone, dto.getPhone()));
+        if (consumer == null) {
+            throw new RuntimeException("用户不存在");
+        }
+        if (dto.getNickName() != null) {
+            consumer.setNickName(dto.getNickName());
+        }
+        if (dto.getRealName() != null) {
+            consumer.setRealName(dto.getRealName());
+        }
+        if (dto.getGender() != null) {
+            consumer.setGender(dto.getGender());
+        }
+        if (dto.getRegion() != null) {
+            consumer.setRegion(dto.getRegion());
+        }
+        consumer.setUpdateBy(consumer.getPhone());
+        consumerMapper.updateById(consumer);
+        return consumer;
     }
 }

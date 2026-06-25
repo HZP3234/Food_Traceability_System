@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.foodtraceability.enterprise.mapper.ProcessBatchMapper">
+
+    <resultMap id="BaseResultMap" type="com.foodtraceability.enterprise.entity.ProcessBatch">
+        <id column="process_batch_id" property="processBatchId"/>
+        <result column="batch_no" property="batchNo"/>
+        <result column="product_name" property="productName"/>
+        <result column="template_name" property="templateName"/>
+        <result column="raw_batch_no" property="rawBatchNo"/>
+        <result column="planned_amount" property="plannedAmount"/>
+        <result column="process_date" property="processDate"/>
+        <result column="operator" property="operator"/>
+        <result column="production_line" property="productionLine"/>
+        <result column="shift" property="shift"/>
+        <result column="actual_temp" property="actualTemp"/>
+        <result column="actual_duration" property="actualDuration"/>
+        <result column="actual_pressure" property="actualPressure"/>
+        <result column="actual_cool_temp" property="actualCoolTemp"/>
+        <result column="actual_fill_temp" property="actualFillTemp"/>
+        <result column="actual_ph" property="actualPh"/>
+        <result column="actual_viscosity" property="actualViscosity"/>
+        <result column="batch_status" property="batchStatus"/>
+        <result column="data_hash" property="dataHash"/>
+        <result column="chain_hash" property="chainHash"/>
+        <result column="remark" property="remark"/>
+        <result column="create_by" property="createBy"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_by" property="updateBy"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="is_deleted" property="isDeleted"/>
+    </resultMap>
+
+    <select id="selectByBatchNo" resultMap="BaseResultMap">
+        SELECT * FROM t_process_batch WHERE batch_no = #{batchNo} AND is_deleted = 0 LIMIT 1
+    </select>
+
+    <select id="selectByRawBatchNo" resultMap="BaseResultMap">
+        SELECT * FROM t_process_batch WHERE raw_batch_no = #{rawBatchNo} AND is_deleted = 0 ORDER BY create_time DESC
+    </select>
+
+    <select id="selectByProductName" resultMap="BaseResultMap">
+        SELECT * FROM t_process_batch WHERE product_name LIKE CONCAT('%', #{productName}, '%') AND is_deleted = 0 ORDER BY create_time DESC
+    </select>
+
+    <select id="selectByBatchStatus" resultMap="BaseResultMap">
+        SELECT * FROM t_process_batch WHERE batch_status = #{batchStatus} AND is_deleted = 0 ORDER BY create_time DESC
+    </select>
+
+</mapper>

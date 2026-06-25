@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.foodtraceability.enterprise.mapper.CcTempHumidityMapper">
+
+    <resultMap id="BaseResultMap" type="com.foodtraceability.enterprise.entity.CcTempHumidity">
+        <id column="record_id" property="recordId"/>
+        <result column="order_no" property="orderNo"/>
+        <result column="temperature" property="temperature"/>
+        <result column="humidity" property="humidity"/>
+        <result column="record_time" property="recordTime"/>
+        <result column="location_desc" property="locationDesc"/>
+        <result column="is_abnormal" property="isAbnormal"/>
+        <result column="abnormal_reason" property="abnormalReason"/>
+        <result column="create_by" property="createBy"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_by" property="updateBy"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="is_deleted" property="isDeleted"/>
+    </resultMap>
+
+    <select id="selectByOrderNo" resultMap="BaseResultMap">
+        SELECT * FROM t_cc_temp_humidity WHERE order_no = #{orderNo} AND is_deleted = 0 ORDER BY record_time DESC
+    </select>
+
+    <select id="selectByIsAbnormal" resultMap="BaseResultMap">
+        SELECT * FROM t_cc_temp_humidity WHERE is_abnormal = #{isAbnormal} AND is_deleted = 0 ORDER BY record_time DESC
+    </select>
+
+</mapper>

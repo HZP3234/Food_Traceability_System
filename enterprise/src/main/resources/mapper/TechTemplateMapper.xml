@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.foodtraceability.enterprise.mapper.TechTemplateMapper">
+
+    <resultMap id="BaseResultMap" type="com.foodtraceability.enterprise.entity.TechTemplate">
+        <id column="template_id" property="templateId"/>
+        <result column="template_name" property="templateName"/>
+        <result column="version" property="version"/>
+        <result column="applicable_product" property="applicableProduct"/>
+        <result column="target_temp" property="targetTemp"/>
+        <result column="duration" property="duration"/>
+        <result column="pressure" property="pressure"/>
+        <result column="cool_temp" property="coolTemp"/>
+        <result column="fill_temp" property="fillTemp"/>
+        <result column="stir_speed" property="stirSpeed"/>
+        <result column="ph_value" property="phValue"/>
+        <result column="viscosity" property="viscosity"/>
+        <result column="clean_level" property="cleanLevel"/>
+        <result column="template_status" property="templateStatus"/>
+        <result column="remark" property="remark"/>
+        <result column="create_by" property="createBy"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_by" property="updateBy"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="is_deleted" property="isDeleted"/>
+    </resultMap>
+
+    <select id="selectByTemplateName" resultMap="BaseResultMap">
+        SELECT * FROM t_tech_template WHERE template_name = #{templateName} AND is_deleted = 0 LIMIT 1
+    </select>
+
+    <select id="selectByApplicableProduct" resultMap="BaseResultMap">
+        SELECT * FROM t_tech_template WHERE applicable_product LIKE CONCAT('%', #{product}, '%') AND is_deleted = 0 ORDER BY create_time DESC
+    </select>
+
+    <select id="selectByTemplateStatus" resultMap="BaseResultMap">
+        SELECT * FROM t_tech_template WHERE template_status = #{status} AND is_deleted = 0 ORDER BY create_time DESC
+    </select>
+
+</mapper>

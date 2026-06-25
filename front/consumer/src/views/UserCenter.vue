@@ -93,6 +93,7 @@ function onLogout() {
     <!-- 功能菜单 -->
     <div class="menu-section">
       <van-cell-group inset>
+        <van-cell title="编辑资料" icon="user-o" is-link to="/profile-edit" />
         <van-cell title="我的投诉" icon="records-o" is-link @click="goMyComplaints" />
         <van-cell title="扫码历史" icon="scan" is-link @click="goScanHistory" />
         <van-cell title="投诉提交" icon="add-o" is-link to="/complaint-submit" />

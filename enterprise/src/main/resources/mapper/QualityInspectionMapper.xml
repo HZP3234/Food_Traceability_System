@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.foodtraceability.enterprise.mapper.QualityInspectionMapper">
+
+    <resultMap id="BaseResultMap" type="com.foodtraceability.enterprise.entity.QualityInspection">
+        <id column="inspection_id" property="inspectionId"/>
+        <result column="inspection_no" property="inspectionNo"/>
+        <result column="biz_type" property="bizType"/>
+        <result column="biz_batch_no" property="bizBatchNo"/>
+        <result column="inspection_type" property="inspectionType"/>
+        <result column="inspection_result" property="inspectionResult"/>
+        <result column="inspector" property="inspector"/>
+        <result column="standard" property="standard"/>
+        <result column="inspection_date" property="inspectionDate"/>
+        <result column="sensory_check" property="sensoryCheck"/>
+        <result column="microbe_check" property="microbeCheck"/>
+        <result column="seal_check" property="sealCheck"/>
+        <result column="detail_result" property="detailResult"/>
+        <result column="remark" property="remark"/>
+        <result column="create_by" property="createBy"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_by" property="updateBy"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="is_deleted" property="isDeleted"/>
+    </resultMap>
+
+    <select id="selectByInspectionNo" resultMap="BaseResultMap">
+        SELECT * FROM t_quality_inspection WHERE inspection_no = #{inspectionNo} AND is_deleted = 0 LIMIT 1
+    </select>
+
+    <select id="selectByBizBatch" resultMap="BaseResultMap">
+        SELECT * FROM t_quality_inspection WHERE biz_type = #{bizType} AND biz_batch_no = #{bizBatchNo} AND is_deleted = 0 ORDER BY create_time DESC
+    </select>
+
+    <select id="selectByBizType" resultMap="BaseResultMap">
+        SELECT * FROM t_quality_inspection WHERE biz_type = #{bizType} AND is_deleted = 0 ORDER BY create_time DESC
+    </select>
+
+    <select id="selectByInspectionResult" resultMap="BaseResultMap">
+        SELECT * FROM t_quality_inspection WHERE inspection_result = #{result} AND is_deleted = 0 ORDER BY create_time DESC
+    </select>
+
+</mapper>

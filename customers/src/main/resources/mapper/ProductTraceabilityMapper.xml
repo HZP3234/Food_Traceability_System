@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.foodtraceability.customers.mapper.ProductTraceabilityMapper">
+
+    <resultMap id="BaseResultMap" type="com.foodtraceability.customers.entity.ProductTraceability">
+        <id column="id" property="id"/>
+        <result column="product_batch_no" property="productBatchNo"/>
+        <result column="product_name" property="productName"/>
+        <result column="product_spec" property="productSpec"/>
+        <result column="manufacturer" property="manufacturer"/>
+        <result column="origin" property="origin"/>
+        <result column="production_date" property="productionDate"/>
+        <result column="expiration_date" property="expirationDate"/>
+        <result column="qr_code_url" property="qrCodeUrl"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="deleted" property="deleted"/>
+    </resultMap>
+
+    <select id="selectByBatchNo" resultMap="BaseResultMap">
+        SELECT * FROM product_traceability
+        WHERE product_batch_no = #{batchNo}
+          AND deleted = 0
+        LIMIT 1
+    </select>
+
+    <select id="selectByProductName" resultMap="BaseResultMap">
+        SELECT * FROM product_traceability
+        WHERE product_name LIKE CONCAT('%', #{productName}, '%')
+          AND deleted = 0
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="selectByManufacturer" resultMap="BaseResultMap">
+        SELECT * FROM product_traceability
+        WHERE manufacturer LIKE CONCAT('%', #{manufacturer}, '%')
+          AND deleted = 0
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="selectPageByKeyword" resultMap="BaseResultMap">
+        SELECT * FROM product_traceability
+        WHERE deleted = 0
+        <if test="keyword != null and keyword != ''">
+            AND (product_name LIKE CONCAT('%', #{keyword}, '%')
+                 OR product_batch_no LIKE CONCAT('%', #{keyword}, '%')
+                 OR manufacturer LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+        ORDER BY create_time DESC
+    </select>
+
+</mapper>

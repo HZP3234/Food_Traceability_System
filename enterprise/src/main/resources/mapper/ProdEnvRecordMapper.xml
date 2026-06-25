@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.foodtraceability.enterprise.mapper.ProdEnvRecordMapper">
+
+    <resultMap id="BaseResultMap" type="com.foodtraceability.enterprise.entity.ProdEnvRecord">
+        <id column="env_record_id" property="envRecordId"/>
+        <result column="production_line" property="productionLine"/>
+        <result column="collect_time" property="collectTime"/>
+        <result column="collector" property="collector"/>
+        <result column="workshop_temp" property="workshopTemp"/>
+        <result column="workshop_humidity" property="workshopHumidity"/>
+        <result column="clean_level" property="cleanLevel"/>
+        <result column="pressure_diff" property="pressureDiff"/>
+        <result column="particles" property="particles"/>
+        <result column="bacteria" property="bacteria"/>
+        <result column="is_abnormal" property="isAbnormal"/>
+        <result column="remark" property="remark"/>
+        <result column="create_by" property="createBy"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_by" property="updateBy"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="is_deleted" property="isDeleted"/>
+    </resultMap>
+
+    <select id="selectByProductionLine" resultMap="BaseResultMap">
+        SELECT * FROM t_prod_env_record WHERE production_line = #{line} AND is_deleted = 0 ORDER BY collect_time DESC
+    </select>
+
+    <select id="selectByIsAbnormal" resultMap="BaseResultMap">
+        SELECT * FROM t_prod_env_record WHERE is_abnormal = #{isAbnormal} AND is_deleted = 0 ORDER BY collect_time DESC
+    </select>
+
+</mapper>

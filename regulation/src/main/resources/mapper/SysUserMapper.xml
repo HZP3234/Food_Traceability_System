@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.foodtraceability.regulation.mapper.SysUserMapper">
+
+    <resultMap id="BaseResultMap" type="com.foodtraceability.regulation.entity.SysUser">
+        <id column="user_id" property="userId"/>
+        <result column="user_uuid" property="userUuid"/>
+        <result column="username" property="username"/>
+        <result column="password_hash" property="passwordHash"/>
+        <result column="role_type" property="roleType"/>
+        <result column="enterprise_uuid" property="enterpriseUuid"/>
+        <result column="real_name" property="realName"/>
+        <result column="phone" property="phone"/>
+        <result column="email" property="email"/>
+        <result column="status" property="status"/>
+        <result column="last_login_time" property="lastLoginTime"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="create_by" property="createBy"/>
+        <result column="update_by" property="updateBy"/>
+        <result column="is_deleted" property="isDeleted"/>
+    </resultMap>
+
+    <select id="selectByUsername" resultMap="BaseResultMap">
+        SELECT * FROM t_sys_user WHERE username = #{username} AND is_deleted = 0 LIMIT 1
+    </select>
+
+    <select id="selectByRoleType" resultMap="BaseResultMap">
+        SELECT * FROM t_sys_user WHERE role_type = #{roleType} AND is_deleted = 0 ORDER BY create_time DESC
+    </select>
+
+    <select id="selectByEnterpriseUuid" resultMap="BaseResultMap">
+        SELECT * FROM t_sys_user WHERE enterprise_uuid = #{uuid} AND is_deleted = 0 ORDER BY create_time DESC
+    </select>
+
+    <select id="selectByStatus" resultMap="BaseResultMap">
+        SELECT * FROM t_sys_user WHERE status = #{status} AND is_deleted = 0 ORDER BY create_time DESC
+    </select>
+
+</mapper>

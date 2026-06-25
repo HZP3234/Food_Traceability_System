@@ -3,16 +3,21 @@ package com.foodtraceability.enterprise.mapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.foodtraceability.enterprise.entity.TraceCode;
 import org.apache.ibatis.annotations.Mapper;
+import java.util.List;
 
-/**
- * 溯源码 Mapper — t_trace_code
- * <p>
- * 继承 MyBatis-Plus BaseMapper，获得通用 CRUD 能力。
- * 复杂查询在 Service 层通过 QueryWrapper 构建。
- *
- * @author GuangYao Liu
- * @since 2026-06-23
- */
+import org.apache.ibatis.annotations.Param;
+
 @Mapper
 public interface EnterpriseTraceCodeMapper extends BaseMapper<TraceCode> {
+
+    TraceCode selectByTraceCode(@Param("code") String code);
+
+    List<TraceCode> selectByBatchNo(@Param("batchNo") String batchNo);
+
+    List<TraceCode> selectByEnterpriseId(@Param("enterpriseId") String enterpriseId);
+
+    List<TraceCode> selectByTraceCodeStatus(@Param("status") Integer status);
+
+    int countByTraceCode(@Param("code") String code);
+
 }

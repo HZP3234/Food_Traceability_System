@@ -19,6 +19,8 @@ public class ComplaintSubmitDTO {
     @Pattern(regexp = "^1[3-9]\\d{9}$", message = "手机号格式不正确")
     private String consumerPhone;
 
+    private Long consumerId;
+
     @NotNull(message = "投诉类型不能为空")
     @Min(value = 1, message = "投诉类型必须在1-5之间")
     @Max(value = 5, message = "投诉类型必须在1-5之间")
