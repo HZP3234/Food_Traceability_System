@@ -3,25 +3,32 @@ package com.foodtraceability.customers.dto;
 import com.foodtraceability.customers.entity.TraceabilityNode;
 import lombok.Data;
 
-import java.time.LocalDate;
 import java.util.List;
 
 @Data
 public class TraceabilityVO {
 
+    /** 批次号 */
     private String productBatchNo;
 
+    /** 商品名称 */
     private String productName;
 
-    private String productSpec;
-
+    /** 生产企业 */
     private String manufacturer;
 
-    private String origin;
+    /** 生产日期 */
+    private String productionDate;
 
-    private LocalDate productionDate;
+    /** 生产线 */
+    private String productionLine;
 
-    private LocalDate expirationDate;
+    /** 质检结果: 1-合格 2-不合格 */
+    private Integer checkResult;
 
+    /** 区块链交易哈希 */
+    private String txHash;
+
+    /** 溯源节点 */
     private List<TraceabilityNode> nodes;
 }

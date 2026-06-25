@@ -1,5 +1,6 @@
 package com.foodtraceability.customers.config;
 
+import com.foodtraceability.customers.common.BusinessException;
 import com.foodtraceability.customers.dto.Result;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -17,6 +18,11 @@ public class CustomersGlobalExceptionHandler {
                 sj.add(error.getDefaultMessage())
         );
         return Result.fail(400, sj.toString());
+    }
+
+    @ExceptionHandler(BusinessException.class)
+    public Result<Void> handleBusiness(BusinessException e) {
+        return Result.fail(e.getCode(), e.getMessage());
     }
 
     @ExceptionHandler(RuntimeException.class)

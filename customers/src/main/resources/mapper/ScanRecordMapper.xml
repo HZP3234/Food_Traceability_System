@@ -8,6 +8,7 @@
         <result column="product_batch_no" property="productBatchNo"/>
         <result column="scan_ip" property="scanIp"/>
         <result column="scan_location" property="scanLocation"/>
+        <result column="user_id" property="userId"/>
         <result column="scan_time" property="scanTime"/>
         <result column="create_time" property="createTime"/>
         <result column="update_time" property="updateTime"/>
@@ -26,6 +27,21 @@
         WHERE scan_location LIKE CONCAT('%', #{location}, '%')
           AND deleted = 0
         ORDER BY scan_time DESC
+    </select>
+
+    <select id="selectRecent" resultMap="BaseResultMap">
+        SELECT * FROM scan_record
+        WHERE deleted = 0
+        ORDER BY scan_time DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="selectByUserId" resultMap="BaseResultMap">
+        SELECT * FROM scan_record
+        WHERE user_id = #{userId}
+          AND deleted = 0
+        ORDER BY scan_time DESC
+        LIMIT #{limit}
     </select>
 
 </mapper>

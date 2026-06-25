@@ -43,10 +43,13 @@ public class ComplaintServiceImpl implements ComplaintService {
         complaint.setComplaintContent(dto.getComplaintContent());
         complaint.setImageUrls(dto.getImageUrls());
         complaint.setStatus(1);
+
+        Consumer consumer = null;
         if (dto.getConsumerId() != null) {
             complaint.setConsumerId(dto.getConsumerId());
+            consumer = consumerMapper.selectById(dto.getConsumerId());
         } else if (dto.getConsumerPhone() != null && !dto.getConsumerPhone().isEmpty()) {
-            Consumer consumer = consumerMapper.selectOne(
+            consumer = consumerMapper.selectOne(
                     new LambdaQueryWrapper<Consumer>().eq(Consumer::getPhone, dto.getConsumerPhone()));
             if (consumer != null) {
                 complaint.setConsumerId(consumer.getConsumerId());
@@ -54,7 +57,13 @@ public class ComplaintServiceImpl implements ComplaintService {
                 log.warn("Consumer not found for phone: {}", dto.getConsumerPhone());
             }
         }
+
         complaintMapper.insert(complaint);
+
+        if (consumer != null) {
+            consumerMapper.incrementComplaintCount(consumer.getConsumerUuid());
+        }
+
         return complaint;
     }
 

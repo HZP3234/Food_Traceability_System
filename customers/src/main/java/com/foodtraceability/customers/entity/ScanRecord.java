@@ -19,6 +19,8 @@ public class ScanRecord implements Serializable {
 
     private String scanLocation;
 
+    private String userId;
+
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime scanTime;
 

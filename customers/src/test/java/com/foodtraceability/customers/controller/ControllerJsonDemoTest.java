@@ -294,7 +294,7 @@ class ControllerJsonDemoTest {
         vo.setNodes(Arrays.asList(node1, node2, node3));
 
         when(traceabilityService.queryByBatchNo("BATCH-20260623-001")).thenReturn(vo);
-        doNothing().when(traceabilityService).recordScan(anyString(), anyString(), any());
+        doNothing().when(traceabilityService).recordScan(anyString(), anyString(), any(), any());
 
         TraceabilityQueryDTO dto = new TraceabilityQueryDTO();
         dto.setProductBatchNo("BATCH-20260623-001");
@@ -315,7 +315,7 @@ class ControllerJsonDemoTest {
     @Test @Order(7)
     @DisplayName("7. POST /api/traceability/scan - 记录扫码事件")
     void demoScan() throws Exception {
-        doNothing().when(traceabilityService).recordScan(anyString(), anyString(), anyString());
+        doNothing().when(traceabilityService).recordScan(anyString(), anyString(), anyString(), anyString());
 
         ScanRecordDTO dto = new ScanRecordDTO();
         dto.setProductBatchNo("BATCH-20260623-001");

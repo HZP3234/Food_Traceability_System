@@ -12,4 +12,6 @@ public class ScanRecordDTO {
     private String scanIp;
 
     private String scanLocation;
+
+    private String userId;
 }

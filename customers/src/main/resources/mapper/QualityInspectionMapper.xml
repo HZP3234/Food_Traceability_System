@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.foodtraceability.customers.mapper.QualityInspectionMapper">
+
+    <select id="selectByBizBatchNo" resultType="java.util.LinkedHashMap">
+        SELECT inspection_no, biz_type, biz_batch_no, inspection_type, inspection_result,
+               inspector, standard, inspection_date, sensory_check, microbe_check,
+               seal_check, detail_result
+        FROM t_quality_inspection
+        WHERE biz_batch_no = #{bizBatchNo}
+          AND is_deleted = 0
+        ORDER BY inspection_date DESC
+    </select>
+
+</mapper>

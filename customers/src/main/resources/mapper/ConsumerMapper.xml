@@ -50,4 +50,21 @@
         ORDER BY create_time DESC
     </select>
 
+    <update id="incrementScanCount">
+        UPDATE t_consumer_info
+        SET total_scans = total_scans + 1,
+            last_scan_time = NOW(),
+            update_time = NOW()
+        WHERE consumer_uuid = #{consumerUuid}
+          AND is_deleted = 0
+    </update>
+
+    <update id="incrementComplaintCount">
+        UPDATE t_consumer_info
+        SET complaint_count = complaint_count + 1,
+            update_time = NOW()
+        WHERE consumer_uuid = #{consumerUuid}
+          AND is_deleted = 0
+    </update>
+
 </mapper>

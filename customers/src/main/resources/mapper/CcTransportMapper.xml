@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.foodtraceability.customers.mapper.CcTransportMapper">
+
+    <select id="selectByProdBatchNo" resultType="java.util.LinkedHashMap">
+        SELECT order_no, plate_no, driver_name, departure_name, destination_name,
+               depart_time, estimated_arrival, actual_arrival, transport_status,
+               loading_temp, temp_upper, temp_lower
+        FROM t_cc_transport
+        WHERE prod_batch_no = #{prodBatchNo}
+          AND is_deleted = 0
+        ORDER BY depart_time DESC
+    </select>
+
+</mapper>

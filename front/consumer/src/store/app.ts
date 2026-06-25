@@ -1,9 +1,10 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { UserInfo } from '@/types'
+import type { TraceabilityVO, UserInfo } from '@/types'
 
 export const useAppStore = defineStore('app', () => {
   const currentBatchNo = ref('')
+  const traceResult = ref<TraceabilityVO | null>(null)
 
   const searchHistory = ref<string[]>(loadHistory())
 
@@ -59,12 +60,18 @@ export const useAppStore = defineStore('app', () => {
     localStorage.removeItem('consumer_user')
   }
 
+  function setTraceResult(data: TraceabilityVO | null) {
+    traceResult.value = data
+  }
+
   return {
     currentBatchNo,
+    traceResult,
     searchHistory,
     userInfo,
     isLoggedIn,
     setBatchNo,
+    setTraceResult,
     addHistory,
     clearHistory,
     setUserInfo,

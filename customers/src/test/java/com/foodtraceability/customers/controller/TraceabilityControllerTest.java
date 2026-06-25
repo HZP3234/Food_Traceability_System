@@ -97,7 +97,7 @@ class TraceabilityControllerTest {
             when(traceabilityService.queryByBatchNo("BATCH-20260623-001"))
                     .thenReturn(mockVO);
             doNothing().when(traceabilityService)
-                    .recordScan(anyString(), anyString(), isNull());
+                    .recordScan(anyString(), anyString(), isNull(), isNull());
 
             TraceabilityQueryDTO dto = new TraceabilityQueryDTO();
             dto.setProductBatchNo("BATCH-20260623-001");
@@ -119,7 +119,7 @@ class TraceabilityControllerTest {
 
             verify(traceabilityService, times(1)).queryByBatchNo("BATCH-20260623-001");
             verify(traceabilityService, times(1))
-                    .recordScan(eq("BATCH-20260623-001"), anyString(), isNull());
+                    .recordScan(eq("BATCH-20260623-001"), anyString(), isNull(), isNull());
         }
 
         @Test
@@ -138,7 +138,7 @@ class TraceabilityControllerTest {
                     .andExpect(jsonPath("$.code").value(500))
                     .andExpect(jsonPath("$.message").value("未找到该批次产品的溯源信息"));
 
-            verify(traceabilityService, never()).recordScan(anyString(), anyString(), anyString());
+            verify(traceabilityService, never()).recordScan(anyString(), anyString(), anyString(), any());
         }
 
         @Test
@@ -162,7 +162,7 @@ class TraceabilityControllerTest {
             when(traceabilityService.queryByBatchNo("BATCH-20260623-001"))
                     .thenReturn(mockVO);
             doNothing().when(traceabilityService)
-                    .recordScan(anyString(), anyString(), isNull());
+                    .recordScan(anyString(), anyString(), isNull(), isNull());
 
             TraceabilityQueryDTO dto = new TraceabilityQueryDTO();
             dto.setProductBatchNo("BATCH-20260623-001");
@@ -183,7 +183,7 @@ class TraceabilityControllerTest {
         @DisplayName("正常记录扫码事件，返回200")
         void testScanSuccess() throws Exception {
             doNothing().when(traceabilityService)
-                    .recordScan(anyString(), anyString(), isNull());
+                    .recordScan(anyString(), anyString(), isNull(), isNull());
 
             ScanRecordDTO dto = new ScanRecordDTO();
             dto.setProductBatchNo("BATCH-20260623-001");
@@ -196,14 +196,14 @@ class TraceabilityControllerTest {
                     .andExpect(jsonPath("$.message").value("success"));
 
             verify(traceabilityService, times(1))
-                    .recordScan(eq("BATCH-20260623-001"), anyString(), isNull());
+                    .recordScan(eq("BATCH-20260623-001"), anyString(), isNull(), isNull());
         }
 
         @Test
         @DisplayName("带扫码IP和定位信息记录")
         void testScanWithIpAndLocation() throws Exception {
             doNothing().when(traceabilityService)
-                    .recordScan(anyString(), anyString(), anyString());
+                    .recordScan(anyString(), anyString(), anyString(), isNull());
 
             ScanRecordDTO dto = new ScanRecordDTO();
             dto.setProductBatchNo("BATCH-20260623-001");
@@ -217,7 +217,7 @@ class TraceabilityControllerTest {
                     .andExpect(jsonPath("$.code").value(200));
 
             verify(traceabilityService, times(1))
-                    .recordScan("BATCH-20260623-001", "192.168.1.100", "北京市朝阳区");
+                    .recordScan("BATCH-20260623-001", "192.168.1.100", "北京市朝阳区", isNull());
         }
 
         @Test
@@ -232,7 +232,7 @@ class TraceabilityControllerTest {
                     .andExpect(jsonPath("$.code").value(400))
                     .andExpect(jsonPath("$.message", containsString("产品批次号不能为空")));
 
-            verify(traceabilityService, never()).recordScan(anyString(), anyString(), anyString());
+            verify(traceabilityService, never()).recordScan(anyString(), anyString(), anyString(), isNull());
         }
     }
 }

@@ -169,7 +169,7 @@ class TraceabilityServiceImplTest {
         void testRecordScanSuccess() {
             when(scanRecordMapper.insert(any(ScanRecord.class))).thenReturn(1);
 
-            traceabilityService.recordScan("BATCH-20260623-001", "192.168.1.100", "北京市");
+            traceabilityService.recordScan("BATCH-20260623-001", "192.168.1.100", "北京市", "user-uuid-123");
 
             ArgumentCaptor<ScanRecord> captor = ArgumentCaptor.forClass(ScanRecord.class);
             verify(scanRecordMapper, times(1)).insert(captor.capture());
@@ -178,6 +178,7 @@ class TraceabilityServiceImplTest {
             assertEquals("BATCH-20260623-001", captured.getProductBatchNo());
             assertEquals("192.168.1.100", captured.getScanIp());
             assertEquals("北京市", captured.getScanLocation());
+            assertEquals("user-uuid-123", captured.getUserId());
             assertNotNull(captured.getScanTime());
         }
 
@@ -186,7 +187,7 @@ class TraceabilityServiceImplTest {
         void testRecordScanWithNullIpAndLocation() {
             when(scanRecordMapper.insert(any(ScanRecord.class))).thenReturn(1);
 
-            traceabilityService.recordScan("BATCH-20260623-001", null, null);
+            traceabilityService.recordScan("BATCH-20260623-001", null, null, null);
 
             ArgumentCaptor<ScanRecord> captor = ArgumentCaptor.forClass(ScanRecord.class);
             verify(scanRecordMapper, times(1)).insert(captor.capture());
@@ -205,7 +206,7 @@ class TraceabilityServiceImplTest {
             LocalDateTime before = LocalDateTime.now();
             ArgumentCaptor<ScanRecord> captor = ArgumentCaptor.forClass(ScanRecord.class);
 
-            traceabilityService.recordScan("BATCH-20260623-001", "127.0.0.1", null);
+            traceabilityService.recordScan("BATCH-20260623-001", "127.0.0.1", null, null);
 
             verify(scanRecordMapper, times(1)).insert(captor.capture());
             ScanRecord captured = captor.getValue();
@@ -229,7 +230,7 @@ class TraceabilityServiceImplTest {
         assertEquals("有机奶粉", vo.getProductName());
         assertEquals(2, vo.getNodes().size());
 
-        traceabilityService.recordScan("BATCH-20260623-001", "127.0.0.1", "北京");
+        traceabilityService.recordScan("BATCH-20260623-001", "127.0.0.1", "北京", "user-uuid-456");
 
         verify(productTraceabilityMapper, times(1)).selectOne(any(LambdaQueryWrapper.class));
         verify(traceabilityNodeMapper, times(1)).selectList(any(LambdaQueryWrapper.class));
