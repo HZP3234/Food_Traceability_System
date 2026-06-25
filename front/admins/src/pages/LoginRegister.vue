@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { ArrowRight, CircleCheckFilled, Lock, Monitor, OfficeBuilding, User, View, Hide } from '@element-plus/icons-vue'
 
 const emit = defineEmits<{
   (e: 'login', data: { username: string; password: string; role: string }): void
-  (e: 'register', data: { username: string; password: string; role: string; enterpriseName?: string; creditCode?: string; contactPerson?: string; contactPhone?: string; address?: string; supplierCode?: string; extraInfo?: string }): void
+  (e: 'register', data: { username: string; password: string; role: string; enterpriseName?: string }): void
 }>()
 
 const mode = ref<'login' | 'register'>('login')
@@ -18,14 +18,8 @@ const activeField = ref('')
 const showPassword = ref(false)
 const cardStyle = ref<Record<string, string>>({})
 
-// 注册额外字段
+// 注册额外字段 — 仅企业名称，资质详情进入系统后维护
 const enterpriseName = ref('')
-const creditCode = ref('')
-const contactPerson = ref('')
-const contactPhone = ref('')
-const address = ref('')
-const supplierCode = ref('')
-const extraInfo = ref('')
 
 const roleOptions = [
   { value: 'supplier', label: '原料供应商', hint: '上传原料源头信息、企业资质，绑定供应商编码' },
@@ -37,29 +31,6 @@ const roleOptions = [
 ]
 
 const showEnterpriseFields = computed(() => role.value !== 'regulator' && role.value !== 'super-admin')
-const showSupplierCode = computed(() => role.value === 'supplier')
-
-const extraInfoLabel = computed(() => {
-  switch (role.value) {
-    case 'manufacturer': return '主要生产线'
-    case 'logistics': return '冷链类型（冷藏/冷冻/恒温）'
-    case 'seller': return '终端类型（超市/便利店/餐饮等）'
-    case 'regulator': return '监管机构编号'
-    case 'super-admin': return '管理员备注'
-    default: return ''
-  }
-})
-
-const extraInfoPlaceholder = computed(() => {
-  switch (role.value) {
-    case 'manufacturer': return '如：液态奶一号线 / 烘焙车间'
-    case 'logistics': return '如：冷藏 2-8℃ / 冷冻 -18℃'
-    case 'seller': return '如：连锁超市 / 社区便利店'
-    case 'regulator': return '如：REG20260001'
-    case 'super-admin': return '如：IT运维管理员'
-    default: return ''
-  }
-})
 
 const canSubmit = computed(() => {
   if (!username.value.trim() || !password.value.trim()) return false
@@ -67,20 +38,12 @@ const canSubmit = computed(() => {
     if (!confirmPassword.value.trim() || password.value !== confirmPassword.value) return false
     // 企业类角色必须填写企业名称
     if (showEnterpriseFields.value && !enterpriseName.value.trim()) return false
-    // 供应商必须填写供应商编码
-    if (showSupplierCode.value && !supplierCode.value.trim()) return false
   }
   return true
 })
 
 const passwordMatched = computed(() => !confirmPassword.value || password.value === confirmPassword.value)
 const modeTitle = computed(() => mode.value === 'login' ? '开启可信工作台' : '创建可信身份')
-
-// 切换角色时清空角色特定字段
-watch(role, () => {
-  supplierCode.value = ''
-  extraInfo.value = ''
-})
 
 function switchMode(target: 'login' | 'register') {
   mode.value = target
@@ -109,10 +72,6 @@ function handleSubmit() {
       errorMsg.value = '请填写企业名称。'
       return
     }
-    if (showSupplierCode.value && !supplierCode.value.trim()) {
-      errorMsg.value = '请填写供应商编码。'
-      return
-    }
   }
   loading.value = true
   if (mode.value === 'register') {
@@ -121,12 +80,6 @@ function handleSubmit() {
       password: password.value,
       role: role.value,
       enterpriseName: enterpriseName.value.trim(),
-      creditCode: creditCode.value.trim(),
-      contactPerson: contactPerson.value.trim(),
-      contactPhone: contactPhone.value.trim(),
-      address: address.value.trim(),
-      supplierCode: supplierCode.value.trim(),
-      extraInfo: extraInfo.value.trim(),
     })
   } else {
     emit('login', {
@@ -213,44 +166,13 @@ defineExpose({ setLoading, setError })
                   <small class="role-hint">{{ roleOptions.find(r => r.value === role)?.hint }}</small>
                 </label>
 
-                <!-- 企业资质（非监管/超管角色显示） -->
+                <!-- 企业类角色只需填写企业名称，资质详情进入系统后维护 -->
                 <template v-if="showEnterpriseFields">
-                  <div class="reg-section-title">企业资质信息</div>
                   <label class="field" :class="{ focused: activeField === 'entName', filled: enterpriseName }">
                     <span class="field-icon"><el-icon><OfficeBuilding /></el-icon></span>
                     <span class="field-copy"><small>企业名称 *</small><input v-model="enterpriseName" placeholder="请输入企业全称" @focus="activeField = 'entName'" @blur="activeField = ''" /></span>
                   </label>
-                  <label class="field" :class="{ focused: activeField === 'credit', filled: creditCode }">
-                    <span class="field-icon"><el-icon><Monitor /></el-icon></span>
-                    <span class="field-copy"><small>统一信用代码</small><input v-model="creditCode" placeholder="18位信用代码" @focus="activeField = 'credit'" @blur="activeField = ''" /></span>
-                  </label>
-                  <div class="reg-row">
-                    <label class="field half" :class="{ focused: activeField === 'contact', filled: contactPerson }">
-                      <span class="field-copy"><small>联系人</small><input v-model="contactPerson" placeholder="姓名" @focus="activeField = 'contact'" @blur="activeField = ''" /></span>
-                    </label>
-                    <label class="field half" :class="{ focused: activeField === 'phone', filled: contactPhone }">
-                      <span class="field-copy"><small>联系电话</small><input v-model="contactPhone" placeholder="11位手机号" @focus="activeField = 'phone'" @blur="activeField = ''" /></span>
-                    </label>
-                  </div>
-                  <label class="field" :class="{ focused: activeField === 'addr', filled: address }">
-                    <span class="field-copy"><small>企业地址</small><input v-model="address" placeholder="省市区详细地址" @focus="activeField = 'addr'" @blur="activeField = ''" /></span>
-                  </label>
-
-                  <!-- 供应商编码（仅供应商角色显示） -->
-                  <template v-if="showSupplierCode">
-                    <div class="reg-section-title">供应商绑定</div>
-                    <label class="field" :class="{ focused: activeField === 'supCode', filled: supplierCode }">
-                      <span class="field-icon" style="font-weight:900;color:#4a7b4e">#</span>
-                      <span class="field-copy"><small>供应商编码 *</small><input v-model="supplierCode" placeholder="如：SUP20260001" @focus="activeField = 'supCode'" @blur="activeField = ''" /></span>
-                    </label>
-                  </template>
-                </template>
-
-                <!-- 角色特定字段 -->
-                <template v-if="extraInfoLabel">
-                  <label class="field" :class="{ focused: activeField === 'extra', filled: extraInfo }">
-                    <span class="field-copy"><small>{{ extraInfoLabel }}</small><input v-model="extraInfo" :placeholder="extraInfoPlaceholder" @focus="activeField = 'extra'" @blur="activeField = ''" /></span>
-                  </label>
+                  <p class="field-hint" style="margin-top:2px">资质详情（信用代码、联系人、地址等）进入系统后在「资质上传编辑」中维护</p>
                 </template>
               </div>
             </transition>

@@ -67,8 +67,9 @@ public class AuthController {
             if (user == null) {
                 return Result.error(404, "用户不存在");
             }
-            // 查询企业类型
+            // 查询企业信息
             Integer enterpriseType = null;
+            String enterpriseName = "";
             if (user.getEnterpriseUuid() != null && !user.getEnterpriseUuid().isBlank()) {
                 Enterprise enterprise = enterpriseMapper.selectOne(
                     new LambdaQueryWrapper<Enterprise>()
@@ -76,6 +77,7 @@ public class AuthController {
                 );
                 if (enterprise != null) {
                     enterpriseType = enterprise.getEnterpriseType();
+                    enterpriseName = enterprise.getEnterpriseName();
                 }
             }
             Map<String, Object> info = new HashMap<>();
@@ -84,6 +86,7 @@ public class AuthController {
             info.put("realName", user.getRealName());
             info.put("enterpriseUuid", user.getEnterpriseUuid() != null ? user.getEnterpriseUuid() : "");
             info.put("enterpriseType", enterpriseType);
+            info.put("enterpriseName", enterpriseName);
             info.put("phone", user.getPhone() != null ? user.getPhone() : "");
             info.put("email", user.getEmail() != null ? user.getEmail() : "");
             return Result.success(info);

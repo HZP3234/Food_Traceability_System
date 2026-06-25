@@ -16,6 +16,7 @@
         <result column="file_hash" property="fileHash"/>
         <result column="qualification_state" property="qualificationState"/>
         <result column="audit_state" property="auditState"/>
+        <result column="audit_remark" property="auditRemark"/>
         <result column="create_time" property="createTime"/>
         <result column="update_time" property="updateTime"/>
         <result column="create_by" property="createBy"/>

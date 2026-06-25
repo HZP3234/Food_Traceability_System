@@ -82,4 +82,11 @@ public class JwtUtil {
     public Integer getEnterpriseType(String token) {
         return parseToken(token).get("enterpriseType", Integer.class);
     }
+
+    /**
+     * 从 Token 中获取企业 UUID
+     */
+    public String getEnterpriseUuid(String token) {
+        return parseToken(token).get("enterpriseUuid", String.class);
+    }
 }

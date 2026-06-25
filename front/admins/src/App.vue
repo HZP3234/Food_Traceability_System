@@ -52,9 +52,10 @@ const activePage = ref('dashboard')
 const screen = ref<'landing' | 'login' | 'admin'>(restoreSession())
 const showPageInfo = ref(false)
 const showLogoutConfirm = ref(false)
-const currentUser = ref<{ username: string; roleType: string; realName: string; enterpriseUuid: string; enterpriseType?: number } | null>(null)
+const currentUser = ref<{ username: string; roleType: string; realName: string; enterpriseUuid: string; enterpriseType?: number; hasQualification?: boolean; enterpriseName?: string } | null>(null)
 
 provide('currentRole', currentRole)
+provide('currentUser', currentUser) // 供子页面读取企业名称等
 
 const pageComponents: Record<string, Component> = {
   'dashboard': markRaw(Dashboard),
@@ -102,11 +103,36 @@ const navIcons: Record<string, Component> = {
   warnings: Connection,
 }
 
+/** 企业用户未提交资质或审核未通过时，只能访问资质相关页面 */
+const lockedToQualification = computed(() => {
+  if (currentUser.value?.roleType !== 'ENTERPRISE') return false
+  if (currentUser.value?.hasQualification === true) return false
+  return true
+})
+
+function navigateTo(pageId: string) {
+  // 企业用户未提交资质时，只允许访问资质上传和资质列表页面
+  if (lockedToQualification.value && pageId !== 'qualification-upload' && pageId !== 'enterprise-qualification') {
+    return
+  }
+  activePage.value = pageId
+}
+
 function changeRole(event: Event) {
   if (currentUser.value?.roleType !== 'ADMIN') return
   currentRole.value = (event.target as HTMLSelectElement).value as RoleKey
   if (!activeItem.value) activePage.value = 'dashboard'
 }
+
+/** 右上角显示名：企业用户显示"公司名 - 用户名"，其他角色显示真实姓名 */
+const displayName = computed(() => {
+  const u = currentUser.value
+  if (!u) return ''
+  if (u.roleType === 'ENTERPRISE' && u.enterpriseName) {
+    return `${u.enterpriseName} - ${u.realName || u.username}`
+  }
+  return u.realName || u.username || ''
+})
 
 async function handleLogin(data: { username: string; password: string; role: string }) {
   const loginRef = loginRegisterRef.value
@@ -127,23 +153,17 @@ async function handleLogin(data: { username: string; password: string; role: str
 
 async function handleRegister(data: {
   username: string; password: string; role: string
-  enterpriseName?: string; creditCode?: string; contactPerson?: string
-  contactPhone?: string; address?: string; supplierCode?: string; extraInfo?: string
+  enterpriseName?: string
 }) {
   const loginRef = loginRegisterRef.value
   try {
-    // 第一步：调用注册接口
+    // 一站式注册：后端直接返回 token
     const regRes: any = await authApi.register({
       username: data.username,
       password: data.password,
       roleType: data.role === 'regulator' ? 'REGULATOR' : data.role === 'super-admin' ? 'ADMIN' : 'ENTERPRISE',
+      realName: data.username,
       enterpriseName: data.enterpriseName || '',
-      creditCode: data.creditCode || '',
-      contactPerson: data.contactPerson || '',
-      contactPhone: data.contactPhone || '',
-      address: data.address || '',
-      supplierCode: data.supplierCode || '',
-      extraInfo: data.extraInfo || '',
       enterpriseType: roleToEnterpriseType(data.role),
     })
     // 注册成功（兼容 code: 200 和 code: 0 两种成功约定）
@@ -153,21 +173,14 @@ async function handleRegister(data: {
       return
     }
 
-    // 第二步：用注册的账号密码登录，获取 token
-    const loginRes: any = await authApi.login(data.username, data.password)
-    if (loginRes.code === 200 && loginRes.data) {
-      enterAdmin(loginRes.data)
-      // 注册成功后，企业类角色跳转到资质上传页面
+    // 注册成功，后端已返回 token，直接进入管理后台
+    if (regRes.data) {
+      enterAdmin(regRes.data)
+      // 注册成功后，企业类角色强制跳转到资质上传页面
       if (data.role !== 'regulator' && data.role !== 'super-admin') {
         activePage.value = 'qualification-upload'
       }
       if (loginRef) loginRef.setError('')
-    } else {
-      // 注册成功但登录失败 — 直接切到登录模式让用户手动登录
-      if (loginRef) {
-        loginRef.setError('')
-      }
-      screen.value = 'login'
     }
   } catch (e: any) {
     if (loginRef) loginRef.setError(e.message || '网络请求失败，请检查后端服务')
@@ -187,10 +200,10 @@ function roleToEnterpriseType(role: string): number {
 }
 
 function enterAdmin(userData: any) {
-  const { token, username, roleType, realName, enterpriseUuid, enterpriseType } = userData
+  const { token, username, roleType, realName, enterpriseUuid, enterpriseType, hasQualification, enterpriseName } = userData
   sessionStorage.setItem('fts-admin-token', token)
   sessionStorage.setItem('fts-admin-authenticated', 'true')
-  const userInfo = { username, roleType, realName, enterpriseUuid, enterpriseType }
+  const userInfo = { username, roleType, realName, enterpriseUuid, enterpriseType, hasQualification, enterpriseName }
   sessionStorage.setItem('fts-admin-user', JSON.stringify(userInfo))
   currentUser.value = userInfo
 
@@ -243,6 +256,11 @@ function confirmLogout() {
       </section>
 
       <nav class="side-nav" aria-label="主导航">
+        <!-- 企业用户未提交资质时的提示 -->
+        <div v-if="lockedToQualification" class="qualification-warning">
+          <el-icon><Document /></el-icon>
+          <p>请先提交企业资质信息，审核通过后方可使用系统功能</p>
+        </div>
         <section v-for="group in visibleNavigation" :key="group.label" class="nav-group">
           <p>{{ group.label }}</p>
           <button
@@ -251,7 +269,7 @@ function confirmLogout() {
             class="nav-item"
             :class="{ active: activePage === item.id }"
             type="button"
-            @click="activePage = item.id"
+            @click="navigateTo(item.id)"
           >
             <span class="nav-icon"><el-icon aria-hidden="true"><component :is="navIcons[item.id] || Grid" /></el-icon></span>
             <span>{{ item.label }}</span>
@@ -271,9 +289,9 @@ function confirmLogout() {
       <header class="topbar">
         <div class="breadcrumb">{{ roles[currentRole] }} <span>/</span> {{ activeItem?.label ?? '系统首页' }}</div>
         <div class="account">
-          <span>2026年06月24日</span>
-          <i>{{ currentUser?.realName?.charAt(0) || '用' }}</i>
-          <strong>{{ currentUser?.realName || roles[currentRole] }}</strong>
+          <span>{{ new Date().toLocaleDateString('zh-CN', { year:'numeric', month:'2-digit', day:'2-digit' }) }}</span>
+          <i>{{ (currentUser?.realName || currentUser?.username || '用').charAt(0) }}</i>
+          <strong>{{ displayName }}</strong>
         </div>
       </header>
 
@@ -335,3 +353,21 @@ function confirmLogout() {
     </div>
   </div>
 </template>
+
+<style>
+.qualification-warning {
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 8px;
+  color: #92400e;
+  font-size: 13px;
+  line-height: 1.5;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.qualification-warning .el-icon { flex-shrink: 0; margin-top: 1px; }
+.qualification-warning p { margin: 0; }
+</style>

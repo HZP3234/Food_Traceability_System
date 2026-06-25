@@ -64,11 +64,11 @@ async function post<T = any>(path: string, data?: Record<string, any>): Promise<
   return json as T
 }
 
-/** 通用 POST 请求（JSON body，regulation 后端使用 @RequestBody） */
+/** 通用 POST 请求（JSON body，自动带 Token） */
 async function postJson<T = any>(path: string, data?: Record<string, any>): Promise<T> {
   const res = await fetch(path, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: data ? JSON.stringify(data) : undefined,
   })
   if (!res.ok) throw new Error(`请求失败 ${res.status}`)
@@ -314,6 +314,24 @@ export const enterpriseApi = {
   update: (enterpriseId: number, data: Record<string, any>) => put(`/api/enterprise/${enterpriseId}`, data),
   delete: (enterpriseId: number) => del(`/api/enterprise/${enterpriseId}`),
   checkStatus: () => post('/api/enterprise/check-status'),
+}
+
+// ==================== Qualification (资质提交+审核，regulation 后端 :8081) ====================
+export const qualificationApi = {
+  /** 提交/更新企业资质 */
+  submit: (data: Record<string, any>) => postJson('/api/qualification/submit', data),
+  /** 更新资质 */
+  update: (id: number, data: Record<string, any>) => put(`/api/qualification/${id}`, data),
+  /** 查看本企业的资质列表 */
+  my: () => get('/api/qualification/my'),
+  /** 查看资质审核状态 */
+  status: () => get('/api/qualification/status'),
+  /** 查看所有企业的资质列表（监管用） */
+  all: (params?: Record<string, any>) => get('/api/qualification/all', params),
+  /** 审核通过 */
+  approve: (id: number, remark?: string) => put(`/api/qualification/${id}/approve`, remark ? { remark } : {}),
+  /** 审核拒绝 */
+  reject: (id: number, remark?: string) => put(`/api/qualification/${id}/reject`, remark ? { remark } : {}),
 }
 
 // ==================== Trace (监管全链追溯，regulation 后端 :8081) ====================
