@@ -25,21 +25,21 @@ public class ColdChainController {
 
     // 按名称查询仓库
     @RequestMapping("/queryWarehouse")
-    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'REGULATOR')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'REGULATOR', 'MANUFACTURER', 'SUPPLIER')")
     public Warehouse queryWarehouse(String warehouseName) {
         return coldChainService.getByWarehouseName(warehouseName);
     }
 
     // 按UUID查询仓库
     @RequestMapping("/queryWarehouseByUuid")
-    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'REGULATOR')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'REGULATOR', 'MANUFACTURER', 'SUPPLIER')")
     public Warehouse queryWarehouseByUuid(String warehouseUuid) {
         return coldChainService.getByWarehouseUuid(warehouseUuid);
     }
 
     // 条件列表查询
     @RequestMapping("/listWarehouse")
-    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'REGULATOR')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'REGULATOR', 'MANUFACTURER', 'SUPPLIER')")
     public List<Warehouse> listWarehouse(Integer warehouseType, Integer warehouseStatus) {
         return coldChainService.listWarehouse(warehouseType, warehouseStatus);
     }
@@ -84,21 +84,21 @@ public class ColdChainController {
 
     // 按车牌号查询
     @RequestMapping("/queryVehicle")
-    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'REGULATOR')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'REGULATOR', 'MANUFACTURER', 'SUPPLIER')")
     public CcVehicle queryVehicle(String plateNo) {
         return coldChainService.getByPlateNo(plateNo);
     }
 
     // 按物流企业查询车辆
     @RequestMapping("/listVehicleByOwner")
-    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'REGULATOR')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'REGULATOR', 'MANUFACTURER', 'SUPPLIER')")
     public List<CcVehicle> listVehicleByOwner(String ownerId) {
         return coldChainService.listByOwnerId(ownerId);
     }
 
     // 条件列表查询
     @RequestMapping("/listVehicle")
-    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'REGULATOR')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'REGULATOR', 'MANUFACTURER', 'SUPPLIER')")
     public List<CcVehicle> listVehicle(Integer vehicleStatus, String ownerName, String coldType) {
         return coldChainService.listVehicle(vehicleStatus, ownerName, coldType);
     }
@@ -155,28 +155,28 @@ public class ColdChainController {
 
     // 按运输订单号查询
     @RequestMapping("/queryTransport")
-    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'MANUFACTURER', 'REGULATOR')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'MANUFACTURER', 'REGULATOR', 'SUPPLIER')")
     public CcTransport queryTransport(String orderNo) {
         return coldChainService.getByOrderNo(orderNo);
     }
 
     // 按生产批次号查询运输订单
     @RequestMapping("/listTransportByBatch")
-    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'MANUFACTURER', 'REGULATOR')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'MANUFACTURER', 'REGULATOR', 'SUPPLIER')")
     public List<CcTransport> listTransportByBatch(String prodBatchNo) {
         return coldChainService.listByProdBatchNo(prodBatchNo);
     }
 
     // 按车牌号查询运输订单
     @RequestMapping("/listTransportByPlate")
-    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'REGULATOR')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'REGULATOR', 'MANUFACTURER', 'SUPPLIER')")
     public List<CcTransport> listTransportByPlate(String plateNo) {
         return coldChainService.listByPlateNo(plateNo);
     }
 
     // 条件列表查询
     @RequestMapping("/listTransport")
-    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'MANUFACTURER', 'REGULATOR')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'MANUFACTURER', 'REGULATOR', 'SUPPLIER')")
     public List<CcTransport> listTransport(Integer transportStatus, String prodBatchNo,
                                             String plateNo, Integer transportMethod) {
         return coldChainService.listTransport(transportStatus, prodBatchNo, plateNo, transportMethod);
@@ -270,14 +270,14 @@ public class ColdChainController {
 
     // 按运输订单号查询温湿度记录
     @RequestMapping("/listTempHumidity")
-    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'REGULATOR')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'REGULATOR', 'MANUFACTURER', 'SUPPLIER')")
     public List<CcTempHumidity> listTempHumidity(String orderNo) {
         return coldChainService.listTempHumidityByOrderNo(orderNo);
     }
 
     // 按异常状态查询
     @RequestMapping("/listTempHumidityAbnormal")
-    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'REGULATOR')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'REGULATOR', 'MANUFACTURER', 'SUPPLIER')")
     public List<CcTempHumidity> listTempHumidityAbnormal(Integer isAbnormal) {
         if (isAbnormal == null) isAbnormal = 1;
         return coldChainService.listTempHumidityByAbnormal(isAbnormal);
@@ -302,14 +302,14 @@ public class ColdChainController {
 
     // 按运输订单号查询节点记录
     @RequestMapping("/listTransportNode")
-    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'REGULATOR')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'REGULATOR', 'MANUFACTURER', 'SUPPLIER')")
     public List<CcTransportNode> listTransportNode(String orderNo) {
         return coldChainService.listNodeByOrderNo(orderNo);
     }
 
     // 按节点类型查询
     @RequestMapping("/listNodeByType")
-    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'REGULATOR')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'REGULATOR', 'MANUFACTURER', 'SUPPLIER')")
     public List<CcTransportNode> listNodeByType(int nodeType) {
         return coldChainService.listNodeByType(nodeType);
     }
@@ -342,7 +342,7 @@ public class ColdChainController {
 
     // 按运输订单号查询签收单
     @RequestMapping("/queryReceipt")
-    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'REGULATOR')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'REGULATOR', 'MANUFACTURER', 'SUPPLIER')")
     public CcReceipt queryReceipt(String orderNo) {
         return coldChainService.getReceiptByOrderNo(orderNo);
     }
@@ -375,14 +375,14 @@ public class ColdChainController {
 
     // 根据运输订单号追溯冷链全链路
     @RequestMapping("/traceColdChain")
-    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'REGULATOR')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'REGULATOR', 'MANUFACTURER', 'SUPPLIER')")
     public ColdChainService.ColdChainTraceVO traceColdChain(String orderNo) {
         return coldChainService.traceColdChain(orderNo);
     }
 
     // 根据生产批次号追溯冷链运输链路
     @RequestMapping("/traceByProdBatch")
-    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'MANUFACTURER', 'REGULATOR')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'MANUFACTURER', 'REGULATOR', 'SUPPLIER')")
     public List<CcTransport> traceByProdBatch(String prodBatchNo) {
         return coldChainService.traceByProdBatch(prodBatchNo);
     }

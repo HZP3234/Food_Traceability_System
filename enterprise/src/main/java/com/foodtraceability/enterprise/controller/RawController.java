@@ -22,14 +22,14 @@ public class RawController {
 
     // 按批次号查询
     @RequestMapping("/queryByBatchNo")
-    @PreAuthorize("hasAnyRole('ADMIN', 'REGULATOR', 'MANUFACTURER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'REGULATOR', 'MANUFACTURER', 'SUPPLIER')")
     public Raw queryByBatchNo(String batchNo) {
         return rawService.getByBatchNo(batchNo);
     }
 
     // 条件列表查询
     @RequestMapping("/listRaw")
-    @PreAuthorize("hasAnyRole('ADMIN', 'REGULATOR', 'MANUFACTURER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'REGULATOR', 'MANUFACTURER', 'SUPPLIER')")
     public List<Raw> listRaw(String supplierName, String productCategory,
                              Integer checkResult, String warehouse,
                              Integer batchStatus, Integer detailStatus) {

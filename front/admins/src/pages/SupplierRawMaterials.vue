@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, inject, type Ref } from 'vue'
-import { OfficeBuilding, Close, DocumentAdd, DocumentChecked, Plus, Select, Upload } from '@element-plus/icons-vue'
+import { Close, DocumentAdd, Plus, Select, Upload } from '@element-plus/icons-vue'
 import { rawApi } from '../services/api'
 import type { RoleKey } from '../config/navigation'
 
@@ -31,14 +31,11 @@ const stats = computed(() => ({
   pending: pendingList.value.length,
 }))
 
-const emit = defineEmits<{ navigate: [page: string] }>()
-
 const uploadForm = ref({
   productName: '', productCategory: '', amount: '', uploadTime: '',
-  origin: '', farmType: '', feed: '', cert: '',
-  inspectionNo: '', breed: '', scale: '', collectDate: '',
-  transportCar: '', transportTemp: '', storage: '', shelfLife: '',
-  supplierQualNo: '', sourceInspectionNo: '',
+  origin: '', cert: '', inspectionNo: '',
+  transportOrderNo: '',
+  supplierQualNo: '',
   uploader: '',
 })
 
@@ -64,38 +61,27 @@ async function loadData() {
 function openUploadForBatch(row: any) {
   isNewUpload.value = false
   viewingBatchNo.value = row.batchNo
-  uploadForm.value = { productName: row.productName || '', productCategory: '', amount: row.amount ? String(row.amount) + (row.unit || '') : '', uploadTime: new Date().toISOString().slice(0, 16).replace('T', ' '), origin: '', farmType: '', feed: '', cert: '', inspectionNo: '', breed: '', scale: '', collectDate: '', transportCar: '', transportTemp: '', storage: '', shelfLife: '', supplierQualNo: '', sourceInspectionNo: '', uploader: row.supplierName || currentUser || '' }
+  uploadForm.value = { productName: row.productName || '', productCategory: '', amount: row.amount ? String(row.amount) + (row.unit || '') : '', uploadTime: new Date().toISOString().slice(0, 16).replace('T', ' '), origin: '', cert: '', inspectionNo: '', transportOrderNo: '', supplierQualNo: '', uploader: currentUser || '' }
   showUploadModal.value = true
 }
 function openNewUpload() {
   isNewUpload.value = true
   viewingBatchNo.value = ''
-  uploadForm.value = { productName: '', productCategory: '', amount: '', uploadTime: new Date().toISOString().slice(0, 16).replace('T', ' '), origin: '', farmType: '', feed: '', cert: '', inspectionNo: '', breed: '', scale: '', collectDate: '', transportCar: '', transportTemp: '', storage: '', shelfLife: '', supplierQualNo: '', sourceInspectionNo: '', uploader: currentUser || '' }
+  uploadForm.value = { productName: '', productCategory: '', amount: '', uploadTime: new Date().toISOString().slice(0, 16).replace('T', ' '), origin: '', cert: '', inspectionNo: '', transportOrderNo: '', supplierQualNo: '', uploader: currentUser || '' }
   showUploadModal.value = true
-}
-
-// 跳转到其他模块页面
-function goToPage(page: string) {
-  showUploadModal.value = false
-  emit('navigate', page)
 }
 
 async function submitUploadForBatch() {
   try {
     await rawApi.uploadDetail(viewingBatchNo.value, {
       origin: uploadForm.value.origin,
-      farmType: uploadForm.value.farmType, feedType: uploadForm.value.feed,
       certType: uploadForm.value.cert, inspectionNo: uploadForm.value.inspectionNo,
-      breed: uploadForm.value.breed, scaleDesc: uploadForm.value.scale,
-      collectDate: uploadForm.value.collectDate,
-      plateNo: uploadForm.value.transportCar, transportTemp: uploadForm.value.transportTemp,
-      storageMethod: uploadForm.value.storage, shelfLife: uploadForm.value.shelfLife,
-      sourceInspectionNo: uploadForm.value.sourceInspectionNo,
+      transportOrderNo: uploadForm.value.transportOrderNo,
       supplierQualNo: uploadForm.value.supplierQualNo,
       productCategory: uploadForm.value.productCategory,
       uploader: uploadForm.value.uploader || 'SYSTEM',
     })
-    notify('success', '源头信息上传成功，已自动匹配到批次 ' + viewingBatchNo.value + '。请等待专职质检人员在「质检确认管理」中确认。')
+    notify('success', '源头信息上传成功，已自动匹配到批次 ' + viewingBatchNo.value)
     showUploadModal.value = false; loadData()
   } catch (e: any) { notify('error', '上传失败: ' + e.message) }
 }
@@ -105,13 +91,8 @@ async function submitProactiveUpload() {
     await rawApi.proactiveUpload(
       {
         origin: uploadForm.value.origin,
-        farmType: uploadForm.value.farmType, feedType: uploadForm.value.feed,
         certType: uploadForm.value.cert, inspectionNo: uploadForm.value.inspectionNo,
-        breed: uploadForm.value.breed, scaleDesc: uploadForm.value.scale,
-        collectDate: uploadForm.value.collectDate,
-        plateNo: uploadForm.value.transportCar, transportTemp: uploadForm.value.transportTemp,
-        storageMethod: uploadForm.value.storage,
-        sourceInspectionNo: uploadForm.value.sourceInspectionNo,
+        transportOrderNo: uploadForm.value.transportOrderNo,
         supplierQualNo: uploadForm.value.supplierQualNo,
         productCategory: uploadForm.value.productCategory,
         uploader: currentUser || uploadForm.value.uploader || 'SYSTEM', uploadTime: now
@@ -123,7 +104,7 @@ async function submitProactiveUpload() {
         amount: uploadForm.value.amount || '0', uploadTime: now, pendingStatus: 1
       }
     )
-    notify('success', '原料信息已保存至待匹配列表，请等待专职质检人员在「质检确认管理」中确认')
+    notify('success', '原料信息已保存至待匹配列表')
     showUploadModal.value = false; loadData()
   } catch (e: any) { notify('error', '上传失败: ' + e.message) }
 }
@@ -234,7 +215,7 @@ onMounted(loadData)
             <div class="form-section-title"><span class="section-ico">匹</span>批次自动匹配</div>
             <div class="grid-form">
               <label>选择批次号（自动匹配）<input :value="viewingBatchNo" readonly style="background:#f8fafc" /></label>
-              <label>供应商名称<input v-model="uploadForm.uploader" readonly style="background:#f8fafc" /></label>
+              <label>供应商名称<input :value="currentUser" readonly style="background:#f8fafc;color:#8195aa" /></label>
               <label>原料名称<input v-model="uploadForm.productName" placeholder="如：生牛乳" /></label>
               <label>原料类别
                 <select v-model="uploadForm.productCategory">
@@ -264,7 +245,7 @@ onMounted(loadData)
                   <option value="粮油原料">粮油原料</option>
                 </select>
               </label>
-              <label>供应商名称 <span class="required">*</span><input v-model="uploadForm.uploader" placeholder="供应商名称" /></label>
+              <label>供应商名称 <span class="required">*</span><input :value="currentUser" readonly style="background:#f8fafc;color:#8195aa" /></label>
               <label>数量<input v-model="uploadForm.amount" placeholder="如：12t" /></label>
               <label>批次号（可选）
                 <select v-model="viewingBatchNo">
@@ -276,79 +257,31 @@ onMounted(loadData)
             </div>
           </div>
 
-          <!-- Section: 源头详细信息 -->
+          <!-- Section: 源头信息 -->
           <div class="form-section">
-            <div class="form-section-title"><span class="section-ico">源</span>源头详细信息</div>
+            <div class="form-section-title"><span class="section-ico">源</span>源头信息</div>
             <div class="grid-form">
-              <label>产地/牧场 <span class="required">*</span><input v-model="uploadForm.origin" placeholder="河北燕北牧场" /></label>
-              <label>种养类型 <span class="required">*</span>
-                <select v-model="uploadForm.farmType">
-                  <option value="">请选择种养类型</option>
-                  <option value="规模化牧场">规模化牧场</option>
-                  <option value="农户散养">农户散养</option>
-                  <option value="合作社">合作社</option>
-                </select>
-              </label>
-              <label>饲料/肥料类型<input v-model="uploadForm.feed" placeholder="有机牧草+精饲料" /></label>
-              <label>品种/品系<input v-model="uploadForm.breed" placeholder="荷斯坦奶牛" /></label>
-              <label>规模/面积<input v-model="uploadForm.scale" placeholder="5000头" /></label>
-              <label>采收/收集日期<input v-model="uploadForm.collectDate" type="date" /></label>
-              <label>产地认证
+              <label>产地 <span class="required">*</span><input v-model="uploadForm.origin" placeholder="如：河北燕北牧场" /></label>
+              <label>认证类型
                 <select v-model="uploadForm.cert">
                   <option value="">请选择认证类型</option>
-                  <option value="有机认证">有机认证</option>
-                  <option value="绿色食品">绿色食品</option>
-                  <option value="无公害">无公害</option>
+                  <option value="1">绿色食品</option>
+                  <option value="2">有机认证</option>
+                  <option value="3">无公害</option>
+                  <option value="4">其他认证</option>
                 </select>
               </label>
               <label>检验报告编号<input v-model="uploadForm.inspectionNo" placeholder="JC20260610001" /></label>
-            </div>
-          </div>
-
-          <!-- Section: 运输与储存信息 -->
-          <div class="form-section">
-            <div class="form-section-title"><span class="section-ico">运</span>运输与储存信息</div>
-            <div class="grid-form">
-              <label>运输车辆<input v-model="uploadForm.transportCar" placeholder="冀C·B9180" /></label>
-              <label>运输温度<input v-model="uploadForm.transportTemp" placeholder="3.5℃" /></label>
-              <label>储存条件
-                <select v-model="uploadForm.storage">
-                  <option value="">请选择储存条件</option>
-                  <option value="冷藏 0-4℃">冷藏 0-4℃</option>
-                  <option value="冷冻 -18℃以下">冷冻 -18℃以下</option>
-                  <option value="常温避光">常温避光</option>
-                </select>
-              </label>
-              <label>保质期至<input v-model="uploadForm.shelfLife" type="date" /></label>
-              <label>源头检测报告<input v-model="uploadForm.sourceInspectionNo" placeholder="JC20260610001" /></label>
               <label>供应商资质编号<input v-model="uploadForm.supplierQualNo" placeholder="QF20260611001" /></label>
             </div>
           </div>
 
-          <!-- Section: 质检与资质 -->
+          <!-- Section: 运输单号 -->
           <div class="form-section">
-            <div class="form-section-title"><span class="section-ico">管</span>质检与资质管理</div>
-            <div class="link-cards">
-              <div class="link-card">
-                <div class="link-card-body">
-                  <span class="link-card-icon"><el-icon><DocumentChecked /></el-icon></span>
-                  <div>
-                    <strong>质检确认管理</strong>
-                    <p>原料上传完成后，由<strong>专职质检人员</strong>在独立页面中对原料进行检验确认</p>
-                  </div>
-                </div>
-                <button class="primary btn-sm" @click="goToPage('quality-inspection')">前往质检确认 →</button>
-              </div>
-              <div class="link-card">
-                <div class="link-card-body">
-                  <span class="link-card-icon"><el-icon><OfficeBuilding /></el-icon></span>
-                  <div>
-                    <strong>企业资质管理</strong>
-                    <p>上传并维护<strong>供应商资质证书</strong>、检验报告、认证信息等企业资质文件</p>
-                  </div>
-                </div>
-                <button class="secondary btn-sm" @click="goToPage('qualification-upload')">前往资质上传 →</button>
-              </div>
+            <div class="form-section-title"><span class="section-ico">运</span>运输单号</div>
+            <div class="trace-hint info">🚚 请在此录入运输单号，用于后续冷链物流跟踪。运输详情（车辆、温度、储存等）由冷链物流商在"冷链运输"模块中完善。</div>
+            <div class="grid-form">
+              <label>运输单号<input v-model="uploadForm.transportOrderNo" placeholder="如：TO20260625001" /></label>
             </div>
           </div>
 
@@ -409,56 +342,6 @@ onMounted(loadData)
   font-size: 12px;
   font-weight: 900;
   flex-shrink: 0;
-}
-
-/* 跳转卡片 */
-.link-cards {
-  display: grid;
-  gap: 10px;
-}
-
-.link-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 16px;
-  border: 1px solid #dce8f4;
-  border-radius: 10px;
-  background: #f8fbfd;
-  gap: 12px;
-}
-
-.link-card-body {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  flex: 1;
-}
-
-.link-card-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  display: grid;
-  place-items: center;
-  background: #eaf2ff;
-  color: #2467df;
-  font-size: 18px;
-  flex-shrink: 0;
-}
-
-.link-card strong {
-  display: block;
-  color: #25486b;
-  font-size: 13px;
-  margin-bottom: 2px;
-}
-
-.link-card p {
-  margin: 0;
-  color: #8195aa;
-  font-size: 12px;
-  line-height: 1.5;
 }
 
 /* 双栏布局 */

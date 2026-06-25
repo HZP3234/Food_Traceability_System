@@ -113,23 +113,7 @@ async function handleLogin(data: { username: string; password: string; role: str
   try {
     const res: any = await authApi.login(data.username, data.password)
     if (res.code === 200 && res.data) {
-      const { token, username, roleType, realName, enterpriseUuid, enterpriseType } = res.data
-      sessionStorage.setItem('fts-admin-token', token)
-      sessionStorage.setItem('fts-admin-authenticated', 'true')
-      const userInfo = { username, roleType, realName, enterpriseUuid, enterpriseType }
-      sessionStorage.setItem('fts-admin-user', JSON.stringify(userInfo))
-      currentUser.value = userInfo
-
-      const enterpriseTypeToRole: Record<number, RoleKey> = {
-        1: 'supplier', 2: 'manufacturer', 3: 'logistics', 4: 'seller',
-      }
-      const roleMap: Record<string, RoleKey> = {
-        ADMIN: 'super-admin',
-        REGULATOR: 'regulator',
-        ENTERPRISE: enterpriseType ? (enterpriseTypeToRole[enterpriseType] || 'manufacturer') : 'manufacturer',
-      }
-      currentRole.value = roleMap[roleType] || 'manufacturer'
-      screen.value = 'admin'
+      enterAdmin(res.data)
       if (loginRef) loginRef.setError('')
     } else {
       if (loginRef) loginRef.setError(res.message || '登录失败')
@@ -139,6 +123,87 @@ async function handleLogin(data: { username: string; password: string; role: str
   } finally {
     if (loginRef) loginRef.setLoading(false)
   }
+}
+
+async function handleRegister(data: {
+  username: string; password: string; role: string
+  enterpriseName?: string; creditCode?: string; contactPerson?: string
+  contactPhone?: string; address?: string; supplierCode?: string; extraInfo?: string
+}) {
+  const loginRef = loginRegisterRef.value
+  try {
+    // 第一步：调用注册接口
+    const regRes: any = await authApi.register({
+      username: data.username,
+      password: data.password,
+      roleType: data.role === 'regulator' ? 'REGULATOR' : data.role === 'super-admin' ? 'ADMIN' : 'ENTERPRISE',
+      enterpriseName: data.enterpriseName || '',
+      creditCode: data.creditCode || '',
+      contactPerson: data.contactPerson || '',
+      contactPhone: data.contactPhone || '',
+      address: data.address || '',
+      supplierCode: data.supplierCode || '',
+      extraInfo: data.extraInfo || '',
+      enterpriseType: roleToEnterpriseType(data.role),
+    })
+    // 注册成功（兼容 code: 200 和 code: 0 两种成功约定）
+    const regOk = regRes.code === 200 || regRes.code === 0 || regRes.success === true
+    if (!regOk) {
+      if (loginRef) loginRef.setError(regRes.message || '注册失败，请检查后端服务')
+      return
+    }
+
+    // 第二步：用注册的账号密码登录，获取 token
+    const loginRes: any = await authApi.login(data.username, data.password)
+    if (loginRes.code === 200 && loginRes.data) {
+      enterAdmin(loginRes.data)
+      // 注册成功后，企业类角色跳转到资质上传页面
+      if (data.role !== 'regulator' && data.role !== 'super-admin') {
+        activePage.value = 'qualification-upload'
+      }
+      if (loginRef) loginRef.setError('')
+    } else {
+      // 注册成功但登录失败 — 直接切到登录模式让用户手动登录
+      if (loginRef) {
+        loginRef.setError('')
+      }
+      screen.value = 'login'
+    }
+  } catch (e: any) {
+    if (loginRef) loginRef.setError(e.message || '网络请求失败，请检查后端服务')
+  } finally {
+    if (loginRef) loginRef.setLoading(false)
+  }
+}
+
+function roleToEnterpriseType(role: string): number {
+  switch (role) {
+    case 'supplier': return 1
+    case 'manufacturer': return 2
+    case 'logistics': return 3
+    case 'seller': return 4
+    default: return 0
+  }
+}
+
+function enterAdmin(userData: any) {
+  const { token, username, roleType, realName, enterpriseUuid, enterpriseType } = userData
+  sessionStorage.setItem('fts-admin-token', token)
+  sessionStorage.setItem('fts-admin-authenticated', 'true')
+  const userInfo = { username, roleType, realName, enterpriseUuid, enterpriseType }
+  sessionStorage.setItem('fts-admin-user', JSON.stringify(userInfo))
+  currentUser.value = userInfo
+
+  const enterpriseTypeToRole: Record<number, RoleKey> = {
+    1: 'supplier', 2: 'manufacturer', 3: 'logistics', 4: 'seller',
+  }
+  const roleMap: Record<string, RoleKey> = {
+    ADMIN: 'super-admin',
+    REGULATOR: 'regulator',
+    ENTERPRISE: enterpriseType ? (enterpriseTypeToRole[enterpriseType] || 'manufacturer') : 'manufacturer',
+  }
+  currentRole.value = roleMap[roleType] || 'manufacturer'
+  screen.value = 'admin'
 }
 
 function handleLogout() { showLogoutConfirm.value = true }
@@ -156,7 +221,7 @@ function confirmLogout() {
 
 <template>
   <LandingPage v-if="screen === 'landing'" @enter-admin="screen = 'login'" />
-  <LoginRegister v-else-if="screen === 'login'" ref="loginRegisterRef" @login="handleLogin" />
+  <LoginRegister v-else-if="screen === 'login'" ref="loginRegisterRef" @login="handleLogin" @register="handleRegister" />
   <main v-else class="admin-shell">
     <aside class="sidebar">
       <div class="brand">

@@ -1,10 +1,13 @@
 package com.foodtraceability.regulation.controller;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.foodtraceability.regulation.common.Result;
 import com.foodtraceability.regulation.dto.AuthResponse;
 import com.foodtraceability.regulation.dto.LoginRequest;
 import com.foodtraceability.regulation.dto.RegisterRequest;
+import com.foodtraceability.regulation.entity.Enterprise;
 import com.foodtraceability.regulation.entity.SysUser;
+import com.foodtraceability.regulation.mapper.EnterpriseMapper;
 import com.foodtraceability.regulation.security.JwtUtil;
 import com.foodtraceability.regulation.service.SysUserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -13,6 +16,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -25,6 +29,7 @@ import java.util.Map;
 public class AuthController {
 
     private final SysUserService sysUserService;
+    private final EnterpriseMapper enterpriseMapper;
     private final JwtUtil jwtUtil;
 
     @Operation(summary = "用户登录")
@@ -62,14 +67,25 @@ public class AuthController {
             if (user == null) {
                 return Result.error(404, "用户不存在");
             }
-            Map<String, Object> info = Map.of(
-                "username", user.getUsername(),
-                "roleType", user.getRoleType(),
-                "realName", user.getRealName(),
-                "enterpriseUuid", user.getEnterpriseUuid() != null ? user.getEnterpriseUuid() : "",
-                "phone", user.getPhone() != null ? user.getPhone() : "",
-                "email", user.getEmail() != null ? user.getEmail() : ""
-            );
+            // 查询企业类型
+            Integer enterpriseType = null;
+            if (user.getEnterpriseUuid() != null && !user.getEnterpriseUuid().isBlank()) {
+                Enterprise enterprise = enterpriseMapper.selectOne(
+                    new LambdaQueryWrapper<Enterprise>()
+                        .eq(Enterprise::getEnterpriseUuid, user.getEnterpriseUuid())
+                );
+                if (enterprise != null) {
+                    enterpriseType = enterprise.getEnterpriseType();
+                }
+            }
+            Map<String, Object> info = new HashMap<>();
+            info.put("username", user.getUsername());
+            info.put("roleType", user.getRoleType());
+            info.put("realName", user.getRealName());
+            info.put("enterpriseUuid", user.getEnterpriseUuid() != null ? user.getEnterpriseUuid() : "");
+            info.put("enterpriseType", enterpriseType);
+            info.put("phone", user.getPhone() != null ? user.getPhone() : "");
+            info.put("email", user.getEmail() != null ? user.getEmail() : "");
             return Result.success(info);
         } catch (Exception e) {
             return Result.unauthorized("Token 解析失败");
