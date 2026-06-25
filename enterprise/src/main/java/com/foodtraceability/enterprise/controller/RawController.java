@@ -30,7 +30,7 @@ public class RawController {
 
     // 条件列表查询
     @RequestMapping("/listRaw")
-    @PreAuthorize("hasAnyRole('ADMIN', 'REGULATOR', 'MANUFACTURER', 'SUPPLIER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'REGULATOR', 'MANUFACTURER', 'SUPPLIER', 'LOGISTICS')")
     public List<Raw> listRaw(String supplierName, String productCategory,
                              Integer checkResult, String warehouse,
                              Integer batchStatus, Integer detailStatus) {

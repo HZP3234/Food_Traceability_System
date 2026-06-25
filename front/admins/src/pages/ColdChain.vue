@@ -124,10 +124,13 @@ function onBatchSelect() {
   const batch = batchOptions.value.find((r: any) => r.batchNo === tForm.value.prodBatchNo)
   if (batch) {
     tForm.value.productName = batch.productName || ''
+    batchSearchText.value = batch.batchNo || ''
   }
 }
 
-function onBatchFocus() { batchDropdownVisible.value = true }
+function onBatchFocus() { batchDropdownVisible.value = true; if (batchOptions.value.length === 0) loadBatchOptions() }
+function onBatchInput() { batchDropdownVisible.value = true }
+function onBatchBlur() { setTimeout(() => batchDropdownVisible.value = false, 200) }
 
 async function loadEnterpriseOptions() {
   try {
@@ -169,6 +172,8 @@ async function loadTransports() {
 async function openCreateT() {
   editingT.value = null
   selectedDestination.value = ''
+  batchSearchText.value = ''
+  destSearchText.value = ''
   await Promise.all([loadBatchOptions(), loadEnterpriseOptions()])
   const self = await loadCurrentUserEnterprise()
   const autoDeparture = self?.address || self?.enterpriseName || ''
@@ -179,6 +184,10 @@ function openEditT(row: any) {
   if (isOtherEnterprise.value) { notify('error', '仅冷链物流商可编辑运输详情'); return }
   editingT.value = row
   selectedDestination.value = ''
+  batchSearchText.value = row.prodBatchNo || ''
+  destSearchText.value = row.destinationName || ''
+  loadBatchOptions()
+  loadEnterpriseOptions()
   tForm.value = { orderNo: row.orderNo ?? '', plateNo: row.plateNo ?? '', driverName: row.driverName ?? '', driverPhone: row.driverPhone ?? '', productName: row.productName ?? '', prodBatchNo: row.prodBatchNo ?? '', departureId: row.departureId ?? '', departureName: row.departureName ?? '', destinationId: row.destinationId ?? '', destinationName: row.destinationName ?? '', loadingTemp: row.loadingTemp ?? '', departTime: row.departTime ?? '', estimatedArrival: row.estimatedArrival ?? '', transportMethod: row.transportMethod ?? 0, collectInterval: row.collectInterval ?? '', tempUpper: row.tempUpper ?? '', tempLower: row.tempLower ?? '', humidUpper: row.humidUpper ?? '', humidLower: row.humidLower ?? '', alertMethod: row.alertMethod ?? '', remark: row.remark ?? '' }
   showTModal.value = true
 }
@@ -380,7 +389,7 @@ onMounted(loadTransports)
                   <label>运输单号<span style="color:#8195aa">（自动生成）</span><input :value="tForm.orderNo" readonly style="background:#f8fafc;color:#8195aa" placeholder="提交后系统自动生成" /></label>
                   <label>关联批次 <span class="required">*</span>
                     <div class="searchable-select">
-                      <input v-model="batchSearchText" placeholder="输入批次号或产品名搜索..." @focus="onBatchFocus" @blur="setTimeout(() => batchDropdownVisible = false, 200)" />
+                      <input v-model="batchSearchText" placeholder="输入批次号或产品名搜索..." @focus="onBatchFocus" @blur="onBatchBlur" @input="onBatchInput" />
                       <div v-if="batchDropdownVisible && filteredBatchOptions.length" class="select-dropdown">
                         <div v-for="r in filteredBatchOptions" :key="r.batchNo" class="select-option" @mousedown.prevent="tForm.prodBatchNo = r.batchNo; onBatchSelect()">
                           <strong>{{ r.batchNo }}</strong> — {{ r.productName }} <small style="color:#8195aa">{{ r.supplierName || '' }}</small>
@@ -415,7 +424,7 @@ onMounted(loadTransports)
                   <label>车牌号 *<input v-model="tForm.plateNo" placeholder="分配冷链车辆" /></label>
                   <label>关联批次 *
                     <div class="searchable-select">
-                      <input v-model="batchSearchText" placeholder="输入批次号或产品名搜索..." @focus="onBatchFocus" @blur="setTimeout(() => batchDropdownVisible = false, 200)" />
+                      <input v-model="batchSearchText" placeholder="输入批次号或产品名搜索..." @focus="onBatchFocus" @blur="onBatchBlur" @input="onBatchInput" />
                       <div v-if="batchDropdownVisible && filteredBatchOptions.length" class="select-dropdown">
                         <div v-for="r in filteredBatchOptions" :key="r.batchNo" class="select-option" @mousedown.prevent="tForm.prodBatchNo = r.batchNo; onBatchSelect()">
                           <strong>{{ r.batchNo }}</strong> — {{ r.productName }} <small style="color:#8195aa">{{ r.supplierName || '' }}</small>
