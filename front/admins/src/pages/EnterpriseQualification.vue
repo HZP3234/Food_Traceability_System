@@ -1,16 +1,18 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { Check, Close, Delete, Edit, OfficeBuilding, Plus, Refresh, Search, View, Warning } from '@element-plus/icons-vue'
+import { ref, computed, onMounted, inject, type Ref } from 'vue'
+import { Check, Close, Delete, OfficeBuilding, Plus, Refresh, Search, View, Warning } from '@element-plus/icons-vue'
 import { enterpriseApi } from '../services/api'
+import type { RoleKey } from '../config/navigation'
+
+const currentRole = inject<Ref<RoleKey>>('currentRole')
+const isRegulator = computed(() => currentRole?.value === 'regulator' || currentRole?.value === 'super-admin')
 
 const tab = ref<'list' | 'qual'>('list')
 const loading = ref(false)
 const list = ref<any[]>([])
 const toast = ref<{ type: 'success' | 'error'; text: string } | null>(null)
-const showModal = ref(false)
 const showDetail = ref(false)
 const showConfirm = ref(false)
-const editing = ref<any>(null)
 const viewing = ref<any>(null)
 const deletingId = ref<number | null>(null)
 const statusChecking = ref(false)
@@ -27,11 +29,6 @@ const stats = computed(() => ({
   normal: list.value.filter((r: any) => r.status === 1).length,
   disabled: list.value.filter((r: any) => r.status === 0).length,
 }))
-
-const form = ref({
-  enterpriseUuid: '', enterpriseName: '', enterpriseType: 1, certNo: '',
-  address: '', contactPhone: '', contactPerson: '', riskLevel: 1, status: 1, remark: '',
-})
 
 function notify(type: 'success' | 'error', text: string) { toast.value = { type, text }; setTimeout(() => (toast.value = null), 2600) }
 function statusClass(label: string) {
@@ -59,30 +56,7 @@ function resetFilters() {
   loadList()
 }
 
-function openCreate() {
-  editing.value = null
-  form.value = { enterpriseUuid: '', enterpriseName: '', enterpriseType: 1, certNo: '', address: '', contactPhone: '', contactPerson: '', riskLevel: 1, status: 1, remark: '' }
-  showModal.value = true
-}
-function openEdit(row: any) {
-  editing.value = row
-  form.value = {
-    enterpriseUuid: row.enterpriseUuid ?? '', enterpriseName: row.enterpriseName ?? '',
-    enterpriseType: row.enterpriseType ?? 1, certNo: row.certNo ?? '', address: row.address ?? '',
-    contactPhone: row.contactPhone ?? '', contactPerson: row.contactPerson ?? '',
-    riskLevel: row.riskLevel ?? 1, status: row.status ?? 1, remark: row.remark ?? '',
-  }
-  showModal.value = true
-}
 function openDetail(row: any) { viewing.value = row; showDetail.value = true }
-
-async function submitForm() {
-  try {
-    if (editing.value) { await enterpriseApi.update(editing.value.enterpriseId, form.value); notify('success', '企业信息更新成功') }
-    else { await enterpriseApi.create(form.value); notify('success', '企业创建成功') }
-    showModal.value = false; loadList()
-  } catch (e: any) { notify('error', '操作失败: ' + e.message) }
-}
 
 function confirmDelete(id: number) { deletingId.value = id; showConfirm.value = true }
 async function doDelete() { try { await enterpriseApi.delete(deletingId.value!); notify('success', '删除成功'); showConfirm.value = false; loadList() } catch (e: any) { notify('error', '删除失败: ' + e.message) } }
@@ -94,6 +68,10 @@ async function doCheckStatus() {
   finally { statusChecking.value = false }
 }
 
+// 跳转到资质上传页面
+const emit = defineEmits<{ navigate: [page: string] }>()
+function goToUpload() { emit('navigate', 'qualification-upload') }
+
 onMounted(loadList)
 </script>
 
@@ -101,11 +79,31 @@ onMounted(loadList)
   <div class="trace-page">
     <div v-if="toast" class="trace-toast" :class="toast.type">{{ toast.text }}</div>
 
+    <div class="trace-role-banner" :class="isRegulator ? 'manufacturer' : 'supplier'">
+      <span class="trace-role-badge">{{ isRegulator ? '监管审核' : '企业资质' }}</span>
+      <span v-if="isRegulator">在线<strong>审批</strong>企业资质（通过/退回/驳回），含有效期管理和到期预警。</span>
+      <span v-else>上传并维护<strong>本企业</strong>的资质证书，监管机构在线审核。</span>
+    </div>
+
     <section class="trace-stats">
       <article><span><el-icon><OfficeBuilding /></el-icon> 企业总数</span><b>{{ stats.total }}</b><em>家注册企业</em></article>
       <article class="red"><span><el-icon><Warning /></el-icon> 高风险企业</span><b>{{ stats.highRisk }}</b><em>需要关注</em></article>
       <article class="green"><span><el-icon><Check /></el-icon> 正常运营</span><b>{{ stats.normal }}</b><em>资质有效</em></article>
       <article class="amber"><span><el-icon><Close /></el-icon> 已停用</span><b>{{ stats.disabled }}</b><em>已暂停</em></article>
+    </section>
+
+    <!-- 资质上传入口提示 -->
+    <section class="trace-panel" style="margin-bottom:18px">
+      <header class="panel-header">
+        <div><p>资质管理</p><h2>{{ isRegulator ? '企业资质管理' : '本企业资质管理' }}</h2></div>
+        <button class="primary create" @click="goToUpload"><el-icon><Plus /></el-icon> 上传/编辑资质</button>
+      </header>
+      <div class="panel-body">
+        <div class="trace-hint info">
+          💡 点击上方<strong>「上传/编辑资质」</strong>按钮进入专门的资质上传页面。
+          在该页面中可以新增、编辑企业资质信息，提交后由监管机构审核。
+        </div>
+      </div>
     </section>
 
     <div class="trace-tabs">
@@ -127,8 +125,7 @@ onMounted(loadList)
         <header class="panel-header">
           <div><p>企业台账</p><h2>企业列表</h2></div>
           <div style="display:flex;gap:8px">
-            <button class="secondary" :disabled="statusChecking" @click="doCheckStatus"><el-icon><Refresh /></el-icon> 资质状态检查</button>
-            <button class="primary create" @click="openCreate"><el-icon><Plus /></el-icon> 新增企业</button>
+            <button v-if="isRegulator" class="secondary" :disabled="statusChecking" @click="doCheckStatus"><el-icon><Refresh /></el-icon> 资质状态检查</button>
           </div>
         </header>
         <div class="table-wrap"><table><thead><tr><th>企业名称</th><th>企业类型</th><th>信用代码</th><th>联系人</th><th>联系电话</th><th>风险等级</th><th>状态</th><th>操作</th></tr></thead>
@@ -145,8 +142,7 @@ onMounted(loadList)
               <td><span class="status" :class="row.status === 1 ? 'status-active' : 'status-void'">{{ statusLabels[row.status] ?? '-' }}</span></td>
               <td class="actions">
                 <button @click="openDetail(row)"><el-icon><View /></el-icon> 详情</button>
-                <button @click="openEdit(row)"><el-icon><Edit /></el-icon> 编辑</button>
-                <button class="danger" @click="confirmDelete(row.enterpriseId)"><el-icon><Delete /></el-icon> 删除</button>
+                <button v-if="isRegulator" class="danger" @click="confirmDelete(row.enterpriseId)"><el-icon><Delete /></el-icon> 删除</button>
               </td>
             </tr>
           </tbody></table></div>
@@ -179,25 +175,6 @@ onMounted(loadList)
           </tbody></table></div>
       </section>
     </template>
-
-    <!-- 新增/编辑模态框 -->
-    <div v-if="showModal" class="trace-modal-backdrop" @click.self="showModal = false">
-      <section class="trace-modal"><header><div><p>企业建档</p><h2>{{ editing ? '编辑企业信息' : '新增企业' }}</h2></div><button @click="showModal = false"><el-icon><Close /></el-icon></button></header>
-        <div class="modal-body grid-form">
-          <label>企业名称 *<input v-model="form.enterpriseName" placeholder="请输入企业名称" /></label>
-          <label>企业类型 *<select v-model.number="form.enterpriseType"><option :value="1">供应商</option><option :value="2">加工商</option><option :value="3">物流商</option><option :value="4">零售商</option></select></label>
-          <label>统一社会信用代码<input v-model="form.certNo" placeholder="18位信用代码" /></label>
-          <label>企业UUID<input v-model="form.enterpriseUuid" placeholder="自动生成或手动输入" /></label>
-          <label>联系人<input v-model="form.contactPerson" placeholder="联系人姓名" /></label>
-          <label>联系电话<input v-model="form.contactPhone" placeholder="联系电话" /></label>
-          <label>注册地址<input v-model="form.address" placeholder="企业注册地址" /></label>
-          <label>风险等级<select v-model.number="form.riskLevel"><option :value="1">低风险</option><option :value="2">中风险</option><option :value="3">高风险</option></select></label>
-          <label>状态<select v-model.number="form.status"><option :value="1">正常</option><option :value="0">停用</option></select></label>
-        </div>
-        <label style="display:grid;gap:6px;color:#718ba6;font-size:12px;font-weight:700;margin:0 23px">备注<textarea v-model="form.remark" style="width:100%;padding:9px;border:1px solid #d7e4f0;border-radius:7px;min-height:60px" /></label>
-        <footer><button class="secondary" @click="showModal = false"><el-icon><Close /></el-icon> 取消</button><button class="primary" @click="submitForm"><el-icon><Check /></el-icon> {{ editing ? '保存' : '创建' }}</button></footer>
-      </section>
-    </div>
 
     <!-- 详情模态框 -->
     <div v-if="showDetail" class="trace-modal-backdrop" @click.self="showDetail = false">

@@ -3,7 +3,11 @@ import { ref, computed, onMounted } from 'vue'
 import { Box, Check, Close, Delete, Edit, Plus, Refresh, Search, Select, Upload } from '@element-plus/icons-vue'
 import { rawApi } from '../services/api'
 
-const currentUser = sessionStorage.getItem('fts-admin-user') || ''
+let currentUser = ''
+try {
+  const raw = sessionStorage.getItem('fts-admin-user')
+  if (raw) { const p = JSON.parse(raw); currentUser = p.realName || p.username || '' }
+} catch { currentUser = sessionStorage.getItem('fts-admin-user') || '' }
 const loading = ref(false)
 const list = ref<any[]>([])
 const pendingList = ref<any[]>([])
@@ -28,7 +32,6 @@ const stats = computed(() => ({
 
 const batchForm = ref({ batchNo: '', productName: '', productCategory: '', amount: '', unit: '', supplierId: '', supplierName: '', warehouse: '', storageMethod: 0, shelfLife: '', purchaseDate: '', remark: '' })
 const qcForm = ref({ batchNo: '', checkResult: 1 })
-const storageMethods = ['常温', '冷藏', '冷冻']
 const customProductCategory = ref('')
 
 function notify(type: 'success' | 'error', text: string) { toast.value = { type, text }; setTimeout(() => (toast.value = null), 2600) }

@@ -29,7 +29,6 @@ async function loadStats() {
     const results = await Promise.allSettled([
       rawApi.list({}),
       productionApi.listProdBatch({}),
-      productionApi.listProcessBatch({}),
       traceCodeApi.list({ page: 1, pageSize: 1 }),
       coldChainApi.listTransport({}),
       salesApi.listTerminal({}),
@@ -48,14 +47,14 @@ async function loadStats() {
 
     stats.value.rawBatches = getArr(results[0]).length
     stats.value.prodBatches = getArr(results[1]).length
-    stats.value.processBatches = getArr(results[2]).length
-    stats.value.traceCodes = getPageTotal(results[3])
-    stats.value.transports = getArr(results[4]).length
-    stats.value.terminals = getArr(results[5]).length
-    stats.value.enterprises = getPageTotal(results[6])
-    stats.value.auditLogs = getPageTotal(results[7])
-    stats.value.qualityFailures = getArr(results[8]).length
-    stats.value.coldChainAlerts = getArr(results[9]).length
+    stats.value.processBatches = getArr(results[1]).length
+    stats.value.traceCodes = getPageTotal(results[2])
+    stats.value.transports = getArr(results[3]).length
+    stats.value.terminals = getArr(results[4]).length
+    stats.value.enterprises = getPageTotal(results[5])
+    stats.value.auditLogs = getPageTotal(results[6])
+    stats.value.qualityFailures = getArr(results[7]).length
+    stats.value.coldChainAlerts = getArr(results[8]).length
   } catch (e: any) {} finally { loading.value = false }
 }
 

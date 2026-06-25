@@ -39,7 +39,7 @@ const inputForm = ref({ rawBatchNo: '', materialName: '', inputAmount: '', unit:
 const envForm = ref({ productionLine: '', temperature: '', humidity: '', cleanliness: '', isAbnormal: 0, abnormalDesc: '', recordTime: '' })
 const inspectionForm = ref({ inspectionNo: '', bizType: 3, bizBatchNo: '', inspectionType: 1, inspector: '', inspectionDate: '', inspectionResult: 1, resultDesc: '', remark: '' })
 
-const checkResultLabels = ['', '合格', '不合格']; const prodBatchStatusLabels = ['', '待生产', '生产中', '生产完成', '已废弃']; const codeStatusLabels = ['', '未绑定', '已绑定']; const shiftLabels = ['', '早班', '中班', '晚班']
+const checkResultLabels = ['', '合格', '不合格']; const prodBatchStatusLabels = ['', '待生产', '生产中', '生产完成', '已废弃']
 
 const stats = computed(() => {
   switch (tab.value) {
@@ -68,7 +68,11 @@ const stats = computed(() => {
   }
 })
 
-const currentUser = sessionStorage.getItem('fts-admin-user') || ''
+let currentUser = ''
+try {
+  const raw = sessionStorage.getItem('fts-admin-user')
+  if (raw) { const p = JSON.parse(raw); currentUser = p.realName || p.username || '' }
+} catch { currentUser = sessionStorage.getItem('fts-admin-user') || '' }
 function notify(type: 'success' | 'error', text: string) { toast.value = { type, text }; setTimeout(() => (toast.value = null), 2600) }
 function statusClass(s: string) {
   if (['已完成', '已存证', '已绑定', '已启用', '合格', '正常'].some(x => s.includes(x))) return 'status-active'

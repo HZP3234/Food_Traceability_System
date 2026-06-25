@@ -47,7 +47,7 @@ export const navigation: NavigationGroup[] = [
   {
     label: '流通销售',
     items: [
-      { id: 'cold-chain', label: '冷链物流管理', icon: '冷', roles: ['super-admin', 'manufacturer', 'logistics', 'regulator'], desc: '运输订单、车辆、仓库、温湿度监控' },
+      { id: 'cold-chain', label: '冷链物流管理', icon: '冷', roles: ['super-admin', 'manufacturer', 'supplier', 'logistics', 'regulator'], desc: '运输订单、车辆、仓库、温湿度监控' },
       { id: 'sales-terminal', label: '销售终端管理', icon: '售', roles: ['super-admin', 'manufacturer', 'seller', 'regulator'], desc: '生产商设置销售商，销售商补充储存与销售信息' },
     ],
   },
@@ -60,7 +60,9 @@ export const navigation: NavigationGroup[] = [
   {
     label: '监管与治理',
     items: [
-      { id: 'enterprise-qualification', label: '企业资质管理', icon: '企', roles: ['super-admin', 'regulator'] },
+      { id: 'enterprise-qualification', label: '资质列表管理', icon: '企', roles: ['super-admin', 'manufacturer', 'supplier', 'seller', 'logistics', 'regulator'], desc: '浏览、筛选、查看所有企业的资质信息' },
+      { id: 'qualification-upload', label: '资质上传编辑', icon: '证', roles: ['super-admin', 'manufacturer', 'supplier', 'seller', 'logistics', 'regulator'], desc: '上传、编辑和维护企业资质信息' },
+      { id: 'quality-inspection', label: '质检确认管理', icon: '检', roles: ['super-admin', 'manufacturer', 'regulator'], desc: '专职质检人员对原料、生产、冷链、销售各环节进行质检确认' },
       { id: 'regulatory-trace', label: '监管全链追溯', icon: '监', roles: ['super-admin', 'regulator'] },
       { id: 'audit-log', label: '操作日志审计', icon: '志', roles: ['super-admin', 'regulator'] },
       { id: 'warnings', label: '异常预警推送', icon: '警', roles: ['super-admin', 'regulator', 'manufacturer'], desc: '汇总冷链温度预警、质检不合格、环境异常等实时预警信息' },
