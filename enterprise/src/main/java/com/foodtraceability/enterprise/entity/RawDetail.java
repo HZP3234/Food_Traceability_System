@@ -26,6 +26,14 @@ public class RawDetail {
     private String scaleDesc;
     @TableField(insertStrategy = FieldStrategy.IGNORED)
     private String collectDate;
+    @TableField(insertStrategy = FieldStrategy.IGNORED)
+    private String plateNo;
+    @TableField(insertStrategy = FieldStrategy.IGNORED)
+    private String transportTemp;
+    @TableField(insertStrategy = FieldStrategy.IGNORED)
+    private Integer storageMethod;
+    @TableField(insertStrategy = FieldStrategy.IGNORED)
+    private String shelfLife;
     private String uploader;
     private String uploadTime;
     @TableField(insertStrategy = FieldStrategy.IGNORED)
@@ -65,6 +73,18 @@ public class RawDetail {
 
     public String getCollectDate() { return collectDate; }
     public void setCollectDate(String collectDate) { this.collectDate = collectDate; }
+
+    public String getPlateNo() { return plateNo; }
+    public void setPlateNo(String plateNo) { this.plateNo = plateNo; }
+
+    public String getTransportTemp() { return transportTemp; }
+    public void setTransportTemp(String transportTemp) { this.transportTemp = transportTemp; }
+
+    public Integer getStorageMethod() { return storageMethod; }
+    public void setStorageMethod(Integer storageMethod) { this.storageMethod = storageMethod; }
+
+    public String getShelfLife() { return shelfLife; }
+    public void setShelfLife(String shelfLife) { this.shelfLife = shelfLife; }
 
     public String getUploader() { return uploader; }
     public void setUploader(String uploader) { this.uploader = uploader; }
