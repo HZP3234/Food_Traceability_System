@@ -80,7 +80,7 @@ public class RawService {
         return rawMapper.selectList(qw);
     }
 
-    // 新增原料批次
+    // 新增原料批次（创建后自动匹配供应商待匹配记录）
     public int createRaw(Raw raw) {
         if (raw.getBatchNo() == null || raw.getBatchNo().isBlank()) {
             raw.setBatchNo(generateBatchNo());
@@ -103,7 +103,44 @@ public class RawService {
         raw.setUpdateTime(now);
         raw.setCreateBy(raw.getCreateBy() != null ? raw.getCreateBy() : "SYSTEM");
         raw.setUpdateBy(raw.getUpdateBy() != null ? raw.getUpdateBy() : "SYSTEM");
-        return rawMapper.insert(raw);
+        int result = rawMapper.insert(raw);
+
+        // ====== 自动匹配：新批次创建后，查找供应商已上传的待匹配原料 ======
+        if (raw.getProductName() != null && !raw.getProductName().isBlank()
+                && raw.getSupplierName() != null && !raw.getSupplierName().isBlank()) {
+            QueryWrapper<RawPending> pendingQw = new QueryWrapper<>();
+            pendingQw.eq("product_name", raw.getProductName());
+            pendingQw.eq("supplier_name", raw.getSupplierName());
+            pendingQw.eq("pending_status", 1);
+            pendingQw.eq("is_deleted", 0);
+            pendingQw.orderByAsc("upload_time");
+            List<RawPending> pendings = rawPendingMapper.selectList(pendingQw);
+            for (RawPending pending : pendings) {
+                // 自动匹配
+                pending.setPendingStatus(2);
+                pending.setMatchedBatchNo(raw.getBatchNo());
+                pending.setMatchTime(now);
+                rawPendingMapper.updateById(pending);
+                // 回写 detail
+                try {
+                    long detailId = Long.parseLong(pending.getRawDetailId());
+                    RawDetail detail = rawDetailMapper.selectById(detailId);
+                    if (detail != null) {
+                        detail.setBatchNo(raw.getBatchNo());
+                        rawDetailMapper.updateById(detail);
+                    }
+                } catch (NumberFormatException ignored) {}
+                // 回写 raw 的详情关联（只关联第一个匹配到的）
+                if (raw.getDetailStatus() == null || raw.getDetailStatus() == 0) {
+                    raw.setDetailId(pending.getRawDetailId());
+                    raw.setDetailStatus(1);
+                    raw.setUpdateTime(now);
+                    rawMapper.updateById(raw);
+                }
+            }
+        }
+
+        return result;
     }
 
     // 更新原料批次
@@ -168,7 +205,7 @@ public class RawService {
         return num;
     }
 
-    // 供应商主动上传原料信息（暂不匹配批次号）
+    // 供应商主动上传原料信息（自动匹配批次号）
     @Transactional
     public int proactiveUpload(RawDetail detail, RawPending pending) {
         String now = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
@@ -201,14 +238,43 @@ public class RawService {
             pending.setPendingCode(generatePendingCode());
         }
         pending.setRawDetailId(String.valueOf(detail.getRawDetailId()));
-        pending.setMatchedBatchNo("");   // 待匹配时为空，匹配后更新
         pending.setPendingStatus(1);
         pending.setUploadTime(now);
         pending.setCreateTime(now);
         pending.setUpdateTime(now);
         pending.setCreateBy(operator);
         pending.setUpdateBy(operator);
-        return rawPendingMapper.insert(pending);
+        int result = rawPendingMapper.insert(pending);
+
+        // ====== 自动匹配：按 产品名称 + 供应商名称 查找已有原料批次 ======
+        if (pending.getProductName() != null && !pending.getProductName().isBlank()
+                && pending.getSupplierName() != null && !pending.getSupplierName().isBlank()) {
+            QueryWrapper<Raw> matchQw = new QueryWrapper<>();
+            matchQw.eq("product_name", pending.getProductName());
+            matchQw.eq("supplier_name", pending.getSupplierName());
+            matchQw.eq("is_deleted", 0);
+            matchQw.eq("detail_status", 0);  // 只匹配尚未上传详情的批次
+            matchQw.orderByDesc("create_time");
+            List<Raw> candidates = rawMapper.selectList(matchQw);
+            if (!candidates.isEmpty()) {
+                Raw matchedBatch = candidates.get(0);
+                // 更新 pending 为已匹配状态
+                pending.setPendingStatus(2);
+                pending.setMatchedBatchNo(matchedBatch.getBatchNo());
+                pending.setMatchTime(now);
+                rawPendingMapper.updateById(pending);
+                // 回写 detail 的真实批次号
+                detail.setBatchNo(matchedBatch.getBatchNo());
+                rawDetailMapper.updateById(detail);
+                // 回写 raw 的详情关联
+                matchedBatch.setDetailId(String.valueOf(detail.getRawDetailId()));
+                matchedBatch.setDetailStatus(1);
+                matchedBatch.setUpdateTime(now);
+                rawMapper.updateById(matchedBatch);
+            }
+        }
+
+        return result;
     }
 
     // 供应商匹配批次号

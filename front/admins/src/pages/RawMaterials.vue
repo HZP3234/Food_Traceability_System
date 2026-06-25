@@ -158,9 +158,10 @@ onMounted(loadList)
     </section>
 
     <!-- 待匹配列表 -->
-    <section v-if="pendingList.length" class="trace-panel list-panel">
+    <section class="trace-panel list-panel">
       <header class="panel-header"><div><p>待匹配</p><h2>供应商主动上传的待匹配原料</h2></div><span style="color:#a4730a;font-size:13px">({{ pendingList.length }} 条)</span></header>
       <div class="trace-row-list" style="padding:0 18px 18px">
+        <div v-if="!pendingList.length" style="text-align:center;color:#96a8b9;padding:16px 0;font-size:13px">暂无待匹配记录，供应商上传源头信息后将在此显示并自动匹配</div>
         <div v-for="p in pendingList" :key="p.rawPendingId" class="trace-row-card">
           <span class="trace-mini-badge amber">待</span>
           <div style="flex:1"><strong>{{ p.pendingCode }}</strong><small style="display:block;color:#96a8b9;font-size:11px">{{ p.productName || '未知原料' }} · {{ p.supplierName || '' }} · {{ p.uploadTime }}</small></div>

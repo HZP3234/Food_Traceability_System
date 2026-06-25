@@ -117,7 +117,7 @@ public class RawController {
 
     // 供应商匹配批次号
     @RequestMapping("/matchBatch")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPPLIER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPPLIER', 'MANUFACTURER')")
     public String matchBatch(String pendingCode, String targetBatchNo) {
         rawService.matchBatch(pendingCode, targetBatchNo);
         return "批次匹配成功";
