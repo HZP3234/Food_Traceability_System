@@ -51,6 +51,12 @@ const router = createRouter({
       name: 'Scanner',
       component: () => import('@/views/ScannerView.vue'),
       meta: { title: '扫一扫', needLogin: true }
+    },
+    {
+      path: '/scan-history',
+      name: 'ScanHistory',
+      component: () => import('@/views/ScanHistory.vue'),
+      meta: { title: '扫码历史', needLogin: true }
     }
   ]
 })

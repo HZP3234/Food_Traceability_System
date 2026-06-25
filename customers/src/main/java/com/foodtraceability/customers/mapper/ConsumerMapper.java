@@ -17,4 +17,8 @@ public interface ConsumerMapper extends BaseMapper<Consumer> {
     List<Consumer> selectByNickName(@Param("nickName") String nickName);
 
     List<Consumer> selectByRegion(@Param("region") String region);
+
+    int incrementScanCount(@Param("consumerUuid") String consumerUuid);
+
+    int incrementComplaintCount(@Param("consumerUuid") String consumerUuid);
 }

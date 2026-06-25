@@ -57,19 +57,24 @@ function onCodeSearch() {
     return
   }
   codeLoading.value = true
-  queryByTraceCode(code)
+  queryByTraceCode(code, store.userInfo?.consumerUuid)
     .then((res) => {
       if (res.code === 200 && res.data) {
         store.setBatchNo(res.data.productBatchNo)
+        store.setTraceResult(res.data)
         store.addHistory(code)
         showCodeDialog.value = false
         router.push({ name: 'TraceResult', query: { batchNo: res.data.productBatchNo } })
+      } else if (res.code === 404) {
+        showToast('未查到该溯源码对应的商品信息，请确认溯源码是否正确')
+      } else if (res.code === 400) {
+        showToast(res.message || '该溯源码已失效')
       } else {
-        showToast(res.message || '未查到该溯源码信息')
+        showToast(res.message || '查询失败，请稍后重试')
       }
     })
     .catch((err) => {
-      showToast(err.message || '查询失败')
+      showToast('网络异常，请检查网络后重试')
     })
     .finally(() => {
       codeLoading.value = false

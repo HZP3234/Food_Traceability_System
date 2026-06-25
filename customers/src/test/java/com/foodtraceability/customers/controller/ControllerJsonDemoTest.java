@@ -19,7 +19,6 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 
@@ -289,12 +288,12 @@ class ControllerJsonDemoTest {
         vo.setProductBatchNo("BATCH-20260623-001"); vo.setProductName("有机奶粉");
         vo.setProductSpec("800g/罐"); vo.setManufacturer("XX乳业有限公司");
         vo.setOrigin("内蒙古");
-        vo.setProductionDate(LocalDate.of(2026, 6, 5));
-        vo.setExpirationDate(LocalDate.of(2028, 6, 4));
+        vo.setProductionDate("2026-06-05");
+        vo.setExpirationDate("2028-06-04");
         vo.setNodes(Arrays.asList(node1, node2, node3));
 
         when(traceabilityService.queryByBatchNo("BATCH-20260623-001")).thenReturn(vo);
-        doNothing().when(traceabilityService).recordScan(anyString(), anyString(), any());
+        doNothing().when(traceabilityService).recordScan(anyString(), anyString(), any(), any());
 
         TraceabilityQueryDTO dto = new TraceabilityQueryDTO();
         dto.setProductBatchNo("BATCH-20260623-001");
@@ -315,7 +314,7 @@ class ControllerJsonDemoTest {
     @Test @Order(7)
     @DisplayName("7. POST /api/traceability/scan - 记录扫码事件")
     void demoScan() throws Exception {
-        doNothing().when(traceabilityService).recordScan(anyString(), anyString(), anyString());
+        doNothing().when(traceabilityService).recordScan(anyString(), anyString(), anyString(), anyString());
 
         ScanRecordDTO dto = new ScanRecordDTO();
         dto.setProductBatchNo("BATCH-20260623-001");

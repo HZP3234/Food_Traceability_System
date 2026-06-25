@@ -2,11 +2,13 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showToast } from 'vant'
+import { useAppStore } from '@/store/app'
 import { queryTraceability, recordScan } from '@/api/traceability'
 import type { TraceabilityVO } from '@/types'
 
 const route = useRoute()
 const router = useRouter()
+const store = useAppStore()
 const loading = ref(true)
 const data = ref<TraceabilityVO | null>(null)
 
@@ -36,22 +38,35 @@ function goComplaint() {
 onMounted(() => {
   if (!batchNo) {
     showToast('缺少批次号')
-    router.replace('/')
+    router.replace({ name: 'Home' })
     return
   }
-  queryTraceability({ productBatchNo: batchNo })
+
+  const userId = store.userInfo?.consumerUuid
+
+  // 优先使用 store 中已查询到的结果，避免重复请求
+  const cached = store.traceResult
+  if (cached && cached.productBatchNo === batchNo) {
+    data.value = cached
+    store.setTraceResult(null)
+    loading.value = false
+    recordScan({ productBatchNo: batchNo, userId }).catch(() => {})
+    return
+  }
+
+  queryTraceability({ productBatchNo: batchNo, userId })
     .then((res) => {
       if (res.code === 200 && res.data) {
         data.value = res.data
-        recordScan({ productBatchNo: batchNo }).catch(() => {})
+        recordScan({ productBatchNo: batchNo, userId }).catch(() => {})
+      } else if (res.code === 404) {
+        showToast('未找到该商品的溯源信息')
       } else {
-        showToast(res.message || '未查到溯源信息')
-        router.replace('/')
+        showToast(res.message || '查询失败，请稍后重试')
       }
     })
-    .catch((err) => {
-      showToast(err.message || '查询失败')
-      router.replace('/')
+    .catch(() => {
+      showToast('网络异常，请检查网络后重试')
     })
     .finally(() => {
       loading.value = false
@@ -83,14 +98,6 @@ onMounted(() => {
 
         <div class="product-grid">
           <div class="product-cell">
-            <span class="cell-label">规格</span>
-            <span class="cell-value">{{ data.productSpec || '-' }}</span>
-          </div>
-          <div class="product-cell">
-            <span class="cell-label">产地</span>
-            <span class="cell-value">{{ data.origin || '-' }}</span>
-          </div>
-          <div class="product-cell">
             <span class="cell-label">生产商</span>
             <span class="cell-value">{{ data.manufacturer || '-' }}</span>
           </div>
@@ -99,9 +106,19 @@ onMounted(() => {
             <span class="cell-value">{{ formatDate(data.productionDate) }}</span>
           </div>
           <div class="product-cell">
-            <span class="cell-label">保质期至</span>
-            <span class="cell-value">{{ formatDate(data.expirationDate) }}</span>
+            <span class="cell-label">生产线</span>
+            <span class="cell-value">{{ data.productionLine || '-' }}</span>
           </div>
+          <div class="product-cell">
+            <span class="cell-label">质检结果</span>
+            <span class="cell-value" :class="{ 'check-ok': data.checkResult === 1, 'check-fail': data.checkResult === 2 }">
+              {{ data.checkResult === 1 ? '合格' : data.checkResult === 2 ? '不合格' : '-' }}
+            </span>
+          </div>
+        </div>
+        <div v-if="data.txHash" class="blockchain-tag">
+          <van-icon name="certificate" size="14" />
+          <span>区块链存证: {{ data.txHash.substring(0, 16) }}...</span>
         </div>
       </div>
 
@@ -206,6 +223,18 @@ onMounted(() => {
   font-weight: 500;
 }
 
+.blockchain-tag {
+  margin-top: 12px;
+  padding: 8px 12px;
+  background: #f0faf4;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #07c160;
+}
+
 .product-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -228,6 +257,16 @@ onMounted(() => {
 .cell-value {
   font-size: 14px;
   color: #323233;
+}
+
+.check-ok {
+  color: #07c160;
+  font-weight: 600;
+}
+
+.check-fail {
+  color: #ee0a24;
+  font-weight: 600;
 }
 
 /* 时间线 */

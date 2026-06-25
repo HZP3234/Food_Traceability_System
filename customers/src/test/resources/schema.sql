@@ -34,11 +34,13 @@ CREATE TABLE IF NOT EXISTS scan_record (
     product_batch_no VARCHAR(64) NOT NULL,
     scan_ip VARCHAR(64),
     scan_location VARCHAR(256),
+    user_id VARCHAR(64),
     scan_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     update_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted TINYINT NOT NULL DEFAULT 0,
-    INDEX idx_product_batch_no (product_batch_no)
+    INDEX idx_product_batch_no (product_batch_no),
+    INDEX idx_user_id (user_id)
 );
 
 CREATE TABLE IF NOT EXISTS t_complaint_record (

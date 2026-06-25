@@ -13,4 +13,8 @@ public interface ScanRecordMapper extends BaseMapper<ScanRecord> {
     List<ScanRecord> selectByProductBatchNo(@Param("batchNo") String batchNo);
 
     List<ScanRecord> selectByScanLocation(@Param("location") String location);
+
+    List<ScanRecord> selectRecent(@Param("limit") int limit);
+
+    List<ScanRecord> selectByUserId(@Param("userId") String userId, @Param("limit") int limit);
 }

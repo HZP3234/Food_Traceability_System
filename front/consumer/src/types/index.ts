@@ -17,6 +17,7 @@ export interface Page<T> {
 // 溯源查询
 export interface TraceabilityQueryDTO {
   productBatchNo: string
+  userId?: string
 }
 
 export interface TraceabilityNode {
@@ -32,11 +33,11 @@ export interface TraceabilityNode {
 export interface TraceabilityVO {
   productBatchNo: string
   productName: string
-  productSpec: string
   manufacturer: string
-  origin: string
   productionDate: string
-  expirationDate: string
+  productionLine: string
+  checkResult: number
+  txHash: string
   nodes: TraceabilityNode[]
 }
 
@@ -44,6 +45,17 @@ export interface TraceabilityVO {
 export interface ScanRecordDTO {
   productBatchNo: string
   scanLocation?: string
+  userId?: string
+}
+
+export interface ScanRecord {
+  id: number
+  productBatchNo: string
+  scanIp: string
+  scanLocation: string
+  userId: string
+  scanTime: string
+  createTime: string
 }
 
 // 投诉

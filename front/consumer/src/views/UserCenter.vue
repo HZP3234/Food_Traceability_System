@@ -18,14 +18,13 @@ const userName = computed(() => store.userInfo?.nickName || '消费者用户')
 const userId = computed(() => store.userInfo?.consumerUuid || '')
 
 onMounted(async () => {
-  scanCount.value = store.searchHistory.length
-
   if (store.userInfo?.phone) {
     // 从后端刷新最新用户数据
     try {
       const res = await getUserInfo(store.userInfo.phone)
       if (res.code === 200 && res.data) {
         store.setUserInfo(res.data)
+        scanCount.value = res.data.totalScans ?? 0
       }
     } catch {}
 
@@ -39,6 +38,10 @@ onMounted(async () => {
       .catch(() => {})
   }
 
+  if (scanCount.value === 0) {
+    scanCount.value = store.userInfo?.totalScans ?? 0
+  }
+
   loading.value = false
 })
 
@@ -47,7 +50,7 @@ function goMyComplaints() {
 }
 
 function goScanHistory() {
-  showToast('可查看历史扫码记录')
+  router.push('/scan-history')
 }
 
 function onLogout() {
@@ -95,7 +98,6 @@ function onLogout() {
       <van-cell-group inset>
         <van-cell title="编辑资料" icon="user-o" is-link to="/profile-edit" />
         <van-cell title="我的投诉" icon="records-o" is-link @click="goMyComplaints" />
-        <van-cell title="扫码历史" icon="scan" is-link @click="goScanHistory" />
         <van-cell title="投诉提交" icon="add-o" is-link to="/complaint-submit" />
         <van-cell title="结果查询" icon="search" is-link to="/complaint-query" />
       </van-cell-group>
