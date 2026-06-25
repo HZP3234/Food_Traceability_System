@@ -261,6 +261,7 @@ public class TraceCodeService {
         vo.setTraceCodeStatusName(getStatusName(tc.getTraceCodeStatus()));
         vo.setContentHash(tc.getContentHash());
         vo.setTxHash(tc.getTxHash());
+        vo.setProofId(tc.getProofId());
         vo.setQualityResult(tc.getQualityResult());
         vo.setQualityReportUrl(tc.getQualityReportUrl());
 

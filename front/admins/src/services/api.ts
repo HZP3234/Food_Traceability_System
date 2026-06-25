@@ -219,6 +219,7 @@ export const traceCodeApi = {
   batchGenerate: (data: Record<string, any>) => post('/TraceCode/batchGenerate', data),
   updateStatus: (data: Record<string, any>) => post('/TraceCode/updateStatus', data),
   verifyHash: (traceCode: string) => get('/TraceCode/verifyHash', { traceCode }),
+  listBinds: (traceCode: string) => get('/TraceCode/listBinds', { traceCode }),
 }
 
 // ==================== ColdChain (冷链物流) ====================

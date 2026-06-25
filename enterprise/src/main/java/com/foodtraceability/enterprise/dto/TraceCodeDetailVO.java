@@ -42,6 +42,9 @@ public class TraceCodeDetailVO {
     /** 区块链交易哈希 */
     private String txHash;
 
+    /** 区块链存证编号 */
+    private String proofId;
+
     /** 质检结果：1-合格 2-不合格 3-待检 */
     private Integer qualityResult;
 
@@ -122,6 +125,9 @@ public class TraceCodeDetailVO {
 
     public String getTxHash() { return txHash; }
     public void setTxHash(String txHash) { this.txHash = txHash; }
+
+    public String getProofId() { return proofId; }
+    public void setProofId(String proofId) { this.proofId = proofId; }
 
     public Integer getQualityResult() { return qualityResult; }
     public void setQualityResult(Integer qualityResult) { this.qualityResult = qualityResult; }
