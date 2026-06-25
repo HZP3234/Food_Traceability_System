@@ -195,6 +195,11 @@ public class RawService {
         if (detail.getScaleDesc() == null || detail.getScaleDesc().isBlank()) detail.setScaleDesc("未填写");
         if (detail.getCollectDate() == null || detail.getCollectDate().isBlank())
             detail.setCollectDate(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+        // t_raw_detail 表中 NOT NULL 无默认值的列：plate_no / transport_temp / storage_method / shelf_life
+        if (detail.getPlateNo() == null || detail.getPlateNo().isBlank()) detail.setPlateNo("");
+        if (detail.getTransportTemp() == null || detail.getTransportTemp().isBlank()) detail.setTransportTemp("");
+        if (detail.getStorageMethod() == null) detail.setStorageMethod(0);
+        if (detail.getShelfLife() == null || detail.getShelfLife().isBlank()) detail.setShelfLife("2099-12-31");
         if (detail.getRemark() == null) detail.setRemark("");
         rawDetailMapper.insert(detail);
 
