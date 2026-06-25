@@ -97,15 +97,10 @@ async function loadCurrentUserEnterprise() {
 
 async function loadBatchOptions() {
   try {
-    const raw = sessionStorage.getItem('fts-admin-user')
-    let supplierName = ''
-    if (raw) {
-      const user = JSON.parse(raw)
-      supplierName = user.realName || user.username || ''
-    }
     const isSupplier = currentRole?.value === 'supplier'
-    const params: Record<string, any> = isSupplier && supplierName ? { supplierName } : {}
-    const data = await rawApi.list(params)
+    // 供应商：不传筛选条件，加载所有批次让下拉有内容
+    // 非供应商：不传筛选条件，加载所有批次供选择
+    const data = await rawApi.list({})
     batchOptions.value = Array.isArray(data) ? data : []
   } catch { batchOptions.value = [] }
 }
