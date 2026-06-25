@@ -6,11 +6,13 @@ import type { RoleKey } from '../config/navigation'
 
 const currentRole = inject<Ref<RoleKey>>('currentRole')
 let currentUser = ''
+let enterpriseName = ''
 try {
   const raw = sessionStorage.getItem('fts-admin-user')
   if (raw) {
     const parsed = JSON.parse(raw)
     currentUser = parsed.realName || parsed.username || ''
+    enterpriseName = parsed.enterpriseName || currentUser
   }
 } catch { currentUser = sessionStorage.getItem('fts-admin-user') || '' }
 
@@ -42,7 +44,8 @@ async function loadData() {
   loading.value = true
   try {
     const isSupplier = currentRole?.value === 'supplier'
-    const supplierFilter = isSupplier && currentUser ? currentUser : undefined
+    const supplierName = enterpriseName || currentUser
+    const supplierFilter = isSupplier && supplierName ? supplierName : undefined
     // 加载所有批次，分离待匹配和已匹配
     const data = await rawApi.list(supplierFilter ? { supplierName: supplierFilter } : {})
     const all = Array.isArray(data) ? data : []
@@ -79,7 +82,7 @@ async function submitProactiveUpload() {
       },
       {
         pendingCode: '',
-        supplierName: currentUser || uploadForm.value.uploader || '',
+        supplierName: enterpriseName || currentUser || '',
         productName: uploadForm.value.productName || '待匹配原料',
         productCategory: uploadForm.value.productCategory || '',
         amount: String(parseInt(uploadForm.value.amount) || 0),
@@ -202,7 +205,7 @@ onMounted(loadData)
                   <option value="粮油原料">粮油原料</option>
                 </select>
               </label>
-              <label>供应商名称 <span class="required">*</span><input :value="currentUser" readonly style="background:#f8fafc;color:#8195aa" /></label>
+              <label>供应商名称 <span class="required">*</span><input :value="enterpriseName || currentUser" readonly style="background:#f8fafc;color:#8195aa" /></label>
               <label>数量<input v-model="uploadForm.amount" placeholder="如：12t" /></label>
               <label>上传日期<input v-model="uploadForm.uploadTime" type="datetime-local" /></label>
             </div>
