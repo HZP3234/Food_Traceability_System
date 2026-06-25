@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { Box, Check, Close, Delete, Edit, Plus, Refresh, Search, Select, Upload } from '@element-plus/icons-vue'
-import { rawApi } from '../services/api'
+import { rawApi, enterpriseApi } from '../services/api'
 import Pagination from '../components/Pagination.vue'
 
 let currentUser = ''
@@ -41,7 +41,39 @@ const batchForm = ref({ batchNo: '', productName: '', productCategory: '', amoun
 const qcForm = ref({ batchNo: '', checkResult: 1 })
 const customProductCategory = ref('')
 
+// 供应商搜索下拉
+const supplierOptions = ref<any[]>([])
+const supplierSearchText = ref('')
+const supplierDropdownVisible = ref(false)
+
 function notify(type: 'success' | 'error', text: string) { toast.value = { type, text }; setTimeout(() => (toast.value = null), 2600) }
+
+async function loadSupplierOptions() {
+  try {
+    const data = await enterpriseApi.search(supplierSearchText.value || '')
+    supplierOptions.value = Array.isArray(data) ? data : []
+  } catch { supplierOptions.value = [] }
+}
+
+const filteredSupplierOptions = computed(() => {
+  if (!supplierSearchText.value) return supplierOptions.value
+  const q = supplierSearchText.value.toLowerCase()
+  return supplierOptions.value.filter((e: any) =>
+    (e.enterpriseName || '').toLowerCase().includes(q) ||
+    (e.address || '').toLowerCase().includes(q)
+  )
+})
+
+function onSupplierSelect(ent: any) {
+  supplierDropdownVisible.value = false
+  batchForm.value.supplierName = ent.enterpriseName || ''
+  batchForm.value.supplierId = ent.enterpriseUuid || ''
+  supplierSearchText.value = ent.enterpriseName || ''
+}
+
+function onSupplierFocus() { supplierDropdownVisible.value = true; if (supplierOptions.value.length === 0) loadSupplierOptions() }
+function onSupplierInput() { supplierDropdownVisible.value = true; loadSupplierOptions() }
+function onSupplierBlur() { setTimeout(() => supplierDropdownVisible.value = false, 200) }
 
 async function loadList() {
   loading.value = true
@@ -67,8 +99,8 @@ function resetFilters() {
   loadList()
 }
 
-function openCreate() { editing.value = null; batchForm.value = { batchNo: '', productName: '', productCategory: '', amount: '', unit: '', supplierId: '', supplierName: '', warehouse: '', storageMethod: 0, shelfLife: '', purchaseDate: '', remark: '' }; customProductCategory.value = ''; showBatchModal.value = true }
-function openEdit(row: any) { editing.value = row; batchForm.value = { batchNo: row.batchNo ?? '', productName: row.productName ?? '', productCategory: row.productCategory ?? '', amount: row.amount ?? '', unit: row.unit ?? '', supplierId: row.supplierId ?? '', supplierName: row.supplierName ?? '', warehouse: row.warehouse ?? '', storageMethod: row.storageMethod ?? 0, shelfLife: row.shelfLife ?? '', purchaseDate: row.purchaseDate ?? '', remark: row.remark ?? '' }; customProductCategory.value = ''; showBatchModal.value = true }
+function openCreate() { editing.value = null; batchForm.value = { batchNo: '', productName: '', productCategory: '', amount: '', unit: '', supplierId: '', supplierName: '', warehouse: '', storageMethod: 0, shelfLife: '', purchaseDate: '', remark: '' }; customProductCategory.value = ''; supplierSearchText.value = ''; showBatchModal.value = true }
+function openEdit(row: any) { editing.value = row; batchForm.value = { batchNo: row.batchNo ?? '', productName: row.productName ?? '', productCategory: row.productCategory ?? '', amount: row.amount ?? '', unit: row.unit ?? '', supplierId: row.supplierId ?? '', supplierName: row.supplierName ?? '', warehouse: row.warehouse ?? '', storageMethod: row.storageMethod ?? 0, shelfLife: row.shelfLife ?? '', purchaseDate: row.purchaseDate ?? '', remark: row.remark ?? '' }; customProductCategory.value = ''; supplierSearchText.value = row.supplierName ?? ''; showBatchModal.value = true }
 
 // 原料类别切换到非"其他"时清空自定义值
 function onCategoryChange() {
@@ -192,7 +224,16 @@ onMounted(loadList)
               </label>
               <!-- 选择"其他"时出现自定义填写框 -->
               <label v-if="batchForm.productCategory === '其他'">自定义类别 *<input v-model="customProductCategory" placeholder="请输入自定义原料类别" /></label>
-              <label>原料供应商 *<input v-model="batchForm.supplierName" placeholder="哪家公司供货" /></label>
+              <label>原料供应商 *
+                <div class="searchable-select">
+                  <input v-model="supplierSearchText" placeholder="输入企业名搜索..." @focus="onSupplierFocus" @blur="onSupplierBlur" @input="onSupplierInput" />
+                  <div v-if="supplierDropdownVisible && filteredSupplierOptions.length" class="select-dropdown">
+                    <div v-for="ent in filteredSupplierOptions" :key="ent.enterpriseUuid" class="select-option" @mousedown.prevent="onSupplierSelect(ent)">
+                      <strong>{{ ent.enterpriseName }}</strong> — {{ ent.address || '地址未登记' }}
+                    </div>
+                  </div>
+                </div>
+              </label>
               <label>原料批次号<input v-model="batchForm.batchNo" placeholder="填写批次号，留空自动生成" /></label>
               <label>数量<input v-model="batchForm.amount" type="number" placeholder="0.00" /></label>
               <label>单位<input v-model="batchForm.unit" placeholder="kg / t" /></label>
@@ -279,4 +320,13 @@ onMounted(loadList)
   font-weight: 900;
   flex-shrink: 0;
 }
+
+/* 可搜索下拉框 (复用 ColdChain 样式) */
+.searchable-select { position: relative; }
+.searchable-select input { width: 100%; padding: 9px 12px; border: 1px solid #d7e4f0; border-radius: 7px; font-size: 13px; outline: none; transition: border-color 0.2s; }
+.searchable-select input:focus { border-color: #2467df; box-shadow: 0 0 0 2px rgba(36, 103, 223, 0.1); }
+.select-dropdown { position: absolute; top: 100%; left: 0; right: 0; max-height: 220px; overflow-y: auto; background: #fff; border: 1px solid #d7e4f0; border-radius: 0 0 8px 8px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12); z-index: 100; }
+.select-option { padding: 10px 12px; font-size: 13px; cursor: pointer; border-bottom: 1px solid #f0f4fa; transition: background 0.15s; }
+.select-option:hover { background: #eaf2ff; }
+.select-option strong { color: #2467df; }
 </style>
