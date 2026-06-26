@@ -6,13 +6,7 @@ import com.foodtraceability.customers.entity.ProdBatch;
 import com.foodtraceability.customers.entity.ScanRecord;
 import com.foodtraceability.customers.entity.TraceabilityNode;
 import com.foodtraceability.customers.entity.TraceCode;
-import com.foodtraceability.customers.mapper.CcTransportMapper;
-import com.foodtraceability.customers.mapper.ConsumerMapper;
-import com.foodtraceability.customers.mapper.ProdBatchMapper;
-import com.foodtraceability.customers.mapper.ProcessBatchMapper;
-import com.foodtraceability.customers.mapper.QualityInspectionMapper;
-import com.foodtraceability.customers.mapper.ScanRecordMapper;
-import com.foodtraceability.customers.mapper.TraceCodeMapper;
+import com.foodtraceability.customers.mapper.*;
 import com.foodtraceability.customers.service.TraceabilityService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -30,12 +24,12 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class TraceabilityServiceImpl implements TraceabilityService {
 
-    private final ScanRecordMapper scanRecordMapper;
-    private final TraceCodeMapper traceCodeMapper;
     private final ProdBatchMapper prodBatchMapper;
     private final ProcessBatchMapper processBatchMapper;
     private final QualityInspectionMapper qualityInspectionMapper;
     private final CcTransportMapper ccTransportMapper;
+    private final TraceCodeMapper traceCodeMapper;
+    private final ScanRecordMapper scanRecordMapper;
     private final ConsumerMapper consumerMapper;
 
     @Override
@@ -67,16 +61,18 @@ public class TraceabilityServiceImpl implements TraceabilityService {
         TraceabilityVO vo = new TraceabilityVO();
         vo.setProductBatchNo(batchNo);
 
+        if (tc != null) {
+            vo.setTraceCode(tc.getTraceCode());
+        }
+
         ProdBatch prod = prodBatchMapper.selectByBatchNo(batchNo);
 
-        // 从溯源码表补充基本信息
         if (tc != null) {
             vo.setProductName(tc.getProductName());
             vo.setManufacturer(tc.getEnterpriseName());
             vo.setTxHash(tc.getTxHash());
         }
 
-        // 从生产批次表补充
         if (prod != null) {
             if (vo.getProductName() == null || vo.getProductName().isBlank()) {
                 vo.setProductName(prod.getProductName());
@@ -93,7 +89,6 @@ public class TraceabilityServiceImpl implements TraceabilityService {
             throw BusinessException.notFound("未找到该批次的溯源信息");
         }
 
-        // 构建溯源链路节点
         vo.setNodes(buildNodes(batchNo, prod));
         return vo;
     }
@@ -108,7 +103,6 @@ public class TraceabilityServiceImpl implements TraceabilityService {
         List<TraceabilityNode> nodes = new ArrayList<>();
         int sort = 0;
 
-        // 1. 加工节点（从 t_process_batch）
         if (prod != null && prod.getProcessBatchNo() != null) {
             Map<String, Object> proc = processBatchMapper.selectByBatchNo(prod.getProcessBatchNo());
             if (proc != null) {
@@ -126,7 +120,6 @@ public class TraceabilityServiceImpl implements TraceabilityService {
             }
         }
 
-        // 2. 生产节点
         if (prod != null) {
             sort++;
             TraceabilityNode node = new TraceabilityNode();
@@ -140,7 +133,6 @@ public class TraceabilityServiceImpl implements TraceabilityService {
             nodes.add(node);
         }
 
-        // 3. 质检节点（从 t_quality_inspection）
         List<Map<String, Object>> inspections = qualityInspectionMapper.selectByBizBatchNo(batchNo);
         for (Map<String, Object> insp : inspections) {
             sort++;
@@ -159,7 +151,6 @@ public class TraceabilityServiceImpl implements TraceabilityService {
             nodes.add(node);
         }
 
-        // 4. 物流节点（从 t_cc_transport）
         List<Map<String, Object>> transports = ccTransportMapper.selectByProdBatchNo(batchNo);
         for (Map<String, Object> trans : transports) {
             sort++;
@@ -181,6 +172,23 @@ public class TraceabilityServiceImpl implements TraceabilityService {
         return nodes;
     }
 
+    @Override
+    @Transactional
+    public void recordScan(String productBatchNo, String scanIp, String scanLocation, String userId, String traceCode) {
+        ScanRecord record = new ScanRecord();
+        record.setProductBatchNo(productBatchNo);
+        record.setTraceCode(traceCode);
+        record.setScanIp(scanIp);
+        record.setScanLocation(scanLocation);
+        record.setUserId(userId);
+        record.setScanTime(LocalDateTime.now());
+        scanRecordMapper.insert(record);
+
+        if (userId != null && !userId.isBlank()) {
+            consumerMapper.incrementScanCount(userId);
+        }
+    }
+
     private static LocalDateTime parseDateTime(String s) {
         if (s == null || s.isBlank()) return null;
         for (DateTimeFormatter fmt : DATE_FORMATS) {
@@ -200,36 +208,10 @@ public class TraceabilityServiceImpl implements TraceabilityService {
     }
 
     private static int toInt(Object obj) {
-        if (obj instanceof Number n) return n.intValue();
-        if (obj instanceof String s) {
-            try { return Integer.parseInt(s); } catch (Exception ignored) {}
+        if (obj instanceof Number) return ((Number) obj).intValue();
+        if (obj instanceof String) {
+            try { return Integer.parseInt((String) obj); } catch (Exception ignored) {}
         }
         return 0;
-    }
-
-    @Override
-    public List<ScanRecord> getRecentScans(int limit) {
-        return scanRecordMapper.selectRecent(limit);
-    }
-
-    @Override
-    public List<ScanRecord> getScansByUserId(String userId, int limit) {
-        return scanRecordMapper.selectByUserId(userId, limit);
-    }
-
-    @Override
-    @Transactional
-    public void recordScan(String productBatchNo, String scanIp, String scanLocation, String userId) {
-        ScanRecord record = new ScanRecord();
-        record.setProductBatchNo(productBatchNo);
-        record.setScanIp(scanIp);
-        record.setScanLocation(scanLocation);
-        record.setUserId(userId);
-        record.setScanTime(LocalDateTime.now());
-        scanRecordMapper.insert(record);
-
-        if (userId != null && !userId.isBlank()) {
-            consumerMapper.incrementScanCount(userId);
-        }
     }
 }

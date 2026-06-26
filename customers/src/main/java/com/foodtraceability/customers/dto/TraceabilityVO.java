@@ -8,6 +8,9 @@ import java.util.List;
 @Data
 public class TraceabilityVO {
 
+    /** 溯源码 */
+    private String traceCode;
+
     /** 批次号 */
     private String productBatchNo;
 

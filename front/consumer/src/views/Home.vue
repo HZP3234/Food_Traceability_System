@@ -21,12 +21,6 @@ function requireLogin(action: () => void) {
   action()
 }
 
-function onScan() {
-  requireLogin(() => {
-    router.push({ name: 'Scanner' })
-  })
-}
-
 function goUserCenter() {
   requireLogin(() => {
     router.push('/user-center')
@@ -60,9 +54,7 @@ function onCodeSearch() {
   queryByTraceCode(code, store.userInfo?.consumerUuid)
     .then((res) => {
       if (res.code === 200 && res.data) {
-        store.setBatchNo(res.data.productBatchNo)
         store.setTraceResult(res.data)
-        store.addHistory(code)
         showCodeDialog.value = false
         router.push({ name: 'TraceResult', query: { batchNo: res.data.productBatchNo } })
       } else if (res.code === 404) {
@@ -73,7 +65,7 @@ function onCodeSearch() {
         showToast(res.message || '查询失败，请稍后重试')
       }
     })
-    .catch((err) => {
+    .catch(() => {
       showToast('网络异常，请检查网络后重试')
     })
     .finally(() => {
@@ -84,12 +76,11 @@ function onCodeSearch() {
 
 <template>
   <div class="home-page">
-    <!-- 头部：含右上角头像入口 -->
     <div class="header">
       <div class="header-top">
         <span class="header-city">食品安全追溯</span>
-        <div class="avatar-entry" @click="goUserCenter">
-          <img :src="headImg" alt="头像" />
+        <div class="avatar-entry" @click="goUserCenter" aria-label="用户中心" role="button" tabindex="0">
+          <img :src="headImg" alt="头像" draggable="false" />
         </div>
       </div>
       <div class="header-main">
@@ -97,20 +88,14 @@ function onCodeSearch() {
           <van-icon name="passed" size="32" color="#fff" />
         </div>
         <h1>食品安全追溯平台</h1>
-        <p>扫码或输入溯源码，了解食品全程信息</p>
+        <p>输入溯源码，了解食品全程信息</p>
       </div>
     </div>
 
-    <!-- 扫码区 -->
+    <!-- 扫码查询区 -->
     <div class="scan-area">
-      <div class="scan-btn" @click="onScan">
+      <div class="scan-btn" @click="openCodeDialog" role="button" tabindex="0" aria-label="输入溯源码查询">
         <div class="scan-icon">
-          <van-icon name="scan" size="32" />
-        </div>
-        <span>扫一扫溯源码</span>
-      </div>
-      <div class="scan-btn" @click="openCodeDialog">
-        <div class="scan-icon code-icon">
           <van-icon name="label-o" size="28" />
         </div>
         <span>输入溯源码</span>
@@ -128,6 +113,7 @@ function onCodeSearch() {
       <div class="code-dialog-body">
         <van-field
           v-model="traceCodeInput"
+          label="溯源码"
           placeholder="请输入溯源码"
           clearable
           autofocus
@@ -139,14 +125,14 @@ function onCodeSearch() {
     <div class="menu-section">
       <div class="menu-title">服务专区</div>
       <div class="menu-grid">
-        <div class="menu-card complaint-card" @click="goComplaintSubmit">
+        <div class="menu-card complaint-card" @click="goComplaintSubmit" role="button" tabindex="0" aria-label="投诉反馈">
           <div class="menu-icon-wrap icon-danger">
             <van-icon name="warning-o" size="24" color="#f56c6c" />
           </div>
           <span class="menu-label">投诉反馈</span>
           <span class="menu-sub">反馈食品安全问题</span>
         </div>
-        <div class="menu-card query-card" @click="goComplaintQuery">
+        <div class="menu-card query-card" @click="goComplaintQuery" role="button" tabindex="0" aria-label="结果查询">
           <div class="menu-icon-wrap icon-primary">
             <van-icon name="search" size="24" color="#1989fa" />
           </div>
@@ -169,7 +155,6 @@ function onCodeSearch() {
   padding-bottom: 40px;
 }
 
-/* 头部 */
 .header {
   background: linear-gradient(135deg, #07c160 0%, #06ad56 100%);
   padding: 0 20px 36px;
@@ -232,13 +217,10 @@ function onCodeSearch() {
   margin: 0;
 }
 
-/* 扫码 */
 .scan-area {
   display: flex;
   justify-content: center;
-  gap: 20px;
   margin: 32px 0;
-  flex-wrap: wrap;
 }
 
 .scan-btn {
@@ -256,15 +238,10 @@ function onCodeSearch() {
   width: 52px;
   height: 52px;
   border-radius: 50%;
-  background: rgba(7, 193, 96, 0.08);
+  background: rgba(25, 137, 250, 0.08);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #07c160;
-}
-
-.code-icon {
-  background: rgba(25, 137, 250, 0.08);
   color: #1989fa;
 }
 
@@ -278,7 +255,6 @@ function onCodeSearch() {
   font-weight: 500;
 }
 
-/* 功能菜单 */
 .menu-section {
   margin: 36px 20px 0;
 }
