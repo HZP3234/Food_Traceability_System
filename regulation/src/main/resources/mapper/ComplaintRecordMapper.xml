@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.foodtraceability.regulation.mapper.ComplaintRecordMapper">
+
+    <resultMap id="BaseResultMap" type="com.foodtraceability.regulation.entity.ComplaintRecord">
+        <id column="complaint_record_id" property="complaintRecordId"/>
+        <result column="complaint_no" property="complaintNo"/>
+        <result column="trace_code" property="traceCode"/>
+        <result column="batch_number" property="batchNumber"/>
+        <result column="enterprise_uuid" property="enterpriseUuid"/>
+        <result column="enterprise_name" property="enterpriseName"/>
+        <result column="consumer_uuid" property="consumerUuid"/>
+        <result column="complainant_name" property="complainantName"/>
+        <result column="phone" property="phone"/>
+        <result column="is_anonymous" property="isAnonymous"/>
+        <result column="complaint_type" property="complaintType"/>
+        <result column="description" property="description"/>
+        <result column="photo_urls" property="photoUrls"/>
+        <result column="priority" property="priority"/>
+        <result column="status" property="status"/>
+        <result column="handler_id" property="handlerId"/>
+        <result column="handler_name" property="handlerName"/>
+        <result column="handling_conclusion" property="handlingConclusion"/>
+        <result column="handling_proof_urls" property="handlingProofUrls"/>
+        <result column="submit_time" property="submitTime"/>
+        <result column="accept_time" property="acceptTime"/>
+        <result column="close_time" property="closeTime"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="create_by" property="createBy"/>
+        <result column="update_by" property="updateBy"/>
+        <result column="is_deleted" property="isDeleted"/>
+    </resultMap>
+
+    <select id="selectByComplaintNo" resultMap="BaseResultMap">
+        SELECT * FROM t_complaint_record
+        WHERE complaint_no = #{complaintNo} AND is_deleted = 0
+    </select>
+
+    <select id="selectByEnterpriseUuid" resultMap="BaseResultMap">
+        SELECT * FROM t_complaint_record
+        WHERE enterprise_uuid = #{enterpriseUuid} AND is_deleted = 0
+        ORDER BY submit_time DESC
+    </select>
+
+    <select id="selectByConsumerUuid" resultMap="BaseResultMap">
+        SELECT * FROM t_complaint_record
+        WHERE consumer_uuid = #{consumerUuid} AND is_deleted = 0
+        ORDER BY submit_time DESC
+    </select>
+
+    <select id="selectByStatus" resultMap="BaseResultMap">
+        SELECT * FROM t_complaint_record
+        WHERE status = #{status} AND is_deleted = 0
+        ORDER BY priority DESC, submit_time ASC
+    </select>
+
+    <select id="selectByBatchNumber" resultMap="BaseResultMap">
+        SELECT * FROM t_complaint_record
+        WHERE batch_number = #{batchNumber} AND is_deleted = 0
+        ORDER BY submit_time DESC
+    </select>
+
+</mapper>

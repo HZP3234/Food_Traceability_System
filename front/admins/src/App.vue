@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, markRaw, provide, type Component } from 'vue'
-import { Box, Close, Connection, Document, DocumentChecked, Grid, House, OfficeBuilding, SetUp, Shop, SwitchButton, User, Van } from '@element-plus/icons-vue'
+import { Box, Close, Connection, Document, DocumentChecked, Grid, House, OfficeBuilding, Promotion, SetUp, Shop, SwitchButton, User, Van } from '@element-plus/icons-vue'
 import { navigation, roles, type RoleKey } from './config/navigation'
 import RawMaterials from './pages/RawMaterials.vue'
 import SupplierRawMaterials from './pages/SupplierRawMaterials.vue'
@@ -17,6 +17,7 @@ import Dashboard from './pages/Dashboard.vue'
 import Warnings from './pages/Warnings.vue'
 import QualityInspection from './pages/QualityInspection.vue'
 import QualificationUpload from './pages/QualificationUpload.vue'
+import ComplaintManagement from './pages/ComplaintManagement.vue'
 
 import { authApi } from './services/api'
 
@@ -71,6 +72,7 @@ const pageComponents: Record<string, Component> = {
   'warnings': markRaw(Warnings),
   'quality-inspection': markRaw(QualityInspection),
   'qualification-upload': markRaw(QualificationUpload),
+  'complaint-management': markRaw(ComplaintManagement),
 }
 
 const visibleNavigation = computed(() =>
@@ -98,6 +100,7 @@ const navIcons: Record<string, Component> = {
   'enterprise-qualification': OfficeBuilding,
   'quality-inspection': DocumentChecked,
   'qualification-upload': OfficeBuilding,
+  'complaint-management': Promotion,
   'regulatory-trace': Connection,
   'audit-log': Document,
   warnings: Connection,

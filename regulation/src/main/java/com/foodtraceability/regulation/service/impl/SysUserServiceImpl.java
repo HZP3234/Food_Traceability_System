@@ -70,6 +70,7 @@ public class SysUserServiceImpl implements SysUserService {
     /** 构建 JWT claims */
     private Map<String, Object> buildClaims(SysUser user, Integer enterpriseType) {
         Map<String, Object> claims = new HashMap<>();
+        claims.put("userId", user.getUserId());
         claims.put("roleType", user.getRoleType());
         claims.put("realName", user.getRealName());
         claims.put("enterpriseUuid", user.getEnterpriseUuid() != null ? user.getEnterpriseUuid() : "");

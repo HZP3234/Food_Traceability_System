@@ -8,7 +8,16 @@
       "Bash('C:/Program Files/Java/jdk17/bin/java.exe' -classpath 'C:/Users/15870/OneDrive/Desktop/Software Engineering Course Design/04-source/Food_Traceability_System/.mvn/wrapper/maven-wrapper.jar' '-Dmaven.multiModuleProjectDirectory=C:/Users/15870/OneDrive/Desktop/Software Engineering Course Design/04-source/Food_Traceability_System' '-Dmaven.wrapper.properties=C:/Users/15870/OneDrive/Desktop/Software Engineering Course Design/04-source/Food_Traceability_System/.mvn/wrapper/maven-wrapper.properties' org.apache.maven.wrapper.MavenWrapperMain test -pl regulation -am -DskipTests=false)",
       "Bash('C:/Program Files/Java/jdk17/bin/java.exe' -classpath 'C:/Users/15870/OneDrive/Desktop/Software Engineering Course Design/04-source/Food_Traceability_System/.mvn/wrapper/maven-wrapper.jar' '-Dmaven.multiModuleProjectDirectory=C:/Users/15870/OneDrive/Desktop/Software Engineering Course Design/04-source/Food_Traceability_System' '-Dmaven.wrapper.properties=C:/Users/15870/OneDrive/Desktop/Software Engineering Course Design/04-source/Food_Traceability_System/.mvn/wrapper/maven-wrapper.properties' org.apache.maven.wrapper.MavenWrapperMain test -pl enterprise,regulation,bootstrap -DskipTests=false -Dmaven.test.failure.ignore=true)",
       "Bash(mvn compile *)",
-      "Bash(./mvnw compile *)"
+      "Bash(./mvnw compile *)",
+      "Bash(java -version)",
+      "Bash(mvn -version)",
+      "Bash(npm -v)",
+      "Bash(mysqladmin ping *)",
+      "Bash(python \"系统用户表生成器.py\")",
+      "Bash(python \"数据库模拟数据生成器.py\")",
+      "Bash(python \"合并加工批次迁移脚本.py\")",
+      "Bash(python \"资质表字段放宽迁移脚本_20250625.py\")",
+      "Bash(python -c ' *)"
     ]
   }
 }

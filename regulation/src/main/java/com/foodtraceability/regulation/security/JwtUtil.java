@@ -89,4 +89,21 @@ public class JwtUtil {
     public String getEnterpriseUuid(String token) {
         return parseToken(token).get("enterpriseUuid", String.class);
     }
+
+    /**
+     * 从 Token 中获取真实姓名
+     */
+    public String getRealName(String token) {
+        return parseToken(token).get("realName", String.class);
+    }
+
+    /**
+     * 从 Token 中获取用户ID
+     */
+    public Long getUserId(String token) {
+        Object id = parseToken(token).get("userId");
+        if (id instanceof Integer) return ((Integer) id).longValue();
+        if (id instanceof Long) return (Long) id;
+        return null;
+    }
 }
