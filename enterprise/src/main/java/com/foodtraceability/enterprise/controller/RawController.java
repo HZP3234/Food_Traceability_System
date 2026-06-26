@@ -112,6 +112,29 @@ public class RawController {
         return "批次匹配成功";
     }
 
+    // 供应商为已创建批次补充溯源详情（加工商先创建批次 → 供应商后补充信息）
+    @RequestMapping("/supplementDetail")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPPLIER')")
+    public String supplementDetail(RawDetail detail, String targetBatchNo,
+                                   String productName, String productCategory,
+                                   String supplierName) {
+        // 校验目标批次存在且状态正确
+        Raw raw = rawService.getByBatchNo(targetBatchNo);
+        if (raw == null) {
+            return "目标批次不存在";
+        }
+        if (raw.getDetailStatus() != null && raw.getDetailStatus() != 0) {
+            return "该批次已有详情信息，无需重复补充";
+        }
+        int num = rawService.supplementDetail(detail, targetBatchNo,
+                productName, productCategory, supplierName);
+        if (num == 1) {
+            return "原料详情补充成功";
+        } else {
+            return "补充失败，未找到对应批次";
+        }
+    }
+
     // 查询待匹配列表（支持按供应商+状态组合过滤，不同供应商只能看到自己的数据）
     @RequestMapping("/listPending")
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPPLIER', 'MANUFACTURER')")

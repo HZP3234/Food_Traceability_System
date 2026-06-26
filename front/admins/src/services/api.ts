@@ -156,6 +156,11 @@ export const rawApi = {
   proactiveUpload: (detail: Record<string, any>, pending: Record<string, any>) =>
     post('/Raw/proactiveUpload', { ...detail, ...pending }),
   matchBatch: (pendingCode: string, targetBatchNo: string) => post('/Raw/matchBatch', { pendingCode, targetBatchNo }),
+  /** 供应商为已存在的原料批次补充溯源详情（加工商先创建，供应商后补充） */
+  supplementDetail: (detail: Record<string, any>, targetBatchNo: string,
+                     productName: string, productCategory: string,
+                     supplierName: string) =>
+    post('/Raw/supplementDetail', { ...detail, targetBatchNo, productName, productCategory, supplierName }),
   listPending: (supplierName?: string, pendingStatus?: number) =>
     get('/Raw/listPending', { supplierName, pendingStatus }),
   qualityCheck: (batchNo: string, checkResult: number) => post('/Raw/qualityCheck', { batchNo, checkResult }),

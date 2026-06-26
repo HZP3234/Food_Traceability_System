@@ -249,6 +249,69 @@ public class RawService {
         return result;
     }
 
+    // 供应商为已存在的原料批次补充详细信息（加工商先创建批次，供应商后补充详情）
+    @Transactional
+    public int supplementDetail(RawDetail detail, String targetBatchNo,
+                                String productName, String productCategory,
+                                String supplierName) {
+        String now = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        String operator = detail.getUploader() != null ? detail.getUploader() : "SYSTEM";
+
+        // 1. 创建 RawDetail，batchNo 直接使用真实批次号
+        detail.setBatchNo(targetBatchNo);
+        detail.setUploadTime(now);
+        detail.setCreateTime(now);
+        detail.setUpdateTime(now);
+        detail.setCreateBy(operator);
+        detail.setUpdateBy(operator);
+        // 可为空的字段设默认值（与 proactiveUpload 保持一致）
+        if (detail.getOrigin() == null || detail.getOrigin().isBlank()) detail.setOrigin("未填写");
+        if (detail.getFarmType() == null || detail.getFarmType().isBlank()) detail.setFarmType("未填写");
+        if (detail.getFeedType() == null || detail.getFeedType().isBlank()) detail.setFeedType("未填写");
+        if (detail.getInspectionNo() == null || detail.getInspectionNo().isBlank()) detail.setInspectionNo("未填写");
+        if (detail.getBreed() == null || detail.getBreed().isBlank()) detail.setBreed("未填写");
+        if (detail.getScaleDesc() == null || detail.getScaleDesc().isBlank()) detail.setScaleDesc("未填写");
+        if (detail.getCollectDate() == null || detail.getCollectDate().isBlank())
+            detail.setCollectDate(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+        if (detail.getPlateNo() == null || detail.getPlateNo().isBlank()) detail.setPlateNo("");
+        if (detail.getTransportTemp() == null || detail.getTransportTemp().isBlank()) detail.setTransportTemp("");
+        if (detail.getStorageMethod() == null) detail.setStorageMethod(0);
+        if (detail.getShelfLife() == null || detail.getShelfLife().isBlank()) detail.setShelfLife("2099-12-31");
+        if (detail.getRemark() == null) detail.setRemark("");
+        rawDetailMapper.insert(detail);
+
+        // 2. 创建 RawPending 审计记录（直接已匹配状态，保留完整溯源链路）
+        RawPending pending = new RawPending();
+        pending.setPendingCode(generatePendingCode());
+        pending.setProductName(productName != null && !productName.isBlank() ? productName : "未知原料");
+        pending.setProductCategory(productCategory != null && !productCategory.isBlank() ? productCategory : "未填写");
+        pending.setSupplierName(supplierName);
+        pending.setAmount(0);
+        pending.setRawDetailId(String.valueOf(detail.getRawDetailId()));
+        pending.setPendingStatus(2);           // 直接已匹配
+        pending.setMatchedBatchNo(targetBatchNo);
+        pending.setUploadTime(now);
+        pending.setMatchTime(now);
+        pending.setCreateTime(now);
+        pending.setUpdateTime(now);
+        pending.setCreateBy(operator);
+        pending.setUpdateBy(operator);
+        if (pending.getRemark() == null) pending.setRemark("");
+        rawPendingMapper.insert(pending);
+
+        // 3. 更新 Raw 批次：关联详情，状态改为已上传
+        Raw raw = getByBatchNo(targetBatchNo);
+        if (raw != null) {
+            raw.setDetailId(String.valueOf(detail.getRawDetailId()));
+            raw.setDetailStatus(1);
+            raw.setUpdateTime(now);
+            raw.setUpdateBy(operator);
+            rawMapper.updateById(raw);
+            return 1;
+        }
+        return 0;
+    }
+
     // 供应商匹配批次号
     @Transactional
     public void matchBatch(String pendingCode, String targetBatchNo) {
