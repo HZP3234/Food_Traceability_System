@@ -264,7 +264,7 @@ onMounted(() => {
       <div class="detail-popup" v-if="detailItem">
         <div class="popup-header">
           <span class="popup-title">投诉信息</span>
-          <van-icon name="cross" size="18" @click="showDetail = false" />
+          <van-icon name="cross" size="18" role="button" aria-label="关闭" tabindex="0" @click="showDetail = false" @keydown.enter="showDetail = false" />
         </div>
         <div class="popup-body">
           <div class="detail-row">

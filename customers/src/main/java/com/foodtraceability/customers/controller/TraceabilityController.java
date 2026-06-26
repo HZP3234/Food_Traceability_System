@@ -4,15 +4,14 @@ import com.foodtraceability.customers.dto.Result;
 import com.foodtraceability.customers.dto.ScanRecordDTO;
 import com.foodtraceability.customers.dto.TraceabilityQueryDTO;
 import com.foodtraceability.customers.dto.TraceabilityVO;
-import com.foodtraceability.customers.entity.ScanRecord;
 import com.foodtraceability.customers.service.TraceabilityService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
+@Slf4j
 @RestController
 @RequestMapping("/api/traceability")
 @RequiredArgsConstructor
@@ -24,7 +23,7 @@ public class TraceabilityController {
     public Result<TraceabilityVO> query(@Valid @RequestBody TraceabilityQueryDTO dto,
                                         HttpServletRequest request) {
         TraceabilityVO vo = traceabilityService.queryByBatchNo(dto.getProductBatchNo());
-        traceabilityService.recordScan(dto.getProductBatchNo(), getClientIp(request), null, dto.getUserId());
+        safeRecordScan(vo.getProductBatchNo(), getClientIp(request), dto.getUserId(), dto.getTraceCode());
         return Result.success(vo);
     }
 
@@ -33,7 +32,7 @@ public class TraceabilityController {
                                               @RequestParam(required = false) String userId,
                                               HttpServletRequest request) {
         TraceabilityVO vo = traceabilityService.queryByTraceCode(traceCode);
-        traceabilityService.recordScan(vo.getProductBatchNo(), getClientIp(request), null, userId);
+        safeRecordScan(vo.getProductBatchNo(), getClientIp(request), userId, traceCode);
         return Result.success(vo);
     }
 
@@ -43,19 +42,17 @@ public class TraceabilityController {
         traceabilityService.recordScan(dto.getProductBatchNo(),
                 dto.getScanIp() != null ? dto.getScanIp() : getClientIp(request),
                 dto.getScanLocation(),
-                dto.getUserId());
+                dto.getUserId(),
+                dto.getTraceCode());
         return Result.success();
     }
 
-    @GetMapping("/scans")
-    public Result<List<ScanRecord>> recentScans(@RequestParam(defaultValue = "20") int limit) {
-        return Result.success(traceabilityService.getRecentScans(limit));
-    }
-
-    @GetMapping("/user-scans")
-    public Result<List<ScanRecord>> userScans(@RequestParam String userId,
-                                               @RequestParam(defaultValue = "50") int limit) {
-        return Result.success(traceabilityService.getScansByUserId(userId, limit));
+    private void safeRecordScan(String productBatchNo, String clientIp, String userId, String traceCode) {
+        try {
+            traceabilityService.recordScan(productBatchNo, clientIp, null, userId, traceCode);
+        } catch (Exception e) {
+            log.error("记录扫码失败: productBatchNo={}, traceCode={}", productBatchNo, traceCode, e);
+        }
     }
 
     private String getClientIp(HttpServletRequest request) {

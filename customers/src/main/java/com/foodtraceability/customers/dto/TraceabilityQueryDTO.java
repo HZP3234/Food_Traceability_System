@@ -10,4 +10,6 @@ public class TraceabilityQueryDTO {
     private String productBatchNo;
 
     private String userId;
+
+    private String traceCode;
 }

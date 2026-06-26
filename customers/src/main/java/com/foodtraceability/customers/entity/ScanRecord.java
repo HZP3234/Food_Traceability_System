@@ -15,6 +15,8 @@ public class ScanRecord implements Serializable {
 
     private String productBatchNo;
 
+    private String traceCode;
+
     private String scanIp;
 
     private String scanLocation;

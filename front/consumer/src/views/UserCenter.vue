@@ -12,14 +12,12 @@ const store = useAppStore()
 
 const complaintCount = ref(0)
 const scanCount = ref(0)
-const loading = ref(true)
 
 const userName = computed(() => store.userInfo?.nickName || '消费者用户')
 const userId = computed(() => store.userInfo?.consumerUuid || '')
 
 onMounted(async () => {
   if (store.userInfo?.phone) {
-    // 从后端刷新最新用户数据
     try {
       const res = await getUserInfo(store.userInfo.phone)
       if (res.code === 200 && res.data) {
@@ -28,7 +26,6 @@ onMounted(async () => {
       }
     } catch {}
 
-    // 查询投诉数量
     queryComplaintPage({ pageNum: 1, pageSize: 1, consumerPhone: store.userInfo.phone })
       .then((res) => {
         if (res.code === 200 && res.data) {
@@ -41,21 +38,14 @@ onMounted(async () => {
   if (scanCount.value === 0) {
     scanCount.value = store.userInfo?.totalScans ?? 0
   }
-
-  loading.value = false
 })
 
 function goMyComplaints() {
   router.push('/complaint-query')
 }
 
-function goScanHistory() {
-  router.push('/scan-history')
-}
-
 function onLogout() {
   store.logout()
-  store.clearHistory()
   showToast('已退出登录')
   router.push('/')
 }
@@ -74,7 +64,7 @@ function onLogout() {
     <!-- 用户信息头部 -->
     <div class="uc-header">
       <div class="avatar-wrap">
-        <img :src="headImg" alt="头像" class="avatar" />
+        <img :src="headImg" alt="头像" class="avatar" draggable="false" />
       </div>
       <div class="user-name">{{ userName }}</div>
       <div class="user-id">UUID: {{ userId || '加载中...' }}</div>
@@ -82,14 +72,14 @@ function onLogout() {
 
     <!-- 数据统计 -->
     <div class="stats-row">
-      <div class="stat-item" @click="goMyComplaints">
+      <div class="stat-item" @click="goMyComplaints" role="button" tabindex="0" aria-label="查看我的投诉">
         <span class="stat-num">{{ complaintCount }}</span>
         <span class="stat-label">我的投诉</span>
       </div>
       <div class="stat-divider"></div>
-      <div class="stat-item" @click="goScanHistory">
+      <div class="stat-item">
         <span class="stat-num">{{ scanCount }}</span>
-        <span class="stat-label">扫码记录</span>
+        <span class="stat-label">扫码次数</span>
       </div>
     </div>
 

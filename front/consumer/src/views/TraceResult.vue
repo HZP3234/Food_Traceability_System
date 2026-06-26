@@ -44,13 +44,12 @@ onMounted(() => {
 
   const userId = store.userInfo?.consumerUuid
 
-  // 优先使用 store 中已查询到的结果，避免重复请求
   const cached = store.traceResult
   if (cached && cached.productBatchNo === batchNo) {
     data.value = cached
     store.setTraceResult(null)
     loading.value = false
-    recordScan({ productBatchNo: batchNo, userId }).catch(() => {})
+    recordScan({ productBatchNo: batchNo, userId, traceCode: cached.traceCode }).catch(() => {})
     return
   }
 
@@ -58,7 +57,7 @@ onMounted(() => {
     .then((res) => {
       if (res.code === 200 && res.data) {
         data.value = res.data
-        recordScan({ productBatchNo: batchNo, userId }).catch(() => {})
+        recordScan({ productBatchNo: batchNo, userId, traceCode: res.data.traceCode }).catch(() => {})
       } else if (res.code === 404) {
         showToast('未找到该商品的溯源信息')
       } else {

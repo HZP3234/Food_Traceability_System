@@ -9,6 +9,8 @@ public class ScanRecordDTO {
     @NotBlank(message = "产品批次号不能为空")
     private String productBatchNo;
 
+    private String traceCode;
+
     private String scanIp;
 
     private String scanLocation;

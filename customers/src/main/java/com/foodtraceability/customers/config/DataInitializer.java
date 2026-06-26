@@ -63,8 +63,7 @@ public class DataInitializer implements CommandLineRunner {
                 "deleted TINYINT NOT NULL DEFAULT 0," +
                 "INDEX idx_scan_batch_no (product_batch_no))");
 
-            stmt.execute("DROP TABLE IF EXISTS t_complaint_record");
-            stmt.execute("CREATE TABLE t_complaint_record (" +
+            stmt.execute("CREATE TABLE IF NOT EXISTS t_complaint_record (" +
                 "id BIGINT AUTO_INCREMENT PRIMARY KEY," +
                 "complaint_no VARCHAR(32) NOT NULL," +
                 "product_batch_no VARCHAR(64)," +
@@ -89,8 +88,7 @@ public class DataInitializer implements CommandLineRunner {
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_cp_consumer_id ON t_complaint_record(consumer_id)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_cp_status ON t_complaint_record(status)");
 
-            stmt.execute("DROP TABLE IF EXISTS t_consumer_info");
-            stmt.execute("CREATE TABLE t_consumer_info (" +
+            stmt.execute("CREATE TABLE IF NOT EXISTS t_consumer_info (" +
                 "consumer_id BIGINT AUTO_INCREMENT PRIMARY KEY," +
                 "consumer_uuid VARCHAR(32)," +
                 "phone VARCHAR(20) NOT NULL," +

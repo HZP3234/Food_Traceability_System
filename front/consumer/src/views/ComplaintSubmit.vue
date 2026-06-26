@@ -3,7 +3,6 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showToast, showConfirmDialog } from 'vant'
 import { submitComplaint } from '@/api/complaint'
-import { uploadImage } from '@/api/upload'
 import { useAppStore } from '@/store/app'
 import type { ComplaintTypeKey } from '@/types'
 
@@ -40,49 +39,6 @@ const complaintTypes = [
   { value: 5 as ComplaintTypeKey, label: '其他问题' }
 ]
 
-const fileList = ref<any[]>([])
-const uploadedUrls = ref<string[]>([])
-const uploading = ref(false)
-const MAX_IMAGES = 4
-
-function onAfterRead(file: any) {
-  const files = Array.isArray(file) ? file : [file]
-  files.forEach(async (f: any) => {
-    if (fileList.value.length >= MAX_IMAGES) {
-      showToast(`最多上传${MAX_IMAGES}张照片`)
-      return
-    }
-    f.status = 'uploading'
-    fileList.value.push(f)
-    uploading.value = true
-    try {
-      const formData = new FormData()
-      formData.append('file', f.file as File)
-      const res = await uploadImage(formData)
-      if (res.code === 200 && res.data) {
-        f.status = 'done'
-        f.url = res.data
-        uploadedUrls.value.push(res.data)
-      } else {
-        showToast(res.message || '上传失败')
-        fileList.value = fileList.value.filter(item => item !== f)
-      }
-    } catch {
-      showToast('图片上传失败，请重试')
-      fileList.value = fileList.value.filter(item => item !== f)
-    } finally {
-      uploading.value = false
-    }
-  })
-}
-
-function onDeleteImage(file: any) {
-  fileList.value = fileList.value.filter(item => item !== file)
-  if (file.url) {
-    uploadedUrls.value = uploadedUrls.value.filter(u => u !== file.url)
-  }
-}
-
 function onTypeSelect(type: ComplaintTypeKey) {
   form.complaintType = type
 }
@@ -115,7 +71,7 @@ function doSubmit() {
     complaintType: form.complaintType,
     complaintTitle: `${complaintTypes.find(t => t.value === form.complaintType)?.label || ''}投诉`,
     complaintContent: form.complaintContent,
-    imageUrls: uploadedUrls.value.length > 0 ? uploadedUrls.value.join(',') : undefined
+    imageUrls: undefined
   })
     .then((res) => {
       if (res.code === 200 && res.data) {
@@ -144,7 +100,6 @@ function doSubmit() {
       placeholder
     />
 
-    <!-- 提交成功 -->
     <template v-if="submitted">
       <div class="success-page">
         <van-icon name="checked" size="64" color="#07c160" />
@@ -160,10 +115,8 @@ function doSubmit() {
       </div>
     </template>
 
-    <!-- 投诉表单 -->
     <template v-else>
       <van-form ref="formRef" @submit="onSubmit" :scroll-to-error="true">
-        <!-- 投诉对象 -->
         <van-cell-group inset title="投诉对象">
           <van-field
             v-model="form.productBatchNo"
@@ -181,7 +134,6 @@ function doSubmit() {
           />
         </van-cell-group>
 
-        <!-- 投诉类型 -->
         <van-cell-group inset title="投诉类型">
           <div class="type-options">
             <div
@@ -189,14 +141,18 @@ function doSubmit() {
               :key="t.value"
               class="type-item"
               :class="{ active: form.complaintType === t.value }"
+              role="radio"
+              :aria-checked="form.complaintType === t.value"
+              :aria-label="t.label"
+              tabindex="0"
               @click="onTypeSelect(t.value)"
+              @keydown.enter="onTypeSelect(t.value)"
             >
               {{ t.label }}
             </div>
           </div>
         </van-cell-group>
 
-        <!-- 投诉内容 -->
         <van-cell-group inset title="投诉内容">
           <van-field
             v-model="form.complaintContent"
@@ -208,24 +164,8 @@ function doSubmit() {
             maxlength="500"
             show-word-limit
           />
-          <!-- 照片上传 -->
-          <div class="photo-upload">
-            <span class="photo-label">照片</span>
-            <div class="photo-grid">
-              <van-uploader
-                v-model="fileList"
-                :after-read="onAfterRead"
-                :max-count="MAX_IMAGES"
-                :preview-full-image="true"
-                accept="image/*"
-                :disabled="uploading"
-                @delete="onDeleteImage"
-              />
-            </div>
-          </div>
         </van-cell-group>
 
-        <!-- 投诉人信息 -->
         <van-cell-group inset title="投诉人信息">
           <van-field
             v-model="form.consumerName"
@@ -271,7 +211,6 @@ function doSubmit() {
   padding-bottom: 40px;
 }
 
-/* 类型选择 */
 .type-options {
   display: flex;
   flex-wrap: wrap;
@@ -295,38 +234,6 @@ function doSubmit() {
   color: #fff;
 }
 
-/* 照片上传 */
-.photo-upload {
-  padding: 12px 16px;
-  background: #fff;
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-}
-
-.photo-label {
-  font-size: 14px;
-  color: #323233;
-  flex-shrink: 0;
-  padding-top: 4px;
-}
-
-.photo-grid {
-  display: flex;
-  gap: 8px;
-}
-
-.photo-add {
-  width: 80px;
-  height: 80px;
-  border: 1px dashed #c8c9cc;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
-
 .submit-area {
   margin: 32px 20px;
 }
@@ -335,7 +242,6 @@ function doSubmit() {
   margin-top: 10px;
 }
 
-/* 提交成功 */
 .success-page {
   display: flex;
   flex-direction: column;
