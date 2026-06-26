@@ -214,6 +214,7 @@ public class RawService {
         pending.setUpdateTime(now);
         pending.setCreateBy(operator);
         pending.setUpdateBy(operator);
+        if (pending.getProductCategory() == null || pending.getProductCategory().isBlank()) pending.setProductCategory("未填写");
         if (pending.getRemark() == null) pending.setRemark("");
         int result = rawPendingMapper.insert(pending);
 
