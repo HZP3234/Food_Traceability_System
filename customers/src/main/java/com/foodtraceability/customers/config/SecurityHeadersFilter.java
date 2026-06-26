@@ -6,7 +6,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@Component("customersSecurityHeadersFilter")
 public class SecurityHeadersFilter implements Filter {
 
     @Override
