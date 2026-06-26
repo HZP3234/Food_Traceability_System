@@ -72,6 +72,9 @@ public class QualificationController {
             qualification.setQualificationState(1);
         }
         qualification.setAuditState(0); // 待审核
+        if (qualification.getFileHash() == null) {
+            qualification.setFileHash("");
+        }
         qualification.setCreateTime(LocalDateTime.now());
         qualification.setUpdateTime(LocalDateTime.now());
         qualification.setCreateBy(getEnterpriseUuid(token));
@@ -100,6 +103,9 @@ public class QualificationController {
         qualification.setQualificationId(qualificationId);
         qualification.setEnterpriseUuid(enterpriseUuid);
         qualification.setAuditState(0); // 修改后重新待审核
+        if (qualification.getFileHash() == null) {
+            qualification.setFileHash("");
+        }
         qualification.setUpdateTime(LocalDateTime.now());
         qualification.setUpdateBy(enterpriseUuid);
         qualificationFileMapper.updateById(qualification);

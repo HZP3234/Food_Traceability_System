@@ -21,6 +21,7 @@ import com.foodtraceability.enterprise.mapper.ProdMaterialInputMapper;
 import com.foodtraceability.enterprise.mapper.ProdEnvRecordMapper;
 import com.foodtraceability.enterprise.mapper.EnterpriseQualityInspectionMapper;
 import com.foodtraceability.enterprise.mapper.RawMapper;
+import com.foodtraceability.enterprise.util.CurrentUserUtil;
 
 /**
  * 生产管理 Service — 加工批次已合并到生产批次
@@ -40,6 +41,8 @@ public class ProductionService {
     private EnterpriseQualityInspectionMapper qualityInspectionMapper;
     @Autowired
     private RawMapper rawMapper;
+    @Autowired
+    private CurrentUserUtil currentUserUtil;
 
     // 生成生产批次号 PBS + yyyyMMdd + 4位序号
     public String generateProdBatchNo() {
@@ -123,6 +126,10 @@ public class ProductionService {
         QueryWrapper<ProdBatch> qw = new QueryWrapper<>();
         qw.eq("batch_no", batchNo);
         qw.eq("is_deleted", 0);
+        // 生产加工商只能查看自己创建的生产批次
+        if (currentUserUtil.isManufacturer()) {
+            qw.eq("create_by", currentUserUtil.getCurrentUsername());
+        }
         return prodBatchMapper.selectOne(qw);
     }
 
@@ -131,6 +138,10 @@ public class ProductionService {
         QueryWrapper<ProdBatch> qw = new QueryWrapper<>();
         qw.eq("raw_batch_no", rawBatchNo);
         qw.eq("is_deleted", 0);
+        // 生产加工商只能查看自己创建的生产批次
+        if (currentUserUtil.isManufacturer()) {
+            qw.eq("create_by", currentUserUtil.getCurrentUsername());
+        }
         qw.orderByDesc("create_time");
         return prodBatchMapper.selectList(qw);
     }
@@ -141,6 +152,10 @@ public class ProductionService {
                                           Integer codeStatus, String rawBatchNo) {
         QueryWrapper<ProdBatch> qw = new QueryWrapper<>();
         qw.eq("is_deleted", 0);
+        // 生产加工商只能查看自己创建的生产批次
+        if (currentUserUtil.isManufacturer()) {
+            qw.eq("create_by", currentUserUtil.getCurrentUsername());
+        }
         if (productName != null && !productName.isBlank())
             qw.eq("product_name", productName);
         if (productionLine != null && !productionLine.isBlank())
@@ -167,8 +182,8 @@ public class ProductionService {
         String now = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         prodBatch.setCreateTime(now);
         prodBatch.setUpdateTime(now);
-        prodBatch.setCreateBy("SYSTEM");
-        prodBatch.setUpdateBy("SYSTEM");
+        prodBatch.setCreateBy(currentUserUtil.getCurrentUsername());
+        prodBatch.setUpdateBy(currentUserUtil.getCurrentUsername());
         if (prodBatch.getDataHash() == null) prodBatch.setDataHash("");
         if (prodBatch.getChainHash() == null) prodBatch.setChainHash("");
         // 加工字段默认值

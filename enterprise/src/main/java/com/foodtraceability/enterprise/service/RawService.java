@@ -16,6 +16,7 @@ import com.foodtraceability.enterprise.mapper.RawMapper;
 import com.foodtraceability.enterprise.mapper.RawDetailMapper;
 import com.foodtraceability.enterprise.mapper.RawPendingMapper;
 import com.foodtraceability.enterprise.mapper.RawTransportPendingMapper;
+import com.foodtraceability.enterprise.util.CurrentUserUtil;
 import com.foodtraceability.enterprise.entity.RawTransportPending;
 
 @Service
@@ -28,6 +29,8 @@ public class RawService {
     private RawPendingMapper rawPendingMapper;
     @Autowired
     private RawTransportPendingMapper rawTransportPendingMapper;
+    @Autowired
+    private CurrentUserUtil currentUserUtil;
 
     // 生成原料批次号 RB + yyyyMMdd + 4位序号
     public String generateBatchNo() {
@@ -50,6 +53,10 @@ public class RawService {
         QueryWrapper<Raw> qw = new QueryWrapper<>();
         qw.eq("batch_no", batchNo);
         qw.eq("is_deleted", 0);
+        // 生产加工商只能查看自己创建的原料批次
+        if (currentUserUtil.isManufacturer()) {
+            qw.eq("create_by", currentUserUtil.getCurrentUsername());
+        }
         return rawMapper.selectOne(qw);
     }
 
@@ -59,6 +66,10 @@ public class RawService {
                              Integer batchStatus, Integer detailStatus) {
         QueryWrapper<Raw> qw = new QueryWrapper<>();
         qw.eq("is_deleted", 0);
+        // 生产加工商只能查看自己创建的原料批次
+        if (currentUserUtil.isManufacturer()) {
+            qw.eq("create_by", currentUserUtil.getCurrentUsername());
+        }
         if (supplierName != null && !supplierName.isBlank())
             qw.eq("supplier_name", supplierName);
         if (productCategory != null && !productCategory.isBlank())
@@ -105,8 +116,8 @@ public class RawService {
         if (raw.getWarehouse() == null || raw.getWarehouse().isBlank()) raw.setWarehouse("未指定仓库");
         raw.setCreateTime(now);
         raw.setUpdateTime(now);
-        raw.setCreateBy(raw.getCreateBy() != null ? raw.getCreateBy() : "SYSTEM");
-        raw.setUpdateBy(raw.getUpdateBy() != null ? raw.getUpdateBy() : "SYSTEM");
+        raw.setCreateBy(currentUserUtil.getCurrentUsername());
+        raw.setUpdateBy(currentUserUtil.getCurrentUsername());
         int result = rawMapper.insert(raw);
 
         // ====== 自动匹配：新批次创建后，查找供应商已上传的待匹配原料 ======
