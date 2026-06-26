@@ -48,7 +48,7 @@ export const navigation: NavigationGroup[] = [
     label: '流通销售',
     items: [
       { id: 'cold-chain', label: '冷链物流管理', icon: '冷', roles: ['super-admin', 'manufacturer', 'supplier', 'logistics', 'regulator'], desc: '运输订单、车辆、仓库、温湿度监控' },
-      { id: 'sales-terminal', label: '销售终端管理', icon: '售', roles: ['super-admin', 'manufacturer', 'seller', 'regulator'], desc: '生产商设置销售商，销售商补充储存与销售信息' },
+      { id: 'sales-terminal', label: '销售管理', icon: '售', roles: ['super-admin', 'manufacturer', 'seller', 'regulator'], desc: '生产商创建销售订单，销售商上传销售详情' },
     ],
   },
   {

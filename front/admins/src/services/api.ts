@@ -42,6 +42,7 @@ async function get<T = any>(path: string, params?: Record<string, any>): Promise
     })
   }
   const res = await fetch(url.toString(), { headers: authHeaders() })
+  if (res.status === 403) return ([] as any)
   if (!res.ok) throw new Error(`请求失败 ${res.status}`)
   const text = await res.text()
   let json: any
@@ -63,6 +64,7 @@ async function post<T = any>(path: string, data?: Record<string, any>): Promise<
     headers: authHeaders({ 'Content-Type': 'application/x-www-form-urlencoded' }),
     body: body.toString(),
   })
+  if (res.status === 403) return ('' as any)
   if (!res.ok) throw new Error(`请求失败 ${res.status}`)
   const text = await res.text()
   let json: any
@@ -78,6 +80,7 @@ async function postJson<T = any>(path: string, data?: Record<string, any>): Prom
     headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: data ? JSON.stringify(data) : undefined,
   })
+  if (res.status === 403) return ([] as any)
   if (!res.ok) throw new Error(`请求失败 ${res.status}`)
   const text = await res.text()
   let json: any
@@ -112,6 +115,7 @@ async function put<T = any>(path: string, data?: Record<string, any>): Promise<T
     headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: data ? JSON.stringify(data) : undefined,
   })
+  if (res.status === 403) return ([] as any)
   if (!res.ok) throw new Error(`请求失败 ${res.status}`)
   const text = await res.text()
   let json: any
@@ -282,7 +286,24 @@ export const coldChainApi = {
     post('/ColdChain/matchTransportPending', { transportOrderNo, rawBatchNo }),
 }
 
-// ==================== Sales (销售) ====================
+// ==================== SalesOrder (销售订单) ====================
+export const salesOrderApi = {
+  // Order
+  queryOrder: (salesOrderCode: string) => get('/Sales/queryOrder', { salesOrderCode }),
+  listOrder: (params: Record<string, any>) => get('/Sales/listOrder', params),
+  listOrderByBuyer: (buyerName: string) => get('/Sales/listOrderByBuyer', { buyerName }),
+  createOrder: (data: Record<string, any>) => post('/Sales/createOrder', data),
+  updateOrder: (data: Record<string, any>) => post('/Sales/updateOrder', data),
+  deleteOrder: (salesOrderId: number) => post('/Sales/deleteOrder', { salesOrderId }),
+
+  // Order Detail
+  createOrderDetail: (data: Record<string, any>) => post('/Sales/createOrderDetail', data),
+  updateOrderDetail: (data: Record<string, any>) => post('/Sales/updateOrderDetail', data),
+  queryOrderDetail: (salesOrderCode: string) => get('/Sales/queryOrderDetail', { salesOrderCode }),
+  listOrderDetail: (salesOrderCode?: string) => get('/Sales/listOrderDetail', { salesOrderCode }),
+}
+
+// ==================== Sales (销售终端 — 保留) ====================
 export const salesApi = {
   // Terminal
   queryTerminal: (terminalCode: string) => get('/Sales/queryTerminal', { terminalCode }),

@@ -9,14 +9,19 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.foodtraceability.enterprise.entity.SalesOrder;
+import com.foodtraceability.enterprise.entity.SalesOrderDetail;
 import com.foodtraceability.enterprise.entity.SalesTerminal;
 import com.foodtraceability.enterprise.entity.SalesStock;
 import com.foodtraceability.enterprise.entity.SalesStorage;
 import com.foodtraceability.enterprise.entity.SalesSupplement;
+import com.foodtraceability.enterprise.mapper.SalesOrderMapper;
+import com.foodtraceability.enterprise.mapper.SalesOrderDetailMapper;
 import com.foodtraceability.enterprise.mapper.SalesTerminalMapper;
 import com.foodtraceability.enterprise.mapper.SalesStockMapper;
 import com.foodtraceability.enterprise.mapper.SalesStorageMapper;
 import com.foodtraceability.enterprise.mapper.SalesSupplementMapper;
+import com.foodtraceability.enterprise.util.CurrentUserUtil;
 
 @Service
 public class SalesService {
@@ -28,6 +33,12 @@ public class SalesService {
     private SalesStorageMapper salesStorageMapper;
     @Autowired
     private SalesSupplementMapper salesSupplementMapper;
+    @Autowired
+    private SalesOrderMapper salesOrderMapper;
+    @Autowired
+    private SalesOrderDetailMapper salesOrderDetailMapper;
+    @Autowired
+    private CurrentUserUtil currentUserUtil;
 
     // 生成终端编号 ST + yyyyMMdd + 4位序号
     public String generateTerminalCode() {
@@ -356,5 +367,180 @@ public class SalesService {
                 updateTerminal(terminal);
             }
         }
+    }
+
+    // ==================== t_sales_order ====================
+
+    // 生成销售订单编码 SO + yyyyMMdd + 4位序号
+    public String generateSalesOrderCode() {
+        String datePart = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String seqPart = String.format("%04d", System.currentTimeMillis() % 10000);
+        return "SO" + datePart + seqPart;
+    }
+
+    // 生成销售详情编码 SD + yyyyMMdd + 4位序号
+    public String generateOrderDetailCode() {
+        String datePart = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String seqPart = String.format("%04d", (System.currentTimeMillis() / 1000) % 10000);
+        return "SD" + datePart + seqPart;
+    }
+
+    // 创建销售订单（生产商调用）
+    public int createSalesOrder(SalesOrder order) {
+        if (order.getSalesOrderCode() == null || order.getSalesOrderCode().isBlank()) {
+            order.setSalesOrderCode(generateSalesOrderCode());
+        } else {
+            // 手动填写的编码需要检查唯一性
+            SalesOrder exist = getSalesOrderByCode(order.getSalesOrderCode());
+            if (exist != null) {
+                throw new RuntimeException("销售编码 " + order.getSalesOrderCode() + " 已存在，请更换或留空自动生成");
+            }
+        }
+        if (order.getOrderStatus() == null) order.setOrderStatus(1);
+        if (order.getDetailStatus() == null) order.setDetailStatus(0);
+        if (order.getOrderQuantity() == null) order.setOrderQuantity(0);
+        String now = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        if (order.getOrderDate() == null || order.getOrderDate().isBlank()) {
+            order.setOrderDate(now.substring(0, 10));
+        }
+        order.setCreateTime(now);
+        order.setUpdateTime(now);
+        order.setCreateBy(currentUserUtil.getCurrentUsername());
+        order.setUpdateBy(currentUserUtil.getCurrentUsername());
+        return salesOrderMapper.insert(order);
+    }
+
+    // 更新销售订单
+    public int updateSalesOrder(SalesOrder order) {
+        order.setUpdateTime(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+        order.setUpdateBy(currentUserUtil.getCurrentUsername());
+        return salesOrderMapper.updateById(order);
+    }
+
+    // 软删除销售订单
+    public int deleteSalesOrder(Long salesOrderId) {
+        SalesOrder order = salesOrderMapper.selectById(salesOrderId);
+        if (order != null) {
+            order.setIsDeleted(1);
+            return salesOrderMapper.updateById(order);
+        }
+        return 0;
+    }
+
+    // 按编码查询销售订单
+    public SalesOrder getSalesOrderByCode(String salesOrderCode) {
+        QueryWrapper<SalesOrder> qw = new QueryWrapper<>();
+        qw.eq("sales_order_code", salesOrderCode);
+        qw.eq("is_deleted", 0);
+        return salesOrderMapper.selectOne(qw);
+    }
+
+    // 条件查询销售订单列表
+    public List<SalesOrder> listSalesOrder(String buyerName, String productName, Integer orderStatus) {
+        QueryWrapper<SalesOrder> qw = new QueryWrapper<>();
+        qw.eq("is_deleted", 0);
+        // 销售商只能看分配给自己的订单（使用前端传入的 buyerName 参数过滤）
+        if (currentUserUtil.isSeller() && (buyerName == null || buyerName.isBlank())) {
+            qw.eq("buyer_enterprise_name", currentUserUtil.getCurrentUsername());
+        }
+        // 生产商只能看自己创建的订单
+        if (currentUserUtil.isManufacturer()) {
+            qw.eq("create_by", currentUserUtil.getCurrentUsername());
+        }
+        if (buyerName != null && !buyerName.isBlank()) qw.eq("buyer_enterprise_name", buyerName);
+        if (productName != null && !productName.isBlank()) qw.eq("product_name", productName);
+        if (orderStatus != null) qw.eq("order_status", orderStatus);
+        qw.orderByDesc("create_time");
+        return salesOrderMapper.selectList(qw);
+    }
+
+    // 销售商查看分配给自己的订单
+    public List<SalesOrder> listSalesOrderByBuyer(String buyerName) {
+        QueryWrapper<SalesOrder> qw = new QueryWrapper<>();
+        qw.eq("is_deleted", 0);
+        qw.eq("buyer_enterprise_name", buyerName);
+        qw.orderByDesc("create_time");
+        return salesOrderMapper.selectList(qw);
+    }
+
+    // ==================== t_sales_order_detail ====================
+
+    // 销售商上传销售详情
+    @Transactional
+    public int createOrderDetail(SalesOrderDetail detail) {
+        if (detail.getDetailCode() == null || detail.getDetailCode().isBlank()) {
+            detail.setDetailCode(generateOrderDetailCode());
+        }
+        if (detail.getDetailStatus() == null) detail.setDetailStatus(1);
+        String now = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        detail.setCreateTime(now);
+        detail.setUpdateTime(now);
+        detail.setCreateBy(currentUserUtil.getCurrentUsername());
+        detail.setUpdateBy(currentUserUtil.getCurrentUsername());
+
+        // 默认值
+        if (detail.getStorageMethod() == null) detail.setStorageMethod(0);
+        if (detail.getLightCondition() == null) detail.setLightCondition(0);
+        if (detail.getActualQuantity() == null) detail.setActualQuantity(0);
+        if (detail.getTemperature() == null || detail.getTemperature().isBlank()) detail.setTemperature("");
+        if (detail.getHumidity() == null || detail.getHumidity().isBlank()) detail.setHumidity("");
+        if (detail.getShelfLife() == null || detail.getShelfLife().isBlank()) detail.setShelfLife("");
+        if (detail.getLocationCode() == null || detail.getLocationCode().isBlank()) detail.setLocationCode("");
+        if (detail.getInboundTime() == null || detail.getInboundTime().isBlank()) detail.setInboundTime(now);
+        if (detail.getRemark() == null) detail.setRemark("");
+
+        int result = salesOrderDetailMapper.insert(detail);
+
+        // 回写销售订单的状态
+        if (detail.getSalesOrderId() != null) {
+            SalesOrder order = salesOrderMapper.selectById(detail.getSalesOrderId());
+            if (order != null) {
+                order.setDetailId(String.valueOf(detail.getDetailId()));
+                order.setDetailStatus(1);
+                order.setOrderStatus(2);
+                order.setUpdateTime(now);
+                order.setUpdateBy(currentUserUtil.getCurrentUsername());
+                salesOrderMapper.updateById(order);
+            }
+        } else if (detail.getSalesOrderCode() != null && !detail.getSalesOrderCode().isBlank()) {
+            SalesOrder order = getSalesOrderByCode(detail.getSalesOrderCode());
+            if (order != null) {
+                detail.setSalesOrderId(order.getSalesOrderId());
+                salesOrderDetailMapper.updateById(detail);
+                order.setDetailId(String.valueOf(detail.getDetailId()));
+                order.setDetailStatus(1);
+                order.setOrderStatus(2);
+                order.setUpdateTime(now);
+                order.setUpdateBy(currentUserUtil.getCurrentUsername());
+                salesOrderMapper.updateById(order);
+            }
+        }
+        return result;
+    }
+
+    // 更新销售详情
+    public int updateOrderDetail(SalesOrderDetail detail) {
+        detail.setUpdateTime(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+        detail.setUpdateBy(currentUserUtil.getCurrentUsername());
+        return salesOrderDetailMapper.updateById(detail);
+    }
+
+    // 按订单编码查询详情
+    public SalesOrderDetail getDetailByOrderCode(String salesOrderCode) {
+        QueryWrapper<SalesOrderDetail> qw = new QueryWrapper<>();
+        qw.eq("sales_order_code", salesOrderCode);
+        qw.eq("is_deleted", 0);
+        return salesOrderDetailMapper.selectOne(qw);
+    }
+
+    // 查询详情列表
+    public List<SalesOrderDetail> listOrderDetail(String salesOrderCode) {
+        QueryWrapper<SalesOrderDetail> qw = new QueryWrapper<>();
+        qw.eq("is_deleted", 0);
+        if (salesOrderCode != null && !salesOrderCode.isBlank()) {
+            qw.eq("sales_order_code", salesOrderCode);
+        }
+        qw.orderByDesc("create_time");
+        return salesOrderDetailMapper.selectList(qw);
     }
 }

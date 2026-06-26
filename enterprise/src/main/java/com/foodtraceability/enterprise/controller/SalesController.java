@@ -7,6 +7,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.foodtraceability.enterprise.entity.SalesOrder;
+import com.foodtraceability.enterprise.entity.SalesOrderDetail;
 import com.foodtraceability.enterprise.entity.SalesTerminal;
 import com.foodtraceability.enterprise.entity.SalesStock;
 import com.foodtraceability.enterprise.entity.SalesStorage;
@@ -201,5 +203,108 @@ public class SalesController {
     public String runAntiFraud() {
         salesService.runAntiFraudCheck();
         return "防窜货核验执行完毕";
+    }
+
+    // ==================== t_sales_order ====================
+
+    // 按订单编码查询
+    @RequestMapping("/queryOrder")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANUFACTURER', 'SELLER', 'REGULATOR')")
+    public SalesOrder queryOrder(String salesOrderCode) {
+        return salesService.getSalesOrderByCode(salesOrderCode);
+    }
+
+    // 条件列表查询
+    @RequestMapping("/listOrder")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANUFACTURER', 'SELLER', 'REGULATOR')")
+    public List<SalesOrder> listOrder(String buyerName, String productName, Integer orderStatus) {
+        return salesService.listSalesOrder(buyerName, productName, orderStatus);
+    }
+
+    // 销售商查看分配给自己的订单
+    @RequestMapping("/listOrderByBuyer")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SELLER')")
+    public List<SalesOrder> listOrderByBuyer(String buyerName) {
+        return salesService.listSalesOrderByBuyer(buyerName);
+    }
+
+    // 生产商创建销售订单
+    @RequestMapping("/createOrder")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANUFACTURER')")
+    public String createOrder(SalesOrder order) {
+        try {
+            int num = salesService.createSalesOrder(order);
+            if (num == 1) {
+                return order.getSalesOrderCode(); // 返回自动生成或手动填写的订单编码
+            } else {
+                return "订单创建失败";
+            }
+        } catch (RuntimeException e) {
+            return "错误: " + e.getMessage();
+        }
+    }
+
+    // 更新销售订单
+    @RequestMapping("/updateOrder")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANUFACTURER')")
+    public String updateOrder(SalesOrder order) {
+        int num = salesService.updateSalesOrder(order);
+        if (num == 1) {
+            return "订单更新成功";
+        } else {
+            return "订单更新失败";
+        }
+    }
+
+    // 软删除销售订单
+    @RequestMapping("/deleteOrder")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANUFACTURER')")
+    public String deleteOrder(Long salesOrderId) {
+        int num = salesService.deleteSalesOrder(salesOrderId);
+        if (num == 1) {
+            return "订单删除成功";
+        } else {
+            return "订单删除失败";
+        }
+    }
+
+    // ==================== t_sales_order_detail ====================
+
+    // 销售商上传销售详情
+    @RequestMapping("/createOrderDetail")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SELLER')")
+    public String createOrderDetail(SalesOrderDetail detail) {
+        int num = salesService.createOrderDetail(detail);
+        if (num == 1) {
+            return "销售详情上传成功";
+        } else {
+            return "上传失败";
+        }
+    }
+
+    // 更新销售详情
+    @RequestMapping("/updateOrderDetail")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SELLER')")
+    public String updateOrderDetail(SalesOrderDetail detail) {
+        int num = salesService.updateOrderDetail(detail);
+        if (num == 1) {
+            return "详情更新成功";
+        } else {
+            return "详情更新失败";
+        }
+    }
+
+    // 按订单编码查询详情
+    @RequestMapping("/queryOrderDetail")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANUFACTURER', 'SELLER', 'REGULATOR')")
+    public SalesOrderDetail queryOrderDetail(String salesOrderCode) {
+        return salesService.getDetailByOrderCode(salesOrderCode);
+    }
+
+    // 查询详情列表
+    @RequestMapping("/listOrderDetail")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANUFACTURER', 'SELLER', 'REGULATOR')")
+    public List<SalesOrderDetail> listOrderDetail(String salesOrderCode) {
+        return salesService.listOrderDetail(salesOrderCode);
     }
 }

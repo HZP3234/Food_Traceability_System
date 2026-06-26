@@ -38,6 +38,13 @@ public class CurrentUserUtil {
     }
 
     /**
+     * 当前用户是否为销售商（纯 SELLER，不包含 ADMIN）
+     */
+    public boolean isSeller() {
+        return hasRole("ROLE_SELLER") && !hasRole("ROLE_ADMIN");
+    }
+
+    /**
      * 当前用户是否为监管机构
      */
     public boolean isRegulator() {
