@@ -1,16 +1,17 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, useTemplateRef } from 'vue'
 import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import { useAppStore } from '@/store/app'
 import { queryByTraceCode } from '@/api/traceability'
+import ScannerOverlay from '@/components/ScannerOverlay.vue'
 import headImg from '@/assets/user_head_image.png'
 
 const router = useRouter()
 const store = useAppStore()
 const showCodeDialog = ref(false)
 const traceCodeInput = ref('')
-const codeLoading = ref(false)
+const scannerRef = useTemplateRef<InstanceType<typeof ScannerOverlay>>('scanner')
 
 function requireLogin(action: () => void) {
   if (!store.isLoggedIn) {
@@ -44,33 +45,55 @@ function openCodeDialog() {
   showCodeDialog.value = true
 }
 
-function onCodeSearch() {
-  const code = traceCodeInput.value.trim()
-  if (!code) {
-    showToast('请输入溯源码')
-    return
-  }
-  codeLoading.value = true
+function handleScanResult(code: string) {
   queryByTraceCode(code, store.userInfo?.consumerUuid)
     .then((res) => {
       if (res.code === 200 && res.data) {
         store.setTraceResult(res.data)
-        showCodeDialog.value = false
         router.push({ name: 'TraceResult', query: { batchNo: res.data.productBatchNo } })
       } else if (res.code === 404) {
-        showToast('未查到该溯源码对应的商品信息，请确认溯源码是否正确')
+        showToast('未查到该溯源码对应的商品信息')
       } else if (res.code === 400) {
         showToast(res.message || '该溯源码已失效')
       } else {
-        showToast(res.message || '查询失败，请稍后重试')
+        showToast(res.message || '查询失败')
       }
     })
     .catch(() => {
       showToast('网络异常，请检查网络后重试')
     })
-    .finally(() => {
-      codeLoading.value = false
-    })
+}
+
+function onScan() {
+  scannerRef.value?.open()
+}
+
+async function onCodeSearch(action: string): Promise<boolean> {
+  if (action === 'cancel') {
+    return true
+  }
+  const code = traceCodeInput.value.trim()
+  if (!code) {
+    showToast('请输入溯源码')
+    return false
+  }
+  try {
+    const res = await queryByTraceCode(code, store.userInfo?.consumerUuid)
+    if (res.code === 200 && res.data) {
+      store.setTraceResult(res.data)
+      router.push({ name: 'TraceResult', query: { batchNo: res.data.productBatchNo } })
+      return true
+    } else if (res.code === 404) {
+      showToast('未查到该溯源码对应的商品信息，请确认溯源码是否正确')
+    } else if (res.code === 400) {
+      showToast(res.message || '该溯源码已失效')
+    } else {
+      showToast(res.message || '查询失败，请稍后重试')
+    }
+  } catch {
+    showToast('网络异常，请检查网络后重试')
+  }
+  return false
 }
 </script>
 
@@ -88,12 +111,18 @@ function onCodeSearch() {
           <van-icon name="passed" size="32" color="#fff" />
         </div>
         <h1>食品安全追溯平台</h1>
-        <p>输入溯源码，了解食品全程信息</p>
+        <p>扫码或输入溯源码，了解食品全程信息</p>
       </div>
     </div>
 
     <!-- 扫码查询区 -->
     <div class="scan-area">
+      <div class="scan-btn" @click="onScan" role="button" tabindex="0" aria-label="扫一扫溯源码">
+        <div class="scan-icon">
+          <van-icon name="scan" size="28" />
+        </div>
+        <span>扫一扫</span>
+      </div>
       <div class="scan-btn" @click="openCodeDialog" role="button" tabindex="0" aria-label="输入溯源码查询">
         <div class="scan-icon">
           <van-icon name="label-o" size="28" />
@@ -107,8 +136,7 @@ function onCodeSearch() {
       v-model:show="showCodeDialog"
       title="输入溯源码"
       show-cancel-button
-      :confirm-loading="codeLoading"
-      @confirm="onCodeSearch"
+      :before-close="onCodeSearch"
     >
       <div class="code-dialog-body">
         <van-field
@@ -145,6 +173,8 @@ function onCodeSearch() {
     <div class="footer-tip">
       食品安全 全民监督
     </div>
+
+    <ScannerOverlay ref="scanner" @scanned="handleScanResult" />
   </div>
 </template>
 
@@ -220,7 +250,9 @@ function onCodeSearch() {
 .scan-area {
   display: flex;
   justify-content: center;
+  gap: 16px;
   margin: 32px 0;
+  flex-wrap: wrap;
 }
 
 .scan-btn {
