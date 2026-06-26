@@ -51,16 +51,14 @@ function handleScanResult(code: string) {
       if (res.code === 200 && res.data) {
         store.setTraceResult(res.data)
         router.push({ name: 'TraceResult', query: { batchNo: res.data.productBatchNo } })
-      } else if (res.code === 404) {
-        showToast('未查到该溯源码对应的商品信息')
-      } else if (res.code === 400) {
-        showToast(res.message || '该溯源码已失效')
+      } else if (res.code === 404 || res.code === 400) {
+        showToast({ message: res.message || '该商品没有溯源信息或溯源码被禁用', className: 'toast-error' })
       } else {
-        showToast(res.message || '查询失败')
+        showToast({ message: res.message || '查询失败', className: 'toast-error' })
       }
     })
     .catch(() => {
-      showToast('网络异常，请检查网络后重试')
+      showToast({ message: '网络异常，请检查网络后重试', className: 'toast-error' })
     })
 }
 
@@ -83,15 +81,13 @@ async function onCodeSearch(action: string): Promise<boolean> {
       store.setTraceResult(res.data)
       router.push({ name: 'TraceResult', query: { batchNo: res.data.productBatchNo } })
       return true
-    } else if (res.code === 404) {
-      showToast('未查到该溯源码对应的商品信息，请确认溯源码是否正确')
-    } else if (res.code === 400) {
-      showToast(res.message || '该溯源码已失效')
+    } else if (res.code === 404 || res.code === 400) {
+      showToast({ message: res.message || '该商品没有溯源信息或溯源码被禁用', className: 'toast-error' })
     } else {
-      showToast(res.message || '查询失败，请稍后重试')
+      showToast({ message: res.message || '查询失败，请稍后重试', className: 'toast-error' })
     }
   } catch {
-    showToast('网络异常，请检查网络后重试')
+    showToast({ message: '网络异常，请检查网络后重试', className: 'toast-error' })
   }
   return false
 }

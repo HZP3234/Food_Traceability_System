@@ -15,6 +15,16 @@
     <description>聚合启动模块 — 统一入口，依赖所有子模块</description>
 
     <dependencies>
+        <!-- 直接依赖，帮助 IDE 解析符号（Maven 传递依赖已覆盖，但 IDE 静态分析需要显式声明） -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
+        </dependency>
+
         <!-- 三个业务模块 -->
         <dependency>
             <groupId>com.foodtraceability</groupId>

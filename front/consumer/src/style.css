@@ -56,3 +56,10 @@ textarea {
   width: 0;
   height: 0;
 }
+
+/* 错误提示 Toast：黑字 + 浅色背景 */
+.toast-error {
+  color: #323233 !important;
+  background: #fff !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}

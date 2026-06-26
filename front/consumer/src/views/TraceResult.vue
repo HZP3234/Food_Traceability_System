@@ -37,7 +37,7 @@ function goComplaint() {
 
 onMounted(() => {
   if (!batchNo) {
-    showToast('缺少批次号')
+    showToast({ message: '缺少批次号', className: 'toast-error' })
     router.replace({ name: 'Home' })
     return
   }
@@ -58,14 +58,14 @@ onMounted(() => {
       if (res.code === 200 && res.data) {
         data.value = res.data
         recordScan({ productBatchNo: batchNo, userId, traceCode: res.data.traceCode }).catch(() => {})
-      } else if (res.code === 404) {
-        showToast('未找到该商品的溯源信息')
+      } else if (res.code === 404 || res.code === 400) {
+        showToast({ message: res.message || '该商品没有溯源信息或溯源码被禁用', className: 'toast-error' })
       } else {
-        showToast(res.message || '查询失败，请稍后重试')
+        showToast({ message: res.message || '查询失败，请稍后重试', className: 'toast-error' })
       }
     })
     .catch(() => {
-      showToast('网络异常，请检查网络后重试')
+      showToast({ message: '网络异常，请检查网络后重试', className: 'toast-error' })
     })
     .finally(() => {
       loading.value = false

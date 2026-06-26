@@ -41,7 +41,7 @@ public class TraceabilityServiceImpl implements TraceabilityService {
     public TraceabilityVO queryByTraceCode(String traceCode) {
         TraceCode tc = traceCodeMapper.selectByTraceCode(traceCode);
         if (tc == null) {
-            throw BusinessException.notFound("未找到该溯源码对应的产品信息");
+            throw BusinessException.notFound("该商品没有溯源信息或溯源码被禁用");
         }
         if (tc.getTraceCodeStatus() != null && tc.getTraceCodeStatus() >= 3) {
             String tip = tc.getTraceCodeStatus() == 3 ? "该溯源码已被禁用" :
@@ -51,7 +51,7 @@ public class TraceabilityServiceImpl implements TraceabilityService {
 
         String batchNo = tc.getBatchNo();
         if (batchNo == null || batchNo.isBlank()) {
-            throw BusinessException.notFound("该溯源码尚未绑定产品批次");
+            throw BusinessException.notFound("该商品没有溯源信息或溯源码被禁用");
         }
 
         return buildTraceabilityVO(batchNo, tc);
@@ -86,7 +86,7 @@ public class TraceabilityServiceImpl implements TraceabilityService {
         }
 
         if (prod == null && tc == null) {
-            throw BusinessException.notFound("未找到该批次的溯源信息");
+            throw BusinessException.notFound("该商品没有溯源信息或溯源码被禁用");
         }
 
         vo.setNodes(buildNodes(batchNo, prod));
