@@ -198,12 +198,6 @@ export const productionApi = {
   recordMaterialInput: (data: Record<string, any>) => post('/Production/recordMaterialInput', data),
   updateMaterialInput: (data: Record<string, any>) => post('/Production/updateMaterialInput', data),
 
-  // Env Record
-  listEnvRecord: (productionLine: string) => get('/Production/listEnvRecord', { productionLine }),
-  listEnvAbnormal: (isAbnormal?: number) => get('/Production/listEnvAbnormal', { isAbnormal }),
-  recordEnv: (data: Record<string, any>) => post('/Production/recordEnv', data),
-  updateEnvRecord: (data: Record<string, any>) => post('/Production/updateEnvRecord', data),
-
   // Quality Inspection
   queryInspection: (inspectionNo: string) => get('/Production/queryInspection', { inspectionNo }),
   listInspectionByBiz: (bizType: number, bizBatchNo: string) =>
@@ -215,6 +209,9 @@ export const productionApi = {
   qualityCheckProd: (prodBatchNo: string, checkResult: number) =>
     post('/Production/qualityCheckProd', { prodBatchNo, checkResult }),
   traceProcessChain: (prodBatchNo: string) => get('/Production/traceProcessChain', { prodBatchNo }),
+
+  // Env (Warnings page uses listEnvAbnormal)
+  listEnvAbnormal: (isAbnormal?: number) => get('/Production/listEnvAbnormal', { isAbnormal }),
 }
 
 // ==================== TraceCode (溯源码) ====================

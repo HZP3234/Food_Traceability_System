@@ -160,36 +160,15 @@ public class ProductionController {
         return num == 1 ? "投料记录更新成功" : "投料记录更新失败";
     }
 
-    // ==================== t_prod_env_record ====================
+    // ==================== t_quality_inspection ====================
 
-    @RequestMapping("/listEnvRecord")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANUFACTURER', 'REGULATOR')")
-    public List<ProdEnvRecord> listEnvRecord(String productionLine) {
-        return productionService.listEnvRecordByLine(productionLine);
-    }
-
+    // listEnvAbnormal 保留供预警页面使用
     @RequestMapping("/listEnvAbnormal")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANUFACTURER', 'REGULATOR')")
     public List<ProdEnvRecord> listEnvAbnormal(Integer isAbnormal) {
         if (isAbnormal == null) isAbnormal = 1;
         return productionService.listEnvRecordByAbnormal(isAbnormal);
     }
-
-    @RequestMapping("/recordEnv")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANUFACTURER')")
-    public String recordEnv(ProdEnvRecord envRecord) {
-        int num = productionService.recordEnv(envRecord);
-        return num == 1 ? "环境数据采集成功" : "环境数据采集失败";
-    }
-
-    @RequestMapping("/updateEnvRecord")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANUFACTURER')")
-    public String updateEnvRecord(ProdEnvRecord envRecord) {
-        int num = productionService.updateEnvRecord(envRecord);
-        return num == 1 ? "环境记录更新成功" : "环境记录更新失败";
-    }
-
-    // ==================== t_quality_inspection ====================
 
     @RequestMapping("/queryInspection")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANUFACTURER', 'REGULATOR')")

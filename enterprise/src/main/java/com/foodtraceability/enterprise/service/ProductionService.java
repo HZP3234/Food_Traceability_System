@@ -285,42 +285,13 @@ public class ProductionService {
         return prodMaterialInputMapper.updateById(input);
     }
 
-    // ==================== t_prod_env_record ====================
-
-    public List<ProdEnvRecord> listEnvRecordByLine(String productionLine) {
-        QueryWrapper<ProdEnvRecord> qw = new QueryWrapper<>();
-        qw.eq("production_line", productionLine);
-        qw.eq("is_deleted", 0);
-        qw.orderByDesc("collect_time");
-        return prodEnvRecordMapper.selectList(qw);
-    }
-
+    // listEnvRecordByAbnormal 保留供预警页面使用
     public List<ProdEnvRecord> listEnvRecordByAbnormal(int isAbnormal) {
         QueryWrapper<ProdEnvRecord> qw = new QueryWrapper<>();
         qw.eq("is_abnormal", isAbnormal);
         qw.eq("is_deleted", 0);
         qw.orderByDesc("collect_time");
         return prodEnvRecordMapper.selectList(qw);
-    }
-
-    public int recordEnv(ProdEnvRecord envRecord) {
-        String now = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-        envRecord.setCollectTime(now);
-        envRecord.setCreateTime(now);
-        envRecord.setUpdateTime(now);
-        envRecord.setCreateBy("SYSTEM");
-        envRecord.setUpdateBy("SYSTEM");
-        if (envRecord.getCollector() == null) envRecord.setCollector("");
-        if (envRecord.getPressureDiff() == null) envRecord.setPressureDiff("");
-        if (envRecord.getParticles() == null) envRecord.setParticles("");
-        if (envRecord.getBacteria() == null) envRecord.setBacteria("");
-        if (envRecord.getRemark() == null) envRecord.setRemark("");
-        return prodEnvRecordMapper.insert(envRecord);
-    }
-
-    public int updateEnvRecord(ProdEnvRecord envRecord) {
-        envRecord.setUpdateTime(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
-        return prodEnvRecordMapper.updateById(envRecord);
     }
 
     // ==================== t_quality_inspection ====================
@@ -407,7 +378,6 @@ public class ProductionService {
         private ProdBatch prodBatch;
         private Raw rawBatch;
         private List<ProdMaterialInput> materialInputs;
-        private List<ProdEnvRecord> envRecords;
 
         public ProdBatch getProdBatch() { return prodBatch; }
         public void setProdBatch(ProdBatch prodBatch) { this.prodBatch = prodBatch; }
@@ -415,8 +385,6 @@ public class ProductionService {
         public void setRawBatch(Raw rawBatch) { this.rawBatch = rawBatch; }
         public List<ProdMaterialInput> getMaterialInputs() { return materialInputs; }
         public void setMaterialInputs(List<ProdMaterialInput> materialInputs) { this.materialInputs = materialInputs; }
-        public List<ProdEnvRecord> getEnvRecords() { return envRecords; }
-        public void setEnvRecords(List<ProdEnvRecord> envRecords) { this.envRecords = envRecords; }
     }
 
     /**
@@ -441,10 +409,6 @@ public class ProductionService {
         // 查询投料记录
         List<ProdMaterialInput> inputs = listMaterialInput(prodBatch.getProductName());
         vo.setMaterialInputs(inputs);
-
-        // 查询环境记录
-        List<ProdEnvRecord> envRecords = listEnvRecordByLine(prodBatch.getProductionLine());
-        vo.setEnvRecords(envRecords);
 
         return vo;
     }

@@ -4,30 +4,29 @@ import { Check, Close, Connection, Delete, DocumentChecked, Edit, Link, Plus, Se
 import { productionApi } from '../services/api'
 import Pagination from '../components/Pagination.vue'
 
-const tab = ref<'prod' | 'template' | 'input' | 'env' | 'inspection'>('prod')
+const tab = ref<'prod' | 'template' | 'input' | 'inspection'>('prod')
 const loading = ref(false)
 const toast = ref<{ type: 'success' | 'error'; text: string } | null>(null)
 
 const showModal = ref(false); const showTemplateModal = ref(false)
-const showInputModal = ref(false); const showEnvModal = ref(false); const showInspectionModal = ref(false)
+const showInputModal = ref(false); const showInspectionModal = ref(false)
 const showConfirm = ref(false); const showChainModal = ref(false); const showQcProdModal = ref(false)
 const confirmTitle = ref('确认操作'); const confirmMsg = ref(''); const confirmBtnLabel = ref('确认'); const confirmBtnClass = ref('danger-fill')
 const confirmCallback = ref<null | (() => void)>(null)
 
-const list = ref<any[]>([]); const templates = ref<any[]>([]); const materialInputs = ref<any[]>([]); const envRecords = ref<any[]>([]); const inspections = ref<any[]>([])
+const list = ref<any[]>([]); const templates = ref<any[]>([]); const materialInputs = ref<any[]>([]); const inspections = ref<any[]>([])
 
 // Pagination
-const prodPage = ref(1); const tplPage = ref(1); const inputPage = ref(1); const envPage = ref(1); const inspPage = ref(1); const pageSize = ref(10)
+const prodPage = ref(1); const tplPage = ref(1); const inputPage = ref(1); const inspPage = ref(1); const pageSize = ref(10)
 const paginatedList = computed(() => { const s = (prodPage.value - 1) * pageSize.value; return list.value.slice(s, s + pageSize.value) })
 const paginatedTemplates = computed(() => { const s = (tplPage.value - 1) * pageSize.value; return templates.value.slice(s, s + pageSize.value) })
 const paginatedInputs = computed(() => { const s = (inputPage.value - 1) * pageSize.value; return materialInputs.value.slice(s, s + pageSize.value) })
-const paginatedEnv = computed(() => { const s = (envPage.value - 1) * pageSize.value; return envRecords.value.slice(s, s + pageSize.value) })
 const paginatedInspections = computed(() => { const s = (inspPage.value - 1) * pageSize.value; return inspections.value.slice(s, s + pageSize.value) })
 const editing = ref<any>(null); const editingTemplate = ref<any>(null); const qcTarget = ref<any>(null); const qcResult = ref(1); const chainData = ref<any>(null)
 
 const filters = ref({ productName: '', productionLine: '', checkResult: '', batchStatus: '', codeStatus: '', rawBatchNo: '' })
 const templateFilters = ref({ applicableProduct: '', templateStatus: '' })
-const envLine = ref(''); const inspFilters = ref({ bizType: '', bizBatchNo: '', inspectionType: '', inspectionResult: '' })
+const inspFilters = ref({ bizType: '', bizBatchNo: '', inspectionType: '', inspectionResult: '' })
 
 // 合并后的生产批次表单（含加工参数、投料明细、三级质检）
 const form = ref({
@@ -45,7 +44,6 @@ const qcFinal = ref({ inspector: '', time: '', result: '合格' })
 
 const templateForm = ref({ templateName: '', version: '', applicableProduct: '', targetTemp: '', duration: '', pressure: '', coolTemp: '', fillTemp: '', stirSpeed: '', phValue: '', viscosity: '', cleanLevel: 0, templateStatus: 1, remark: '' })
 const inputForm = ref({ rawBatchNo: '', materialName: '', inputAmount: '', unit: '', operator: '', inputTime: '', remark: '' })
-const envForm = ref({ productionLine: '', temperature: '', humidity: '', cleanliness: '', isAbnormal: 0, abnormalDesc: '', recordTime: '' })
 const inspectionForm = ref({ inspectionNo: '', bizType: 3, bizBatchNo: '', inspectionType: 1, inspector: '', inspectionDate: '', inspectionResult: 1, resultDesc: '', remark: '' })
 
 const checkResultLabels = ['', '合格', '不合格']; const prodBatchStatusLabels = ['', '待生产', '生产中', '生产完成', '已废弃']
@@ -64,10 +62,6 @@ const stats = computed(() => {
       { label: '停用', icon: Close, cls: '', val: templates.value.filter((r: any) => r.templateStatus === 2).length },
     ]
     case 'input': return [{ label: '投料记录', icon: Edit, cls: '', val: materialInputs.value.length }]
-    case 'env': return [
-      { label: '环境记录', icon: Edit, cls: '', val: envRecords.value.length },
-      { label: '异常', icon: Close, cls: 'amber', val: envRecords.value.filter((r: any) => r.isAbnormal === 1).length },
-    ]
     case 'inspection': return [
       { label: '质检记录', icon: Edit, cls: '', val: inspections.value.length },
       { label: '合格', icon: Check, cls: 'green', val: inspections.value.filter((r: any) => r.inspectionResult === 1).length },
@@ -179,10 +173,6 @@ function confirmDeleteTemplate(id: number) { confirmTitle.value = '确认删除'
 async function loadMaterialInput() { try { const d = await productionApi.listMaterialInput(); materialInputs.value = Array.isArray(d) ? d : []; inputPage.value = 1 } catch (e: any) { notify('error', '加载失败') } }
 function submitMaterialInput() { confirmTitle.value = '确认投料'; confirmMsg.value = '确认记录该投料信息？'; confirmBtnLabel.value = '确认记录'; confirmBtnClass.value = 'primary'; confirmCallback.value = async () => { try { await productionApi.recordMaterialInput(inputForm.value); notify('success', '投料记录成功'); showInputModal.value = false; showConfirm.value = false; loadMaterialInput() } catch (e: any) { notify('error', '投料失败: ' + e.message) } }; showConfirm.value = true }
 
-// Env Record
-async function loadEnvRecords() { try { if (envLine.value) { const d = await productionApi.listEnvRecord(envLine.value); envRecords.value = Array.isArray(d) ? d : []; envPage.value = 1 } } catch (e: any) { notify('error', '加载失败') } }
-function submitEnv() { confirmTitle.value = '确认采集'; confirmMsg.value = '确认提交该环境监测数据？'; confirmBtnLabel.value = '确认提交'; confirmBtnClass.value = 'primary'; confirmCallback.value = async () => { try { await productionApi.recordEnv(envForm.value); notify('success', '环境数据采集成功'); showEnvModal.value = false; showConfirm.value = false; loadEnvRecords() } catch (e: any) { notify('error', '采集失败: ' + e.message) } }; showConfirm.value = true }
-
 // Inspection
 async function loadInspections() { try { const p: Record<string, any> = {}; if (inspFilters.value.bizType) p.bizType = Number(inspFilters.value.bizType); if (inspFilters.value.bizBatchNo) p.bizBatchNo = inspFilters.value.bizBatchNo; if (inspFilters.value.inspectionResult) p.inspectionResult = Number(inspFilters.value.inspectionResult); const d = await productionApi.listInspection(p); inspections.value = Array.isArray(d) ? d : []; inspPage.value = 1 } catch (e: any) { notify('error', '加载失败') } }
 function submitInspection() { confirmTitle.value = '确认提交'; confirmMsg.value = '确认创建该质检记录？'; confirmBtnLabel.value = '确认提交'; confirmBtnClass.value = 'primary'; confirmCallback.value = async () => { try { await productionApi.createInspection(inspectionForm.value); notify('success', '质检记录创建成功'); showInspectionModal.value = false; showConfirm.value = false; loadInspections() } catch (e: any) { notify('error', '创建失败: ' + e.message) } }; showConfirm.value = true }
@@ -190,7 +180,7 @@ function submitInspection() { confirmTitle.value = '确认提交'; confirmMsg.va
 // Delete
 function confirmDeleteProd(id: number) { confirmTitle.value = '确认删除'; confirmMsg.value = '确定要删除该生产批次吗？'; confirmBtnLabel.value = '确认删除'; confirmBtnClass.value = 'danger-fill'; confirmCallback.value = async () => { try { await productionApi.deleteProdBatch(id); notify('success', '删除成功'); showConfirm.value = false; loadProdBatch() } catch (e: any) { notify('error', '删除失败: ' + e.message) } }; showConfirm.value = true }
 
-function switchTab(t: typeof tab.value) { tab.value = t; if (t === 'prod') loadProdBatch(); else if (t === 'template') loadTemplates(); else if (t === 'input') loadMaterialInput(); else if (t === 'env') loadEnvRecords(); else loadInspections() }
+function switchTab(t: typeof tab.value) { tab.value = t; if (t === 'prod') loadProdBatch(); else if (t === 'template') loadTemplates(); else if (t === 'input') loadMaterialInput(); else loadInspections() }
 function doConfirm() { if (confirmCallback.value) { confirmCallback.value() } }
 
 // 投料明细行操作
@@ -215,7 +205,6 @@ onMounted(loadProdBatch)
       <button class="trace-tab-btn" :class="{ active: tab === 'prod' }" @click="switchTab('prod')"><el-icon><Edit /></el-icon> 生产批次</button>
       <button class="trace-tab-btn" :class="{ active: tab === 'template' }" @click="switchTab('template')"><el-icon><DocumentChecked /></el-icon> 工艺模板</button>
       <button class="trace-tab-btn" :class="{ active: tab === 'input' }" @click="switchTab('input')"><el-icon><Plus /></el-icon> 投料记录</button>
-      <button class="trace-tab-btn" :class="{ active: tab === 'env' }" @click="switchTab('env')"><el-icon><Search /></el-icon> 环境监测</button>
       <button class="trace-tab-btn" :class="{ active: tab === 'inspection' }" @click="switchTab('inspection')"><el-icon><DocumentChecked /></el-icon> 质检记录</button>
     </div>
 
@@ -296,25 +285,6 @@ onMounted(loadProdBatch)
             <tr v-for="row in paginatedInputs" :key="row.inputId"><td><code>{{ row.rawBatchNo }}</code></td><td>{{ row.materialName }}</td><td>{{ row.inputAmount }}{{ row.unit }}</td><td>{{ row.unit }}</td><td>{{ row.operator }}</td><td>{{ row.inputTime }}</td></tr>
           </tbody></table></div>
       <Pagination v-model="inputPage" :total="materialInputs.length" :page-size="pageSize" />
-      </section>
-    </template>
-
-    <!-- Env Record -->
-    <template v-if="tab === 'env'">
-      <section class="trace-panel filter-panel">
-        <div class="filter-grid-4">
-          <label>生产线<input v-model="envLine" placeholder="输入生产线" @keyup.enter="loadEnvRecords" /></label>
-          <div class="filter-actions"><button class="primary" @click="loadEnvRecords"><el-icon><Search /></el-icon> 查询</button><button class="secondary" @click="showEnvModal = true"><el-icon><Plus /></el-icon> 采集环境数据</button></div>
-        </div>
-      </section>
-      <section class="trace-panel list-panel">
-        <header class="panel-header"><div><p>环境台账</p><h2>环境记录</h2></div></header>
-        <div class="table-wrap"><table><thead><tr><th>生产线</th><th>温度</th><th>湿度</th><th>洁净度</th><th>是否异常</th><th>异常描述</th><th>记录时间</th></tr></thead>
-          <tbody><tr v-if="!envRecords.length"><td colspan="7" class="empty">暂无环境记录</td></tr>
-            <tr v-for="row in paginatedEnv" :key="row.recordId"><td>{{ row.productionLine }}</td><td>{{ row.temperature }}</td><td>{{ row.humidity }}</td><td>{{ row.cleanliness }}</td>
-              <td><span class="status" :class="row.isAbnormal === 1 ? 'status-void' : 'status-active'">{{ row.isAbnormal === 1 ? '异常' : '正常' }}</span></td><td>{{ row.abnormalDesc || '-' }}</td><td>{{ row.recordTime }}</td></tr>
-          </tbody></table></div>
-      <Pagination v-model="envPage" :total="envRecords.length" :page-size="pageSize" />
       </section>
     </template>
 
@@ -478,19 +448,6 @@ onMounted(loadProdBatch)
         </div>
         <label style="display:grid;gap:6px;color:#718ba6;font-size:12px;font-weight:700;margin:0 23px">备注<textarea v-model="inputForm.remark" style="width:100%;padding:9px;border:1px solid #d7e4f0;border-radius:7px;min-height:60px" /></label>
         <footer><button class="secondary" @click="showInputModal = false"><el-icon><Close /></el-icon> 取消</button><button class="primary" @click="submitMaterialInput"><el-icon><Check /></el-icon> 记录</button></footer>
-      </section>
-    </div>
-
-    <div v-if="showEnvModal" class="trace-modal-backdrop" @click.self="showEnvModal = false">
-      <section class="trace-modal"><header><div><p>环境采集</p><h2>生产环境采集</h2></div><button @click="showEnvModal = false"><el-icon><Close /></el-icon></button></header>
-        <div class="modal-body grid-form">
-          <label>生产线 *<input v-model="envForm.productionLine" /></label><label>采集时间<input v-model="envForm.recordTime" /></label>
-          <label>车间温度<input v-model="envForm.temperature" /></label><label>车间湿度<input v-model="envForm.humidity" /></label>
-          <label>洁净度等级<input v-model="envForm.cleanliness" /></label>
-          <label>是否异常<select v-model.number="envForm.isAbnormal"><option :value="0">正常</option><option :value="1">异常</option></select></label>
-        </div>
-        <label style="display:grid;gap:6px;color:#718ba6;font-size:12px;font-weight:700;margin:0 23px">异常描述<textarea v-model="envForm.abnormalDesc" style="width:100%;padding:9px;border:1px solid #d7e4f0;border-radius:7px;min-height:60px" /></label>
-        <footer><button class="secondary" @click="showEnvModal = false"><el-icon><Close /></el-icon> 取消</button><button class="primary" @click="submitEnv"><el-icon><Check /></el-icon> 确认提交</button></footer>
       </section>
     </div>
 
