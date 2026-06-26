@@ -46,10 +46,10 @@ public class RegulationComplaintServiceImpl extends ServiceImpl<ComplaintRecordM
                    ComplaintRecord::getStatus, dto.getStatus())
                .eq(dto.getPriority() != null,
                    ComplaintRecord::getPriority, dto.getPriority())
-               .ge(dto.getSubmitTimeStart() != null && !dto.getSubmitTimeStart().isBlank(),
-                   ComplaintRecord::getSubmitTime, dto.getSubmitTimeStart() + " 00:00:00")
-               .le(dto.getSubmitTimeEnd() != null && !dto.getSubmitTimeEnd().isBlank(),
-                   ComplaintRecord::getSubmitTime, dto.getSubmitTimeEnd() + " 23:59:59")
+               .ge(dto.getSubmitTimeStart() != null,
+                   ComplaintRecord::getSubmitTime, dto.getSubmitTimeStart() != null ? dto.getSubmitTimeStart().atStartOfDay() : null)
+               .le(dto.getSubmitTimeEnd() != null,
+                   ComplaintRecord::getSubmitTime, dto.getSubmitTimeEnd() != null ? dto.getSubmitTimeEnd().atTime(23, 59, 59) : null)
                .orderByDesc(ComplaintRecord::getPriority)
                .orderByAsc(ComplaintRecord::getStatus)
                .orderByDesc(ComplaintRecord::getSubmitTime);

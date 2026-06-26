@@ -16,27 +16,29 @@ const submitted = ref(false)
 const complaintNo = ref('')
 
 const form = reactive({
-  productBatchNo: (route.query.productBatchNo as string) || '',
-  productName: (route.query.productName as string) || '',
+  batchNumber: (route.query.batchNumber as string) || '',
+  enterpriseName: (route.query.enterpriseName as string) || '',
+  traceCode: (route.query.traceCode as string) || '',
   complaintType: '' as unknown as ComplaintTypeKey,
-  complaintContent: '',
-  consumerName: '',
-  consumerPhone: ''
+  description: '',
+  complainantName: '',
+  phone: '',
+  isAnonymous: false
 })
 
 onMounted(() => {
   if (store.isLoggedIn && store.userInfo) {
-    form.consumerPhone = store.userInfo.phone
-    form.consumerName = store.userInfo.nickName
+    form.phone = store.userInfo.phone || ''
+    form.complainantName = store.userInfo.nickName || ''
   }
 })
 
 const complaintTypes = [
-  { value: 1 as ComplaintTypeKey, label: '质量问题' },
-  { value: 2 as ComplaintTypeKey, label: '包装问题' },
-  { value: 3 as ComplaintTypeKey, label: '保质期异常' },
-  { value: 4 as ComplaintTypeKey, label: '假冒伪劣' },
-  { value: 5 as ComplaintTypeKey, label: '其他问题' }
+  { value: 1 as ComplaintTypeKey, label: '产品质量' },
+  { value: 2 as ComplaintTypeKey, label: '食品安全' },
+  { value: 3 as ComplaintTypeKey, label: '包装问题' },
+  { value: 4 as ComplaintTypeKey, label: '虚假宣传' },
+  { value: 5 as ComplaintTypeKey, label: '其他' }
 ]
 
 function onTypeSelect(type: ComplaintTypeKey) {
@@ -63,15 +65,16 @@ function onSubmit() {
 function doSubmit() {
   submitting.value = true
   submitComplaint({
-    productBatchNo: form.productBatchNo,
-    productName: form.productName,
-    consumerName: form.consumerName || '匿名',
-    consumerPhone: form.consumerPhone,
-    consumerId: store.userInfo?.consumerId || undefined,
+    batchNumber: form.batchNumber,
+    enterpriseName: form.enterpriseName,
+    traceCode: form.traceCode || undefined,
+    consumerUuid: store.userInfo?.consumerUuid || undefined,
+    complainantName: form.isAnonymous ? '匿名' : (form.complainantName || '匿名'),
+    phone: form.phone,
+    isAnonymous: form.isAnonymous ? 1 : 0,
     complaintType: form.complaintType,
-    complaintTitle: `${complaintTypes.find(t => t.value === form.complaintType)?.label || ''}投诉`,
-    complaintContent: form.complaintContent,
-    imageUrls: undefined
+    description: form.description,
+    photoUrls: undefined
   })
     .then((res) => {
       if (res.code === 200 && res.data) {
@@ -119,18 +122,18 @@ function doSubmit() {
       <van-form ref="formRef" @submit="onSubmit" :scroll-to-error="true">
         <van-cell-group inset title="投诉对象">
           <van-field
-            v-model="form.productBatchNo"
-            name="productBatchNo"
+            v-model="form.batchNumber"
+            name="batchNumber"
             label="产品批次号"
             placeholder="请输入产品批次号"
             :rules="[{ required: true, message: '请输入产品批次号' }]"
           />
           <van-field
-            v-model="form.productName"
-            name="productName"
-            label="投诉的公司"
-            placeholder="请输入公司名称"
-            :rules="[{ required: true, message: '请输入公司名称' }]"
+            v-model="form.enterpriseName"
+            name="enterpriseName"
+            label="被投诉企业"
+            placeholder="请输入企业名称"
+            :rules="[{ required: true, message: '请输入企业名称' }]"
           />
         </van-cell-group>
 
@@ -155,11 +158,11 @@ function doSubmit() {
 
         <van-cell-group inset title="投诉内容">
           <van-field
-            v-model="form.complaintContent"
-            name="complaintContent"
+            v-model="form.description"
+            name="description"
             type="textarea"
             rows="4"
-            placeholder="请输入内容"
+            placeholder="请详细描述投诉内容"
             :rules="[{ required: true, message: '请输入投诉内容' }]"
             maxlength="500"
             show-word-limit
@@ -168,14 +171,15 @@ function doSubmit() {
 
         <van-cell-group inset title="投诉人信息">
           <van-field
-            v-model="form.consumerName"
-            name="consumerName"
+            v-model="form.complainantName"
+            name="complainantName"
             label="姓名"
-            placeholder="请输入内容（可匿名）"
+            placeholder="请输入姓名（可匿名）"
+            :rules="[{ required: !form.isAnonymous, message: '请输入姓名' }]"
           />
           <van-field
-            v-model="form.consumerPhone"
-            name="consumerPhone"
+            v-model="form.phone"
+            name="phone"
             label="电话"
             placeholder="请输入手机号"
             type="tel"
@@ -185,6 +189,11 @@ function doSubmit() {
               { pattern: /^1[3-9]\d{9}$/, message: '手机号格式不正确' }
             ]"
           />
+          <div class="anonymous-row">
+            <van-checkbox v-model="form.isAnonymous" shape="square" icon-size="16px">
+              匿名提交
+            </van-checkbox>
+          </div>
         </van-cell-group>
 
         <div class="submit-area">
@@ -240,6 +249,13 @@ function doSubmit() {
 
 .mt-10 {
   margin-top: 10px;
+}
+
+.anonymous-row {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  background: #fff;
 }
 
 .success-page {

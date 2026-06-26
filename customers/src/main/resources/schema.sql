@@ -1,34 +1,3 @@
-CREATE TABLE IF NOT EXISTS product_traceability (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    product_batch_no VARCHAR(64) NOT NULL,
-    product_name VARCHAR(128) NOT NULL,
-    product_spec VARCHAR(128),
-    manufacturer VARCHAR(256),
-    origin VARCHAR(256),
-    production_date DATE,
-    expiration_date DATE,
-    qr_code_url VARCHAR(512),
-    create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    update_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    deleted TINYINT NOT NULL DEFAULT 0,
-    UNIQUE INDEX idx_product_batch_no (product_batch_no)
-);
-
-CREATE TABLE IF NOT EXISTS traceability_node (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    product_batch_no VARCHAR(64) NOT NULL,
-    node_name VARCHAR(128) NOT NULL,
-    node_description TEXT,
-    node_time TIMESTAMP,
-    location VARCHAR(256),
-    operator VARCHAR(128),
-    sort_order INT NOT NULL DEFAULT 0,
-    create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    update_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    deleted TINYINT NOT NULL DEFAULT 0,
-    INDEX idx_product_batch_no (product_batch_no)
-);
-
 CREATE TABLE IF NOT EXISTS scan_record (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     product_batch_no VARCHAR(64) NOT NULL,
@@ -77,15 +46,4 @@ CREATE TABLE IF NOT EXISTS t_complaint_record (
     INDEX idx_batch_number (batch_number),
     INDEX idx_phone (phone),
     INDEX idx_status (status)
-);
-
-CREATE TABLE IF NOT EXISTS consumer (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    phone VARCHAR(20) NOT NULL,
-    nickname VARCHAR(64),
-    avatar VARCHAR(256),
-    create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    update_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    deleted TINYINT NOT NULL DEFAULT 0,
-    UNIQUE INDEX idx_phone (phone)
 );

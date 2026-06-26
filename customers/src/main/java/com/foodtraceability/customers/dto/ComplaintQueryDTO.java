@@ -7,13 +7,15 @@ public class ComplaintQueryDTO {
 
     private String complaintNo;
 
-    private String productBatchNo;
+    private String traceCode;
 
-    private String productName;
+    private String batchNumber;
 
-    private String consumerPhone;
+    private String enterpriseName;
 
-    private Long consumerId;
+    private String phone;
+
+    private String consumerUuid;
 
     private Integer complaintType;
 

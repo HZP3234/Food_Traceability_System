@@ -1,7 +1,6 @@
 package com.foodtraceability.customers.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.foodtraceability.customers.dto.ComplaintFeedbackDTO;
 import com.foodtraceability.customers.dto.ComplaintQueryDTO;
 import com.foodtraceability.customers.dto.ComplaintSubmitDTO;
 import com.foodtraceability.customers.entity.Complaint;
@@ -22,9 +21,4 @@ public interface ComplaintService {
      * 查询投诉详情
      */
     Complaint detail(Long id);
-
-    /**
-     * 处理反馈
-     */
-    Complaint feedback(ComplaintFeedbackDTO dto);
 }

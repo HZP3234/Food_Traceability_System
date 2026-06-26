@@ -29,8 +29,9 @@ function goComplaint() {
   router.push({
     name: 'ComplaintSubmit',
     query: {
-      productBatchNo: data.value.productBatchNo,
-      productName: data.value.manufacturer
+      batchNumber: data.value.productBatchNo,
+      enterpriseName: data.value.manufacturer,
+      traceCode: data.value.traceCode || ''
     }
   })
 }

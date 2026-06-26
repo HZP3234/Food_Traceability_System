@@ -2,7 +2,6 @@ package com.foodtraceability.customers.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.foodtraceability.customers.config.CustomersGlobalExceptionHandler;
-import com.foodtraceability.customers.dto.ComplaintFeedbackDTO;
 import com.foodtraceability.customers.dto.ComplaintQueryDTO;
 import com.foodtraceability.customers.dto.ComplaintSubmitDTO;
 import com.foodtraceability.customers.entity.Complaint;
@@ -54,17 +53,17 @@ class ComplaintControllerTest {
                 .build();
 
         mockComplaint = new Complaint();
-        mockComplaint.setId(1L);
+        mockComplaint.setComplaintRecordId(1L);
         mockComplaint.setComplaintNo("TS2026062300001");
-        mockComplaint.setProductBatchNo("BATCH-001");
-        mockComplaint.setProductName("有机奶粉");
-        mockComplaint.setConsumerName("张三");
-        mockComplaint.setConsumerPhone("13800138000");
+        mockComplaint.setBatchNumber("BATCH-001");
+        mockComplaint.setEnterpriseName("有机奶粉公司");
+        mockComplaint.setComplainantName("张三");
+        mockComplaint.setPhone("13800138000");
         mockComplaint.setComplaintType(1);
-        mockComplaint.setComplaintTitle("产品包装破损");
-        mockComplaint.setComplaintContent("收到产品时发现外包装严重破损");
-        mockComplaint.setImageUrls("https://img.example.com/1.jpg");
-        mockComplaint.setStatus(0);
+        mockComplaint.setDescription("收到产品时发现外包装严重破损");
+        mockComplaint.setPhotoUrls("https://img.example.com/1.jpg");
+        mockComplaint.setStatus(1);
+        mockComplaint.setSubmitTime(LocalDateTime.now());
         mockComplaint.setCreateTime(LocalDateTime.now());
         mockComplaint.setUpdateTime(LocalDateTime.now());
     }
@@ -80,13 +79,12 @@ class ComplaintControllerTest {
                     .thenReturn(mockComplaint);
 
             ComplaintSubmitDTO dto = new ComplaintSubmitDTO();
-            dto.setProductBatchNo("BATCH-001");
-            dto.setProductName("有机奶粉");
-            dto.setConsumerName("张三");
-            dto.setConsumerPhone("13800138000");
+            dto.setBatchNumber("BATCH-001");
+            dto.setEnterpriseName("有机奶粉公司");
+            dto.setComplainantName("张三");
+            dto.setPhone("13800138000");
             dto.setComplaintType(1);
-            dto.setComplaintTitle("产品包装破损");
-            dto.setComplaintContent("收到产品时发现外包装严重破损");
+            dto.setDescription("收到产品时发现外包装严重破损");
 
             mockMvc.perform(post("/api/complaint/submit")
                             .contentType(MediaType.APPLICATION_JSON)
@@ -95,9 +93,9 @@ class ComplaintControllerTest {
                     .andExpect(jsonPath("$.code").value(200))
                     .andExpect(jsonPath("$.message").value("success"))
                     .andExpect(jsonPath("$.data.complaintNo").value("TS2026062300001"))
-                    .andExpect(jsonPath("$.data.productName").value("有机奶粉"))
-                    .andExpect(jsonPath("$.data.consumerName").value("张三"))
-                    .andExpect(jsonPath("$.data.status").value(0));
+                    .andExpect(jsonPath("$.data.enterpriseName").value("有机奶粉公司"))
+                    .andExpect(jsonPath("$.data.complainantName").value("张三"))
+                    .andExpect(jsonPath("$.data.status").value(1));
         }
 
         @Test
@@ -119,13 +117,12 @@ class ComplaintControllerTest {
         @DisplayName("手机号格式错误时返回400")
         void testSubmitInvalidPhone() throws Exception {
             ComplaintSubmitDTO dto = new ComplaintSubmitDTO();
-            dto.setProductBatchNo("BATCH-001");
-            dto.setProductName("有机奶粉");
-            dto.setConsumerName("张三");
-            dto.setConsumerPhone("12345");
+            dto.setBatchNumber("BATCH-001");
+            dto.setEnterpriseName("有机奶粉公司");
+            dto.setComplainantName("张三");
+            dto.setPhone("12345");
             dto.setComplaintType(1);
-            dto.setComplaintTitle("产品包装破损");
-            dto.setComplaintContent("收到产品时发现外包装严重破损");
+            dto.setDescription("收到产品时发现外包装严重破损");
 
             mockMvc.perform(post("/api/complaint/submit")
                             .contentType(MediaType.APPLICATION_JSON)
@@ -141,13 +138,12 @@ class ComplaintControllerTest {
         @DisplayName("投诉类型超出范围时返回400")
         void testSubmitInvalidComplaintType() throws Exception {
             ComplaintSubmitDTO dto = new ComplaintSubmitDTO();
-            dto.setProductBatchNo("BATCH-001");
-            dto.setProductName("有机奶粉");
-            dto.setConsumerName("张三");
-            dto.setConsumerPhone("13800138000");
+            dto.setBatchNumber("BATCH-001");
+            dto.setEnterpriseName("有机奶粉公司");
+            dto.setComplainantName("张三");
+            dto.setPhone("13800138000");
             dto.setComplaintType(99);
-            dto.setComplaintTitle("产品包装破损");
-            dto.setComplaintContent("收到产品时发现外包装严重破损");
+            dto.setDescription("收到产品时发现外包装严重破损");
 
             mockMvc.perform(post("/api/complaint/submit")
                             .contentType(MediaType.APPLICATION_JSON)
@@ -155,28 +151,6 @@ class ComplaintControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.code").value(400))
                     .andExpect(jsonPath("$.message", containsString("投诉类型必须在1-5之间")));
-
-            verify(complaintService, never()).submit(any());
-        }
-
-        @Test
-        @DisplayName("投诉标题过长时返回400")
-        void testSubmitTitleTooLong() throws Exception {
-            ComplaintSubmitDTO dto = new ComplaintSubmitDTO();
-            dto.setProductBatchNo("BATCH-001");
-            dto.setProductName("有机奶粉");
-            dto.setConsumerName("张三");
-            dto.setConsumerPhone("13800138000");
-            dto.setComplaintType(1);
-            dto.setComplaintTitle("A".repeat(257));
-            dto.setComplaintContent("收到产品时发现外包装严重破损");
-
-            mockMvc.perform(post("/api/complaint/submit")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(dto)))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.code").value(400))
-                    .andExpect(jsonPath("$.message", containsString("投诉标题不能超过256字")));
 
             verify(complaintService, never()).submit(any());
         }
@@ -204,7 +178,7 @@ class ComplaintControllerTest {
                     .andExpect(jsonPath("$.code").value(200))
                     .andExpect(jsonPath("$.data.total").value(2))
                     .andExpect(jsonPath("$.data.records.length()").value(1))
-                    .andExpect(jsonPath("$.data.records[0].consumerName").value("张三"));
+                    .andExpect(jsonPath("$.data.records[0].complainantName").value("张三"));
         }
 
         @Test
@@ -236,7 +210,7 @@ class ComplaintControllerTest {
                     .thenReturn(mockPage);
 
             ComplaintQueryDTO queryDTO = new ComplaintQueryDTO();
-            queryDTO.setStatus(0);
+            queryDTO.setStatus(1);
             queryDTO.setComplaintType(1);
             queryDTO.setPageNum(1);
             queryDTO.setPageSize(10);
@@ -262,10 +236,10 @@ class ComplaintControllerTest {
             mockMvc.perform(get("/api/complaint/detail/1"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.code").value(200))
-                    .andExpect(jsonPath("$.data.id").value(1))
+                    .andExpect(jsonPath("$.data.complaintRecordId").value(1))
                     .andExpect(jsonPath("$.data.complaintNo").value("TS2026062300001"))
-                    .andExpect(jsonPath("$.data.consumerName").value("张三"))
-                    .andExpect(jsonPath("$.data.productName").value("有机奶粉"));
+                    .andExpect(jsonPath("$.data.complainantName").value("张三"))
+                    .andExpect(jsonPath("$.data.enterpriseName").value("有机奶粉公司"));
         }
 
         @Test
@@ -278,91 +252,6 @@ class ComplaintControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.code").value(500))
                     .andExpect(jsonPath("$.message").value("投诉记录不存在"));
-        }
-    }
-
-    @Nested
-    @DisplayName("PUT /api/complaint/feedback - 处理反馈")
-    class FeedbackTests {
-
-        @Test
-        @DisplayName("正常反馈，返回200和更新后的投诉")
-        void testFeedbackSuccess() throws Exception {
-            Complaint feedbackComplaint = new Complaint();
-            feedbackComplaint.setId(1L);
-            feedbackComplaint.setComplaintNo("TS2026062300001");
-            feedbackComplaint.setStatus(2);
-            feedbackComplaint.setFeedbackContent("已处理完毕");
-            feedbackComplaint.setFeedbackBy("管理员");
-            feedbackComplaint.setFeedbackTime(LocalDateTime.now());
-
-            when(complaintService.feedback(any(ComplaintFeedbackDTO.class)))
-                    .thenReturn(feedbackComplaint);
-
-            ComplaintFeedbackDTO dto = new ComplaintFeedbackDTO();
-            dto.setComplaintId(1L);
-            dto.setFeedbackContent("已处理完毕");
-            dto.setFeedbackBy("管理员");
-
-            mockMvc.perform(put("/api/complaint/feedback")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(dto)))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.code").value(200))
-                    .andExpect(jsonPath("$.data.status").value(2))
-                    .andExpect(jsonPath("$.data.feedbackContent").value("已处理完毕"))
-                    .andExpect(jsonPath("$.data.feedbackBy").value("管理员"));
-        }
-
-        @Test
-        @DisplayName("缺少投诉ID时返回400")
-        void testFeedbackMissingComplaintId() throws Exception {
-            ComplaintFeedbackDTO dto = new ComplaintFeedbackDTO();
-            dto.setFeedbackContent("处理反馈");
-            dto.setFeedbackBy("管理员");
-
-            mockMvc.perform(put("/api/complaint/feedback")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(dto)))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.code").value(400))
-                    .andExpect(jsonPath("$.message", containsString("投诉ID不能为空")));
-
-            verify(complaintService, never()).feedback(any());
-        }
-
-        @Test
-        @DisplayName("缺少反馈内容时返回400")
-        void testFeedbackMissingContent() throws Exception {
-            ComplaintFeedbackDTO dto = new ComplaintFeedbackDTO();
-            dto.setComplaintId(1L);
-            dto.setFeedbackBy("管理员");
-
-            mockMvc.perform(put("/api/complaint/feedback")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(dto)))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.code").value(400))
-                    .andExpect(jsonPath("$.message", containsString("反馈内容不能为空")));
-
-            verify(complaintService, never()).feedback(any());
-        }
-
-        @Test
-        @DisplayName("缺少反馈人时返回400")
-        void testFeedbackMissingFeedbackBy() throws Exception {
-            ComplaintFeedbackDTO dto = new ComplaintFeedbackDTO();
-            dto.setComplaintId(1L);
-            dto.setFeedbackContent("已处理完毕");
-
-            mockMvc.perform(put("/api/complaint/feedback")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(dto)))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.code").value(400))
-                    .andExpect(jsonPath("$.message", containsString("反馈人不能为空")));
-
-            verify(complaintService, never()).feedback(any());
         }
     }
 }

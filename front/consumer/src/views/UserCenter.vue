@@ -26,7 +26,7 @@ onMounted(async () => {
       }
     } catch {}
 
-    queryComplaintPage({ pageNum: 1, pageSize: 1, consumerPhone: store.userInfo.phone })
+    queryComplaintPage({ pageNum: 1, pageSize: 1, phone: store.userInfo.phone })
       .then((res) => {
         if (res.code === 200 && res.data) {
           complaintCount.value = res.data.total

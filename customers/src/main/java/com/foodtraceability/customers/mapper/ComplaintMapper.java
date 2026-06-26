@@ -14,9 +14,9 @@ public interface ComplaintMapper extends BaseMapper<Complaint> {
 
     Complaint selectByComplaintNo(@Param("complaintNo") String complaintNo);
 
-    List<Complaint> selectByConsumerId(@Param("consumerId") Long consumerId);
+    List<Complaint> selectByConsumerUuid(@Param("consumerUuid") String consumerUuid);
 
-    List<Complaint> selectByProductBatchNo(@Param("batchNo") String batchNo);
+    List<Complaint> selectByBatchNumber(@Param("batchNumber") String batchNumber);
 
     List<Complaint> selectByStatus(@Param("status") Integer status);
 
@@ -24,6 +24,7 @@ public interface ComplaintMapper extends BaseMapper<Complaint> {
                                             @Param("complaintNo") String complaintNo,
                                             @Param("complaintType") Integer complaintType,
                                             @Param("status") Integer status,
-                                            @Param("consumerPhone") String consumerPhone,
-                                            @Param("productName") String productName);
+                                            @Param("phone") String phone,
+                                            @Param("enterpriseName") String enterpriseName,
+                                            @Param("consumerUuid") String consumerUuid);
 }

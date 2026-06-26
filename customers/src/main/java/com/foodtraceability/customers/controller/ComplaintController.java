@@ -1,7 +1,6 @@
 package com.foodtraceability.customers.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.foodtraceability.customers.dto.ComplaintFeedbackDTO;
 import com.foodtraceability.customers.dto.ComplaintQueryDTO;
 import com.foodtraceability.customers.dto.ComplaintSubmitDTO;
 import com.foodtraceability.customers.dto.Result;
@@ -33,12 +32,6 @@ public class ComplaintController {
     @GetMapping("/detail/{id}")
     public Result<Complaint> detail(@PathVariable Long id) {
         Complaint complaint = complaintService.detail(id);
-        return Result.success(complaint);
-    }
-
-    @PutMapping("/feedback")
-    public Result<Complaint> feedback(@Valid @RequestBody ComplaintFeedbackDTO dto) {
-        Complaint complaint = complaintService.feedback(dto);
         return Result.success(complaint);
     }
 }

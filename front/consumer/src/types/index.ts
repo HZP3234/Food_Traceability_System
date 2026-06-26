@@ -52,42 +52,52 @@ export interface TraceabilityVO {
 
 // 投诉
 export interface Complaint {
-  id: number
+  complaintRecordId: number
   complaintNo: string
-  productBatchNo: string
-  productName: string
-  consumerName: string
-  consumerPhone: string
-  consumerId?: number
+  traceCode: string
+  batchNumber: string
+  enterpriseUuid: string
+  enterpriseName: string
+  consumerUuid: string
+  complainantName: string
+  phone: string
+  isAnonymous: number
   complaintType: number
-  complaintTitle: string
-  complaintContent: string
-  imageUrls: string
+  description: string
+  photoUrls: string
+  priority: number
   status: number
-  feedbackContent: string
-  feedbackTime: string
-  feedbackBy: string
+  handlerId: string
+  handlerName: string
+  handlingConclusion: string
+  handlingProofUrls: string
+  submitTime: string
+  acceptTime: string
+  closeTime: string
   createTime: string
+  updateTime: string
 }
 
 export interface ComplaintSubmitDTO {
-  productBatchNo: string
-  productName: string
-  consumerName: string
-  consumerPhone: string
-  consumerId?: number
+  traceCode?: string
+  batchNumber: string
+  enterpriseUuid?: string
+  enterpriseName: string
+  consumerUuid?: string
+  complainantName: string
+  phone: string
+  isAnonymous?: number
   complaintType: number
-  complaintTitle: string
-  complaintContent: string
-  imageUrls?: string
+  description: string
+  photoUrls?: string
 }
 
 export interface ComplaintQueryDTO {
   complaintNo?: string
-  productBatchNo?: string
-  productName?: string
-  consumerPhone?: string
-  consumerId?: number
+  batchNumber?: string
+  enterpriseName?: string
+  phone?: string
+  consumerUuid?: string
   complaintType?: number
   status?: number
   pageNum?: number

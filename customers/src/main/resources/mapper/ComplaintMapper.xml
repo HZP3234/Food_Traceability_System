@@ -4,23 +4,32 @@
 <mapper namespace="com.foodtraceability.customers.mapper.ComplaintMapper">
 
     <resultMap id="BaseResultMap" type="com.foodtraceability.customers.entity.Complaint">
-        <id column="id" property="id"/>
+        <id column="complaint_record_id" property="complaintRecordId"/>
         <result column="complaint_no" property="complaintNo"/>
-        <result column="product_batch_no" property="productBatchNo"/>
-        <result column="product_name" property="productName"/>
-        <result column="consumer_name" property="consumerName"/>
-        <result column="consumer_phone" property="consumerPhone"/>
-        <result column="consumer_id" property="consumerId"/>
+        <result column="trace_code" property="traceCode"/>
+        <result column="batch_number" property="batchNumber"/>
+        <result column="enterprise_uuid" property="enterpriseUuid"/>
+        <result column="enterprise_name" property="enterpriseName"/>
+        <result column="consumer_uuid" property="consumerUuid"/>
+        <result column="complainant_name" property="complainantName"/>
+        <result column="phone" property="phone"/>
+        <result column="is_anonymous" property="isAnonymous"/>
         <result column="complaint_type" property="complaintType"/>
-        <result column="complaint_title" property="complaintTitle"/>
-        <result column="complaint_content" property="complaintContent"/>
-        <result column="image_urls" property="imageUrls"/>
+        <result column="description" property="description"/>
+        <result column="photo_urls" property="photoUrls"/>
+        <result column="priority" property="priority"/>
         <result column="status" property="status"/>
-        <result column="feedback_content" property="feedbackContent"/>
-        <result column="feedback_time" property="feedbackTime"/>
-        <result column="feedback_by" property="feedbackBy"/>
+        <result column="handler_id" property="handlerId"/>
+        <result column="handler_name" property="handlerName"/>
+        <result column="handling_conclusion" property="handlingConclusion"/>
+        <result column="handling_proof_urls" property="handlingProofUrls"/>
+        <result column="submit_time" property="submitTime"/>
+        <result column="accept_time" property="acceptTime"/>
+        <result column="close_time" property="closeTime"/>
         <result column="create_time" property="createTime"/>
         <result column="update_time" property="updateTime"/>
+        <result column="create_by" property="createBy"/>
+        <result column="update_by" property="updateBy"/>
         <result column="is_deleted" property="isDeleted"/>
     </resultMap>
 
@@ -31,16 +40,16 @@
         LIMIT 1
     </select>
 
-    <select id="selectByConsumerId" resultMap="BaseResultMap">
+    <select id="selectByConsumerUuid" resultMap="BaseResultMap">
         SELECT * FROM t_complaint_record
-        WHERE consumer_id = #{consumerId}
+        WHERE consumer_uuid = #{consumerUuid}
           AND is_deleted = 0
         ORDER BY create_time DESC
     </select>
 
-    <select id="selectByProductBatchNo" resultMap="BaseResultMap">
+    <select id="selectByBatchNumber" resultMap="BaseResultMap">
         SELECT * FROM t_complaint_record
-        WHERE product_batch_no = #{batchNo}
+        WHERE batch_number = #{batchNumber}
           AND is_deleted = 0
         ORDER BY create_time DESC
     </select>
@@ -64,11 +73,14 @@
         <if test="status != null">
             AND status = #{status}
         </if>
-        <if test="consumerPhone != null and consumerPhone != ''">
-            AND consumer_phone LIKE CONCAT('%', #{consumerPhone}, '%')
+        <if test="phone != null and phone != ''">
+            AND phone LIKE CONCAT('%', #{phone}, '%')
         </if>
-        <if test="productName != null and productName != ''">
-            AND product_name LIKE CONCAT('%', #{productName}, '%')
+        <if test="enterpriseName != null and enterpriseName != ''">
+            AND enterprise_name LIKE CONCAT('%', #{enterpriseName}, '%')
+        </if>
+        <if test="consumerUuid != null and consumerUuid != ''">
+            AND consumer_uuid = #{consumerUuid}
         </if>
         ORDER BY create_time DESC
     </select>

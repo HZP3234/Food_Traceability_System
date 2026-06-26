@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, inject, type Ref } from 'vue'
+import { ref, onMounted, inject, type Ref } from 'vue'
 import { Check, Close, Refresh, Search, View, Warning, Timer, CircleCheck, CircleClose, Promotion } from '@element-plus/icons-vue'
 import Pagination from '../components/Pagination.vue'
+import { complaintApi } from '../services/api'
 import type { RoleKey } from '../config/navigation'
 
 const currentRole = inject<Ref<RoleKey>>('currentRole')
@@ -11,6 +12,7 @@ const loading = ref(false)
 const list = ref<any[]>([])
 const currentPage = ref(1)
 const pageSize = ref(10)
+const total = ref(0)
 
 const complaintTypeLabels: Record<number, string> = { 1: '产品质量', 2: '食品安全', 3: '包装问题', 4: '虚假宣传', 5: '其他' }
 const statusLabels: Record<number, string> = { 1: '已提交', 2: '处理中', 3: '已处理', 4: '已驳回' }
@@ -34,20 +36,17 @@ const handlingId = ref<number | null>(null)
 
 const filters = ref({ status: '', complaintType: '', priority: '', complainantName: '', enterpriseName: '', submitTimeStart: '', submitTimeEnd: '' })
 
-const paginatedList = computed(() => {
-  const start = (currentPage.value - 1) * pageSize.value
-  return list.value.slice(start, start + pageSize.value)
-})
-
 // ==================== Stats ====================
-const stats = computed(() => ({
-  total: list.value.length,
-  pending: list.value.filter((r: any) => r.status === 1).length,
-  processing: list.value.filter((r: any) => r.status === 2).length,
-  resolved: list.value.filter((r: any) => r.status === 3).length,
-  rejected: list.value.filter((r: any) => r.status === 4).length,
-  urgent: list.value.filter((r: any) => r.priority === 2 || r.priority === 3).length,
-}))
+const stats = ref({ total: 0, pending: 0, processing: 0, resolved: 0, rejected: 0, urgent: 0 })
+
+async function loadStats() {
+  try {
+    const json: any = await complaintApi.stats()
+    if (json.code === 200 && json.data) {
+      stats.value = json.data
+    }
+  } catch { /* ignore */ }
+}
 
 // ==================== API helpers ====================
 function notify(type: 'success' | 'error', text: string) { toast.value = { type, text }; setTimeout(() => (toast.value = null), 2600) }
@@ -70,8 +69,7 @@ function priorityClass(priority: number) {
 async function loadList() {
   loading.value = true
   try {
-    // Build filter params
-    const body: Record<string, any> = { page: 1, size: 200 }
+    const body: Record<string, any> = { page: currentPage.value, size: pageSize.value }
     if (filters.value.status) body.status = Number(filters.value.status)
     if (filters.value.complaintType) body.complaintType = Number(filters.value.complaintType)
     if (filters.value.priority) body.priority = Number(filters.value.priority)
@@ -80,27 +78,25 @@ async function loadList() {
     if (filters.value.submitTimeStart) body.submitTimeStart = filters.value.submitTimeStart
     if (filters.value.submitTimeEnd) body.submitTimeEnd = filters.value.submitTimeEnd
 
-    const res: any = await fetch('/api/regulation/complaint/page', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${sessionStorage.getItem('fts-admin-token')}`,
-      },
-      body: JSON.stringify(body),
-    })
-    const json = await res.json()
+    const json: any = await complaintApi.page(body)
     if (json.code === 200 && json.data) {
       list.value = json.data.records ?? []
+      total.value = json.data.total ?? 0
     } else {
       notify('error', json.message || '加载失败')
     }
-    currentPage.value = 1
   } catch (e: any) { notify('error', '加载投诉列表失败: ' + e.message) }
   finally { loading.value = false }
 }
 
 function resetFilters() {
   filters.value = { status: '', complaintType: '', priority: '', complainantName: '', enterpriseName: '', submitTimeStart: '', submitTimeEnd: '' }
+  currentPage.value = 1
+  loadList()
+}
+
+function onPageChange(page: number) {
+  currentPage.value = page
   loadList()
 }
 
@@ -110,10 +106,7 @@ async function openDetail(row: any) {
   handleLogs.value = []
   showDetail.value = true
   try {
-    const res: any = await fetch(`/api/regulation/complaint/detail/${row.complaintRecordId}`, {
-      headers: { 'Authorization': `Bearer ${sessionStorage.getItem('fts-admin-token')}` },
-    })
-    const json = await res.json()
+    const json: any = await complaintApi.detail(row.complaintRecordId)
     if (json.code === 200 && json.data) {
       viewing.value = json.data.complaint
       handleLogs.value = json.data.handleLogs ?? []
@@ -144,19 +137,12 @@ async function doHandle() {
     if (handleProofUrls.value) body.handlingProofUrls = handleProofUrls.value
     if (handleAction.value === 'ACCEPT' && handlePriority.value) body.priority = handlePriority.value
 
-    const res: any = await fetch('/api/regulation/complaint/handle', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${sessionStorage.getItem('fts-admin-token')}`,
-      },
-      body: JSON.stringify(body),
-    })
-    const json = await res.json()
+    const json: any = await complaintApi.handle(body)
     if (json.code === 200) {
       notify('success', actionLabels[handleAction.value] + '成功')
       showHandleDialog.value = false
       loadList()
+      loadStats()
       if (showDetail.value && viewing.value) openDetail(viewing.value)
     } else {
       notify('error', json.message || '操作失败')
@@ -165,7 +151,7 @@ async function doHandle() {
 }
 
 // ==================== Lifecycle ====================
-onMounted(() => { loadList() })
+onMounted(() => { loadList(); loadStats() })
 </script>
 
 <template>
@@ -252,7 +238,7 @@ onMounted(() => { loadList() })
           <tbody>
             <tr v-if="loading"><td colspan="9" class="empty">加载中...</td></tr>
             <tr v-else-if="!list.length"><td colspan="9" class="empty">暂无投诉数据</td></tr>
-            <tr v-for="row in paginatedList" :key="row.complaintRecordId">
+            <tr v-for="row in list" :key="row.complaintRecordId">
               <td><code>{{ row.complaintNo }}</code></td>
               <td>{{ complaintTypeLabels[row.complaintType] || '-' }}</td>
               <td>
@@ -275,7 +261,7 @@ onMounted(() => { loadList() })
           </tbody>
         </table>
       </div>
-      <Pagination v-model="currentPage" :total="list.length" :page-size="pageSize" />
+      <Pagination :model-value="currentPage" :total="total" :page-size="pageSize" @update:model-value="onPageChange" />
     </section>
 
     <!-- 详情模态框 -->

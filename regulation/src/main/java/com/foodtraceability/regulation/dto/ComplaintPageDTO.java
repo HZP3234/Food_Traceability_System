@@ -2,6 +2,8 @@ package com.foodtraceability.regulation.dto;
 
 import lombok.Data;
 
+import java.time.LocalDate;
+
 /**
  * 投诉分页查询请求 DTO
  */
@@ -33,8 +35,8 @@ public class ComplaintPageDTO {
     private Integer priority;
 
     /** 提交时间起 (yyyy-MM-dd) */
-    private String submitTimeStart;
+    private LocalDate submitTimeStart;
 
     /** 提交时间止 (yyyy-MM-dd) */
-    private String submitTimeEnd;
+    private LocalDate submitTimeEnd;
 }

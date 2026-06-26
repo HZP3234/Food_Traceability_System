@@ -11,32 +11,32 @@ const router = useRouter()
 const store = useAppStore()
 
 const filters = reactive({
-  productName: '',
+  enterpriseName: '',
   complaintType: undefined as number | undefined,
   status: undefined as number | undefined
 })
 
 const complaintTypes = [
-  { value: 1, label: '质量问题' },
-  { value: 2, label: '包装问题' },
-  { value: 3, label: '保质期异常' },
-  { value: 4, label: '假冒伪劣' },
-  { value: 5, label: '其他问题' }
+  { value: 1, label: '产品质量' },
+  { value: 2, label: '食品安全' },
+  { value: 3, label: '包装问题' },
+  { value: 4, label: '虚假宣传' },
+  { value: 5, label: '其他' }
 ]
 
 const statusOptions = [
-  { value: 0, label: '待处理' },
-  { value: 1, label: '处理中' },
-  { value: 2, label: '已处理' },
-  { value: 3, label: '已关闭' }
+  { value: 1, label: '已提交' },
+  { value: 2, label: '处理中' },
+  { value: 3, label: '已处理' },
+  { value: 4, label: '已驳回' }
 ]
 
-const typeMap: Record<number, string> = { 1: '质量问题', 2: '包装问题', 3: '保质期异常', 4: '假冒伪劣', 5: '其他问题' }
+const typeMap: Record<number, string> = { 1: '产品质量', 2: '食品安全', 3: '包装问题', 4: '虚假宣传', 5: '其他' }
 const statusMap: Record<number, { text: string; color: string }> = {
-  0: { text: '待处理', color: '#f90' },
-  1: { text: '处理中', color: '#1989fa' },
-  2: { text: '已处理', color: '#07c160' },
-  3: { text: '已关闭', color: '#969799' }
+  1: { text: '已提交', color: '#f90' },
+  2: { text: '处理中', color: '#1989fa' },
+  3: { text: '已处理', color: '#07c160' },
+  4: { text: '已驳回', color: '#969799' }
 }
 
 const list = ref<Complaint[]>([])
@@ -52,10 +52,11 @@ const showStatusSheet = ref(false)
 
 function buildParams() {
   return {
-    productName: filters.productName || undefined,
+    enterpriseName: filters.enterpriseName || undefined,
     complaintType: filters.complaintType,
     status: filters.status,
-    consumerPhone: store.userInfo?.phone || undefined,
+    phone: store.userInfo?.phone || undefined,
+    consumerUuid: store.userInfo?.consumerUuid || undefined,
     pageNum: page.pageNum,
     pageSize: page.pageSize
   }
@@ -66,9 +67,7 @@ function fetchData(append: boolean) {
   loading.value = true
   queryComplaintPage(buildParams())
     .then((res) => {
-      console.log('complaint page response:', res)
       if (res.code === 200 && res.data) {
-        console.log('records count:', res.data.records?.length, 'total:', res.data.total)
         const { records, current, pages } = res.data
         list.value = append ? [...list.value, ...(records || [])] : (records || [])
         hasMore.value = current < pages
@@ -148,9 +147,9 @@ onMounted(() => {
     <!-- 筛选区 -->
     <div class="filter-section">
       <van-field
-        v-model="filters.productName"
-        label="公司名"
-        placeholder="请输入公司名称"
+        v-model="filters.enterpriseName"
+        label="企业名称"
+        placeholder="请输入企业名称"
         clearable
       />
       <div class="filter-row">
@@ -198,12 +197,12 @@ onMounted(() => {
 
       <div
         v-for="item in list"
-        :key="item.id"
+        :key="item.complaintRecordId"
         class="result-card"
       >
         <div class="card-top">
           <div class="card-info">
-            <span class="card-company">{{ item.productName }}</span>
+            <span class="card-company">{{ item.enterpriseName }}</span>
             <span class="card-type">{{ typeMap[item.complaintType] || '其他' }}</span>
           </div>
           <span class="card-status" :style="{ color: statusMap[item.status]?.color }">
@@ -273,31 +272,27 @@ onMounted(() => {
           </div>
           <div class="detail-row">
             <span class="detail-label">产品批次</span>
-            <span class="detail-value">{{ detailItem.productBatchNo }}</span>
+            <span class="detail-value">{{ detailItem.batchNumber }}</span>
           </div>
           <div class="detail-row">
-            <span class="detail-label">产品/公司</span>
-            <span class="detail-value">{{ detailItem.productName }}</span>
+            <span class="detail-label">被投诉企业</span>
+            <span class="detail-value">{{ detailItem.enterpriseName }}</span>
           </div>
           <div class="detail-row">
             <span class="detail-label">投诉类型</span>
             <span class="detail-value">{{ typeMap[detailItem.complaintType] || '-' }}</span>
           </div>
-          <div class="detail-row">
-            <span class="detail-label">投诉内容</span>
-            <span class="detail-value">{{ detailItem.complaintTitle }}</span>
-          </div>
           <div class="detail-row full-width">
-            <span class="detail-label">详细描述</span>
-            <span class="detail-value desc">{{ detailItem.complaintContent }}</span>
+            <span class="detail-label">投诉描述</span>
+            <span class="detail-value desc">{{ detailItem.description }}</span>
           </div>
           <div class="detail-row">
             <span class="detail-label">投诉人</span>
-            <span class="detail-value">{{ detailItem.consumerName }}</span>
+            <span class="detail-value">{{ detailItem.isAnonymous ? '匿名用户' : detailItem.complainantName }}</span>
           </div>
           <div class="detail-row">
             <span class="detail-label">联系电话</span>
-            <span class="detail-value">{{ detailItem.consumerPhone }}</span>
+            <span class="detail-value">{{ detailItem.isAnonymous ? '***' : detailItem.phone }}</span>
           </div>
           <div class="detail-row">
             <span class="detail-label">处理状态</span>
@@ -305,13 +300,13 @@ onMounted(() => {
               {{ statusMap[detailItem.status]?.text || '-' }}
             </span>
           </div>
-          <div v-if="detailItem.feedbackContent" class="detail-row full-width">
-            <span class="detail-label">处理反馈</span>
-            <span class="detail-value desc">{{ detailItem.feedbackContent }}</span>
+          <div v-if="detailItem.handlingConclusion" class="detail-row full-width">
+            <span class="detail-label">处理结论</span>
+            <span class="detail-value desc">{{ detailItem.handlingConclusion }}</span>
           </div>
           <div class="detail-row">
             <span class="detail-label">提交时间</span>
-            <span class="detail-value">{{ formatTime(detailItem.createTime) }}</span>
+            <span class="detail-value">{{ formatTime(detailItem.submitTime || detailItem.createTime) }}</span>
           </div>
         </div>
       </div>

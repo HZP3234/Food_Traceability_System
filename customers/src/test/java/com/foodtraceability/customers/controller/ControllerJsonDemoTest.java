@@ -138,9 +138,9 @@ class ControllerJsonDemoTest {
     @DisplayName("2. POST /api/complaint/submit - 参数校验失败")
     void demoSubmitValidationError() throws Exception {
         ComplaintSubmitDTO dto = new ComplaintSubmitDTO();
-        dto.setProductBatchNo("BATCH-001");
-        dto.setConsumerPhone("12345");
-        // 故意缺少 productName, consumerName, complaintType, complaintTitle, complaintContent
+        dto.setBatchNumber("BATCH-001");
+        dto.setPhone("12345");
+        // 故意缺少 enterpriseName, complainantName, complaintType, description
         // 同时手机号格式不正确
 
         appendHeader("POST /api/complaint/submit - 参数校验失败");
@@ -161,18 +161,18 @@ class ControllerJsonDemoTest {
     @DisplayName("3. POST /api/complaint/page - 分页查询")
     void demoPage() throws Exception {
         Complaint c1 = new Complaint();
-        c1.setId(1L); c1.setComplaintNo("TS2026062300001"); c1.setProductName("有机奶粉");
-        c1.setConsumerName("张三"); c1.setConsumerPhone("13800138000");
-        c1.setComplaintType(1); c1.setComplaintTitle("产品包装破损");
-        c1.setComplaintContent("外包装严重破损"); c1.setStatus(0);
+        c1.setComplaintRecordId(1L); c1.setComplaintNo("TS2026062300001"); c1.setEnterpriseName("有机奶粉公司");
+        c1.setComplainantName("张三"); c1.setPhone("13800138000");
+        c1.setComplaintType(1); c1.setDescription("外包装严重破损"); c1.setStatus(1);
+        c1.setSubmitTime(LocalDateTime.of(2026, 6, 23, 10, 30, 0));
         c1.setCreateTime(LocalDateTime.of(2026, 6, 23, 10, 30, 0));
         c1.setUpdateTime(LocalDateTime.of(2026, 6, 23, 10, 30, 0));
 
         Complaint c2 = new Complaint();
-        c2.setId(2L); c2.setComplaintNo("TS2026062300002"); c2.setProductName("鲜牛奶");
-        c2.setConsumerName("李四"); c2.setConsumerPhone("13900139000");
-        c2.setComplaintType(2); c2.setComplaintTitle("产品有异味");
-        c2.setComplaintContent("打开后发现有异味"); c2.setStatus(0);
+        c2.setComplaintRecordId(2L); c2.setComplaintNo("TS2026062300002"); c2.setEnterpriseName("鲜牛奶公司");
+        c2.setComplainantName("李四"); c2.setPhone("13900139000");
+        c2.setComplaintType(2); c2.setDescription("打开后发现有异味"); c2.setStatus(1);
+        c2.setSubmitTime(LocalDateTime.of(2026, 6, 23, 11, 0, 0));
         c2.setCreateTime(LocalDateTime.of(2026, 6, 23, 11, 0, 0));
         c2.setUpdateTime(LocalDateTime.of(2026, 6, 23, 11, 0, 0));
 
@@ -183,9 +183,9 @@ class ControllerJsonDemoTest {
         when(complaintService.page(any(ComplaintQueryDTO.class))).thenReturn(mockPage);
 
         ComplaintQueryDTO queryDTO = new ComplaintQueryDTO();
-        queryDTO.setStatus(0); queryDTO.setPageNum(1); queryDTO.setPageSize(10);
+        queryDTO.setStatus(1); queryDTO.setPageNum(1); queryDTO.setPageSize(10);
 
-        appendHeader("POST /api/complaint/page - 分页查询（status=0 待处理）");
+        appendHeader("POST /api/complaint/page - 分页查询（status=1 已提交）");
         appendRequest("POST", "/api/complaint/page", queryDTO);
 
         MvcResult result = complaintMvc.perform(post("/api/complaint/page")
@@ -202,13 +202,13 @@ class ControllerJsonDemoTest {
     @DisplayName("4. GET /api/complaint/detail/{id} - 投诉详情")
     void demoDetail() throws Exception {
         Complaint detail = new Complaint();
-        detail.setId(1L); detail.setComplaintNo("TS2026062300001");
-        detail.setProductBatchNo("BATCH-001"); detail.setProductName("有机奶粉");
-        detail.setConsumerName("张三"); detail.setConsumerPhone("13800138000");
-        detail.setComplaintType(1); detail.setComplaintTitle("产品包装破损");
-        detail.setComplaintContent("收到产品时发现外包装严重破损，内部密封已破裂");
-        detail.setImageUrls("https://img.example.com/1.jpg,https://img.example.com/2.jpg");
-        detail.setStatus(0);
+        detail.setComplaintRecordId(1L); detail.setComplaintNo("TS2026062300001");
+        detail.setBatchNumber("BATCH-001"); detail.setEnterpriseName("有机奶粉公司");
+        detail.setComplainantName("张三"); detail.setPhone("13800138000");
+        detail.setComplaintType(1); detail.setDescription("收到产品时发现外包装严重破损，内部密封已破裂");
+        detail.setPhotoUrls("https://img.example.com/1.jpg,https://img.example.com/2.jpg");
+        detail.setStatus(1);
+        detail.setSubmitTime(LocalDateTime.of(2026, 6, 23, 10, 30, 0));
         detail.setCreateTime(LocalDateTime.of(2026, 6, 23, 10, 30, 0));
         detail.setUpdateTime(LocalDateTime.of(2026, 6, 23, 10, 30, 0));
 
@@ -225,40 +225,10 @@ class ControllerJsonDemoTest {
         appendResponse(result);
     }
 
-    @Test @Order(5)
-    @DisplayName("5. PUT /api/complaint/feedback - 处理反馈")
-    void demoFeedback() throws Exception {
-        Complaint feedbackResult = new Complaint();
-        feedbackResult.setId(1L); feedbackResult.setComplaintNo("TS2026062300001");
-        feedbackResult.setStatus(2);
-        feedbackResult.setFeedbackContent("已联系消费者致歉并安排补发，消费者表示满意");
-        feedbackResult.setFeedbackBy("客服管理员");
-        feedbackResult.setFeedbackTime(LocalDateTime.of(2026, 6, 23, 14, 0, 0));
-
-        when(complaintService.feedback(any(ComplaintFeedbackDTO.class))).thenReturn(feedbackResult);
-
-        ComplaintFeedbackDTO dto = new ComplaintFeedbackDTO();
-        dto.setComplaintId(1L);
-        dto.setFeedbackContent("已联系消费者致歉并安排补发，消费者表示满意");
-        dto.setFeedbackBy("客服管理员");
-
-        appendHeader("PUT /api/complaint/feedback - 处理反馈");
-        appendRequest("PUT", "/api/complaint/feedback", dto);
-
-        MvcResult result = complaintMvc.perform(put("/api/complaint/feedback")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(dto)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value(200))
-                .andReturn();
-
-        appendResponse(result);
-    }
-
     // ======================== 溯源接口 ========================
 
-    @Test @Order(6)
-    @DisplayName("6. POST /api/traceability/query - 扫码查询溯源")
+    @Test @Order(5)
+    @DisplayName("5. POST /api/traceability/query - 扫码查询溯源")
     void demoQueryTraceability() throws Exception {
         TraceabilityNode node1 = new TraceabilityNode();
         node1.setId(1L); node1.setProductBatchNo("BATCH-20260623-001");
@@ -311,8 +281,8 @@ class ControllerJsonDemoTest {
         appendResponse(result);
     }
 
-    @Test @Order(7)
-    @DisplayName("7. POST /api/traceability/scan - 记录扫码事件")
+    @Test @Order(6)
+    @DisplayName("6. POST /api/traceability/scan - 记录扫码事件")
     void demoScan() throws Exception {
         doNothing().when(traceabilityService).recordScan(anyString(), anyString(), anyString(), anyString());
 

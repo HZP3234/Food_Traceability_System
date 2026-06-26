@@ -359,6 +359,20 @@ export const qualificationApi = {
   reject: (id: number, remark?: string) => put(`/api/qualification/${id}/reject`, remark ? { remark } : {}),
 }
 
+// ==================== Complaint (投诉处理，regulation 后端 :8081) ====================
+export const complaintApi = {
+  /** 投诉统计概览 */
+  stats: () => get('/api/regulation/complaint/stats'),
+  /** 分页查询投诉列表 */
+  page: (data: Record<string, any>) => postJson('/api/regulation/complaint/page', data),
+  /** 投诉详情（含处理日志） */
+  detail: (complaintRecordId: number) => get(`/api/regulation/complaint/detail/${complaintRecordId}`),
+  /** 执行投诉处理操作 */
+  handle: (data: Record<string, any>) => postJson('/api/regulation/complaint/handle', data),
+  /** 获取投诉处理日志 */
+  logs: (complaintNo: string) => get(`/api/regulation/complaint/logs/${encodeURIComponent(complaintNo)}`),
+}
+
 // ==================== Trace (监管全链追溯，regulation 后端 :8081) ====================
 export const traceApi = {
   getByCode: (traceCode: string) => get(`/api/trace/code/${encodeURIComponent(traceCode)}`),
