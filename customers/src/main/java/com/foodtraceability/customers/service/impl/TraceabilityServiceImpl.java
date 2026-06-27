@@ -30,6 +30,9 @@ public class TraceabilityServiceImpl implements TraceabilityService {
     private final CustRawMapper custRawMapper;
     private final CcTransportMapper ccTransportMapper;
     private final CustSalesStockMapper custSalesStockMapper;
+    private final CustSalesOrderMapper custSalesOrderMapper;
+    private final ProcessBatchMapper processBatchMapper;
+    private final QualityInspectionMapper qualityInspectionMapper;
     private final TraceCodeMapper traceCodeMapper;
     private final ScanRecordMapper scanRecordMapper;
     private final ConsumerMapper consumerMapper;
@@ -69,7 +72,7 @@ public class TraceabilityServiceImpl implements TraceabilityService {
 
         ProdBatch prod = prodBatchMapper.selectByBatchNo(batchNo);
 
-        // 确定商品名称：优先从溯源码取，其次从生产批次取
+        // 确定商品名称：从溯源码取（权威来源）
         String productName = null;
         if (tc != null) {
             vo.setProductName(tc.getProductName());
@@ -77,6 +80,15 @@ public class TraceabilityServiceImpl implements TraceabilityService {
             vo.setTxHash(tc.getTxHash());
             productName = tc.getProductName();
         }
+
+        // 校验 ProdBatch 的产品名是否与溯源码一致，不一致则按productName重查
+        if (prod != null && productName != null && !productName.isBlank()
+                && !productName.equals(prod.getProductName())) {
+            log.warn("ProdBatch产品名不匹配，改用productName重查: traceCodeProduct={}, prodBatchProduct={}",
+                    productName, prod.getProductName());
+            prod = prodBatchMapper.selectByProductName(productName);
+        }
+
         if (prod != null) {
             if (productName == null || productName.isBlank()) {
                 productName = prod.getProductName();
@@ -94,22 +106,67 @@ public class TraceabilityServiceImpl implements TraceabilityService {
             throw BusinessException.notFound("该商品没有溯源信息或溯源码被禁用");
         }
 
-        // 通过商品名称检索原料、物流、销售信息
+        // 通过商品名称检索原料、生产、物流、销售信息
         List<Map<String, Object>> rawList = new ArrayList<>();
+        List<Map<String, Object>> processList = new ArrayList<>();
+        List<Map<String, Object>> inspectionList = new ArrayList<>();
         List<Map<String, Object>> transportList = new ArrayList<>();
-        List<Map<String, Object>> salesList = new ArrayList<>();
+        List<Map<String, Object>> salesStockList = new ArrayList<>();
+        List<Map<String, Object>> salesOrderList = new ArrayList<>();
 
         if (productName != null && !productName.isBlank()) {
+            // 1. 原料 - 按商品名称查 t_raw_batch
             try {
                 rawList = custRawMapper.selectByProductName(productName);
             } catch (Exception e) {
                 log.warn("查询原料失败: productName={}", productName, e);
             }
-            transportList = ccTransportMapper.selectByProductName(productName, batchNo);
+
+            // 2. 生产 - 按商品名称查 t_process_batch
             try {
-                salesList = custSalesStockMapper.selectByProductName(productName, batchNo);
+                processList = processBatchMapper.selectByProductName(productName);
+            } catch (Exception e) {
+                log.warn("查询加工批次失败: productName={}", productName, e);
+            }
+
+            // 2. 生产 - 质量检测 (用已验证的ProdBatch批次号 + 加工批次号)
+            java.util.Set<String> inspectedBatchNos = new java.util.HashSet<>();
+            if (prod != null) {
+                String prodBatchNo = prod.getBatchNo();
+                if (prodBatchNo != null && !prodBatchNo.isBlank() && inspectedBatchNos.add(prodBatchNo)) {
+                    try {
+                        inspectionList.addAll(qualityInspectionMapper.selectByBizBatchNo(prodBatchNo));
+                    } catch (Exception e) {
+                        log.warn("查询质量检测失败: batchNo={}", prodBatchNo, e);
+                    }
+                }
+            }
+            for (Map<String, Object> process : processList) {
+                String procBatchNo = str(process.get("batch_no"));
+                if (!procBatchNo.isBlank() && inspectedBatchNos.add(procBatchNo)) {
+                    try {
+                        inspectionList.addAll(qualityInspectionMapper.selectByBizBatchNo(procBatchNo));
+                    } catch (Exception e) {
+                        log.warn("查询质量检测失败: procBatchNo={}", procBatchNo, e);
+                    }
+                }
+            }
+
+            // 3. 物流 - 按商品名称+批次号查 t_cc_transport
+            transportList = ccTransportMapper.selectByProductName(productName, batchNo);
+
+            // 4. 销售 - 库存信息
+            try {
+                salesStockList = custSalesStockMapper.selectByProductName(productName, batchNo);
             } catch (Exception e) {
                 log.warn("查询销售库存失败: productName={}", productName, e);
+            }
+
+            // 4. 销售 - 订单信息
+            try {
+                salesOrderList = custSalesOrderMapper.selectByProductName(productName, batchNo);
+            } catch (Exception e) {
+                log.warn("查询销售订单失败: productName={}", productName, e);
             }
 
             if (!rawList.isEmpty()) {
@@ -122,7 +179,7 @@ public class TraceabilityServiceImpl implements TraceabilityService {
             }
         }
 
-        vo.setNodes(buildNodes(batchNo, prod, rawList, transportList, salesList));
+        vo.setNodes(buildNodes(batchNo, prod, rawList, processList, inspectionList, transportList, salesStockList, salesOrderList));
         return vo;
     }
 
@@ -134,8 +191,11 @@ public class TraceabilityServiceImpl implements TraceabilityService {
 
     private List<TraceabilityNode> buildNodes(String batchNo, ProdBatch prod,
             List<Map<String, Object>> rawList,
+            List<Map<String, Object>> processList,
+            List<Map<String, Object>> inspectionList,
             List<Map<String, Object>> transportList,
-            List<Map<String, Object>> salesList) {
+            List<Map<String, Object>> salesStockList,
+            List<Map<String, Object>> salesOrderList) {
         List<TraceabilityNode> nodes = new ArrayList<>();
         int sort = 0;
 
@@ -159,6 +219,7 @@ public class TraceabilityServiceImpl implements TraceabilityService {
         }
 
         // ========== 2. 生产 ==========
+        // 2a. 生产批次汇总
         if (prod != null) {
             sort++;
             int planned = prod.getPlannedAmount() != null ? prod.getPlannedAmount() : 0;
@@ -175,6 +236,49 @@ public class TraceabilityServiceImpl implements TraceabilityService {
                     + "，生产线: " + prod.getProductionLine()
                     + "，生产日期: " + prodDate
                     + "，计划产量: " + planned + "，实际产量: " + actual);
+            nodes.add(node);
+        }
+
+        // 2b. 加工批次详情（按商品名称查到的）
+        for (Map<String, Object> process : processList) {
+            sort++;
+            String procBatchNo = str(process.get("batch_no"));
+            // 跳过与生产批次号相同的重复记录
+            if (procBatchNo.equals(batchNo) || procBatchNo.equals(prod != null ? prod.getProcessBatchNo() : null)) {
+                continue;
+            }
+            TraceabilityNode node = new TraceabilityNode();
+            node.setNodeName("生产");
+            node.setSortOrder(sort);
+            node.setNodeTime(parseDateTime(str(process.get("process_date"))));
+            node.setLocation(str(process.get("production_line")));
+            node.setOperator(str(process.get("operator")));
+            node.setNodeDescription("加工批次: " + procBatchNo
+                    + "，模板: " + str(process.get("template_name"))
+                    + "，计划产量: " + toInt(process.get("planned_amount"))
+                    + "，温度: " + str(process.get("actual_temp")) + "℃"
+                    + "，耗时: " + str(process.get("actual_duration"))
+                    + "，状态: " + (toInt(process.get("batch_status")) == 1 ? "进行中" : toInt(process.get("batch_status")) == 2 ? "已完成" : "待开始"));
+            nodes.add(node);
+        }
+
+        // 2c. 质量检测
+        for (Map<String, Object> insp : inspectionList) {
+            sort++;
+            int inspResult = toInt(insp.get("inspection_result"));
+            String resultTxt = inspResult == 1 ? "合格" : inspResult == 2 ? "不合格" : "待检";
+            TraceabilityNode node = new TraceabilityNode();
+            node.setNodeName("生产");
+            node.setSortOrder(sort);
+            node.setNodeTime(parseDateTime(str(insp.get("inspection_date"))));
+            node.setLocation("质检中心");
+            node.setOperator(str(insp.get("inspector")));
+            node.setNodeDescription("检测单号: " + str(insp.get("inspection_no"))
+                    + "，类型: " + (toInt(insp.get("inspection_type")) == 1 ? "原料检测" : toInt(insp.get("inspection_type")) == 2 ? "过程检测" : toInt(insp.get("inspection_type")) == 3 ? "成品检测" : "其他")
+                    + "，结果: " + resultTxt
+                    + "，感官: " + (toInt(insp.get("sensory_check")) == 1 ? "合格" : toInt(insp.get("sensory_check")) == 2 ? "不合格" : "未检")
+                    + "，微生物: " + (toInt(insp.get("microbe_check")) == 1 ? "合格" : toInt(insp.get("microbe_check")) == 2 ? "不合格" : "未检")
+                    + "，封口: " + (toInt(insp.get("seal_check")) == 1 ? "合格" : toInt(insp.get("seal_check")) == 2 ? "不合格" : "未检"));
             nodes.add(node);
         }
 
@@ -197,7 +301,8 @@ public class TraceabilityServiceImpl implements TraceabilityService {
         }
 
         // ========== 4. 销售 ==========
-        for (Map<String, Object> stock : salesList) {
+        // 4a. 库存信息
+        for (Map<String, Object> stock : salesStockList) {
             sort++;
             int stockStatus = toInt(stock.get("stock_status"));
             String statusName = stockStatus == 0 ? "在库" : stockStatus == 1 ? "已上架" :
@@ -211,6 +316,27 @@ public class TraceabilityServiceImpl implements TraceabilityService {
             node.setNodeDescription("产品: " + str(stock.get("product_name"))
                     + "，入库数量: " + toInt(stock.get("quantity"))
                     + "，终端: " + str(stock.get("terminal_name"))
+                    + "，状态: " + statusName);
+            nodes.add(node);
+        }
+
+        // 4b. 销售订单
+        for (Map<String, Object> order : salesOrderList) {
+            sort++;
+            int orderStatus = toInt(order.get("order_status"));
+            String statusName = orderStatus == 0 ? "待发货" : orderStatus == 1 ? "已发货" :
+                                orderStatus == 2 ? "已签收" : orderStatus == 3 ? "已完成" : "已取消";
+            TraceabilityNode node = new TraceabilityNode();
+            node.setNodeName("销售");
+            node.setSortOrder(sort);
+            node.setNodeTime(parseDateTime(str(order.get("order_date"))));
+            node.setLocation(str(order.get("buyer_enterprise_name")));
+            node.setOperator(str(order.get("seller_enterprise_name")));
+            node.setNodeDescription("订单: " + str(order.get("sales_order_code"))
+                    + "，买方: " + str(order.get("buyer_enterprise_name"))
+                    + "，数量: " + toInt(order.get("order_quantity"))
+                    + "，单价: ¥" + str(order.get("unit_price"))
+                    + "，总金额: ¥" + str(order.get("total_amount"))
                     + "，状态: " + statusName);
             nodes.add(node);
         }

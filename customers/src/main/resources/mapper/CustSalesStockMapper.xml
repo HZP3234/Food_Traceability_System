@@ -7,7 +7,7 @@
         SELECT stock_code, terminal_name, product_name, prod_batch_no,
                quantity, received_time, last_check_time, stock_status
         FROM t_sales_stock
-        WHERE (product_name = #{productName} OR prod_batch_no = #{prodBatchNo})
+        WHERE product_name = #{productName}
           AND is_deleted = 0
         ORDER BY received_time DESC
     </select>

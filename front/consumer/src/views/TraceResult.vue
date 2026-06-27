@@ -75,6 +75,13 @@ function formatDateTime(dateStr: string) {
   return dateStr.replace('T', ' ').substring(0, 16)
 }
 
+const checkResultInfo = computed(() => {
+  const v = data.value?.checkResult
+  if (v === 1) return { text: '合格', cls: 'check-ok' }
+  if (v === 2) return { text: '不合格', cls: 'check-fail' }
+  return { text: '未检测', cls: '' }
+})
+
 function goComplaint() {
   if (!requireLogin()) return
   if (!data.value) return
@@ -146,6 +153,7 @@ onMounted(() => {
           <span>已认证</span>
         </div>
         <div class="product-name">{{ data.productName }}</div>
+        <div v-if="data.productSpec" class="product-spec">规格: {{ data.productSpec }}</div>
         <div class="product-grid">
           <div class="product-cell">
             <span class="cell-label">生产商</span>
@@ -163,6 +171,26 @@ onMounted(() => {
             <span class="cell-label">生产线</span>
             <span class="cell-value">{{ data.productionLine || '-' }}</span>
           </div>
+          <div v-if="data.origin" class="product-cell">
+            <span class="cell-label">产地</span>
+            <span class="cell-value">{{ data.origin }}</span>
+          </div>
+          <div v-if="data.expirationDate" class="product-cell">
+            <span class="cell-label">保质期至</span>
+            <span class="cell-value">{{ formatDate(data.expirationDate) }}</span>
+          </div>
+          <div class="product-cell">
+            <span class="cell-label">批次号</span>
+            <span class="cell-value">{{ data.productBatchNo || '-' }}</span>
+          </div>
+          <div class="product-cell">
+            <span class="cell-label">溯源码</span>
+            <span class="cell-value code-text">{{ data.traceCode || '-' }}</span>
+          </div>
+        </div>
+        <div class="check-row">
+          <span class="cell-label">质检结果</span>
+          <span :class="checkResultInfo.cls">{{ checkResultInfo.text }}</span>
         </div>
         <div v-if="data.txHash" class="blockchain-tag">
           <van-icon name="certificate" size="14" />
@@ -279,6 +307,37 @@ onMounted(() => {
   font-weight: 600;
   color: #323233;
   margin-bottom: 6px;
+}
+
+.product-spec {
+  font-size: 13px;
+  color: #969799;
+  margin-bottom: 8px;
+}
+
+.check-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 12px;
+  margin-top: 12px;
+  border-top: 1px solid #f0f0f0;
+  font-size: 14px;
+}
+
+.check-row .check-ok {
+  color: #07c160;
+  font-weight: 600;
+}
+
+.check-row .check-fail {
+  color: #ee0a24;
+  font-weight: 600;
+}
+
+.code-text {
+  font-size: 11px;
+  word-break: break-all;
 }
 
 .blockchain-tag {

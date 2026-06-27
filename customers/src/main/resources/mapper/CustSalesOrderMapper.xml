@@ -18,7 +18,7 @@
                seller_enterprise_name, order_quantity, unit_price, total_amount,
                order_date, order_status
         FROM t_sales_order
-        WHERE (product_name = #{productName} OR prod_batch_no = #{prodBatchNo})
+        WHERE product_name = #{productName}
           AND is_deleted = 0
         ORDER BY order_date DESC
     </select>

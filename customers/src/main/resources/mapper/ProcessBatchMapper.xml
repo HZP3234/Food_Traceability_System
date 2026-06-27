@@ -14,4 +14,15 @@
         LIMIT 1
     </select>
 
+    <select id="selectByProductName" resultType="java.util.LinkedHashMap">
+        SELECT batch_no, product_name, template_name, raw_batch_no,
+               planned_amount, process_date, operator, production_line,
+               actual_temp, actual_duration, actual_pressure, actual_cool_temp,
+               actual_fill_temp, actual_ph, actual_viscosity, batch_status
+        FROM t_process_batch
+        WHERE product_name = #{productName}
+          AND is_deleted = 0
+        ORDER BY process_date DESC
+    </select>
+
 </mapper>

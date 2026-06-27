@@ -18,7 +18,7 @@
                depart_time, estimated_arrival, actual_arrival, transport_status,
                loading_temp, temp_upper, temp_lower
         FROM t_cc_transport
-        WHERE (product_name = #{productName} OR prod_batch_no = #{prodBatchNo})
+        WHERE product_name = #{productName}
           AND is_deleted = 0
         ORDER BY depart_time DESC
     </select>

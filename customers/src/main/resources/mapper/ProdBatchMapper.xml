@@ -33,4 +33,12 @@
         LIMIT 1
     </select>
 
+    <select id="selectByProductName" resultMap="BaseResultMap">
+        SELECT * FROM t_prod_batch
+        WHERE product_name = #{productName}
+          AND is_deleted = 0
+        ORDER BY production_date DESC
+        LIMIT 1
+    </select>
+
 </mapper>
