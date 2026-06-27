@@ -436,7 +436,8 @@ public class SalesService {
     }
 
     // 条件查询销售订单列表
-    public List<SalesOrder> listSalesOrder(String buyerName, String productName, Integer orderStatus) {
+    public List<SalesOrder> listSalesOrder(String buyerName, String productName, Integer orderStatus,
+                                           String prodBatchNo) {
         QueryWrapper<SalesOrder> qw = new QueryWrapper<>();
         qw.eq("is_deleted", 0);
         // 销售商只能看分配给自己的订单（使用前端传入的 buyerName 参数过滤）
@@ -450,6 +451,7 @@ public class SalesService {
         if (buyerName != null && !buyerName.isBlank()) qw.eq("buyer_enterprise_name", buyerName);
         if (productName != null && !productName.isBlank()) qw.eq("product_name", productName);
         if (orderStatus != null) qw.eq("order_status", orderStatus);
+        if (prodBatchNo != null && !prodBatchNo.isBlank()) qw.eq("prod_batch_no", prodBatchNo);
         qw.orderByDesc("create_time");
         return salesOrderMapper.selectList(qw);
     }

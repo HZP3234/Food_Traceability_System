@@ -39,4 +39,19 @@ public interface TraceCodeService extends IService<TraceCode> {
      * 作废溯源码
      */
     void voidTraceCode(String traceCode, String reason);
+
+    /**
+     * 恢复溯源码（从禁用/作废状态恢复为正常）
+     */
+    void restoreTraceCode(String traceCode);
+
+    /**
+     * 查询所有溯源码列表
+     */
+    List<TraceCode> listAll();
+
+    /**
+     * 按企业名称模糊查询溯源码
+     */
+    List<TraceCode> listByEnterpriseName(String enterpriseName);
 }

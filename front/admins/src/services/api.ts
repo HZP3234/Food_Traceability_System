@@ -396,10 +396,15 @@ export const complaintApi = {
 
 // ==================== Trace (监管全链追溯，regulation 后端 :8081) ====================
 export const traceApi = {
+  /** 查询所有溯源码 */
+  listAll: () => get('/api/trace/all'),
   getByCode: (traceCode: string) => get(`/api/trace/code/${encodeURIComponent(traceCode)}`),
   listByBatch: (batchNo: string) => get(`/api/trace/batch/${encodeURIComponent(batchNo)}`),
   listByEnterprise: (enterpriseUuid: string) => get(`/api/trace/enterprise/${encodeURIComponent(enterpriseUuid)}`),
+  /** 按企业名称模糊查询 */
+  searchByEnterpriseName: (name: string) => get(`/api/trace/search?name=${encodeURIComponent(name)}`),
   verifyHash: (traceCode: string) => get(`/api/trace/verify/${encodeURIComponent(traceCode)}`),
   disable: (traceCode: string, reason: string) => put(`/api/trace/disable/${encodeURIComponent(traceCode)}?reason=${encodeURIComponent(reason)}`),
   void: (traceCode: string, reason: string) => put(`/api/trace/void/${encodeURIComponent(traceCode)}?reason=${encodeURIComponent(reason)}`),
+  restore: (traceCode: string) => put(`/api/trace/restore/${encodeURIComponent(traceCode)}`),
 }

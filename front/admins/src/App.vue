@@ -14,7 +14,6 @@ import AuditLog from './pages/AuditLog.vue'
 import EnterpriseQualification from './pages/EnterpriseQualification.vue'
 import RegulatoryTrace from './pages/RegulatoryTrace.vue'
 import Dashboard from './pages/Dashboard.vue'
-import Warnings from './pages/Warnings.vue'
 import QualityInspection from './pages/QualityInspection.vue'
 import QualificationUpload from './pages/QualificationUpload.vue'
 import ComplaintManagement from './pages/ComplaintManagement.vue'
@@ -69,7 +68,6 @@ const pageComponents: Record<string, Component> = {
   'enterprise-qualification': markRaw(EnterpriseQualification),
   'regulatory-trace': markRaw(RegulatoryTrace),
   'audit-log': markRaw(AuditLog),
-  'warnings': markRaw(Warnings),
   'quality-inspection': markRaw(QualityInspection),
   'qualification-upload': markRaw(QualificationUpload),
   'complaint-management': markRaw(ComplaintManagement),
@@ -103,7 +101,6 @@ const navIcons: Record<string, Component> = {
   'complaint-management': Promotion,
   'regulatory-trace': Connection,
   'audit-log': Document,
-  warnings: Connection,
 }
 
 /** 企业用户未提交资质或审核未通过时，只能访问资质相关页面 */

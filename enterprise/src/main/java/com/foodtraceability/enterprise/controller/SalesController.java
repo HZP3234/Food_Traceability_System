@@ -217,8 +217,9 @@ public class SalesController {
     // 条件列表查询
     @RequestMapping("/listOrder")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANUFACTURER', 'SELLER', 'REGULATOR')")
-    public List<SalesOrder> listOrder(String buyerName, String productName, Integer orderStatus) {
-        return salesService.listSalesOrder(buyerName, productName, orderStatus);
+    public List<SalesOrder> listOrder(String buyerName, String productName, Integer orderStatus,
+                                      String prodBatchNo) {
+        return salesService.listSalesOrder(buyerName, productName, orderStatus, prodBatchNo);
     }
 
     // 销售商查看分配给自己的订单

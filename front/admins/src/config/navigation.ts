@@ -66,7 +66,6 @@ export const navigation: NavigationGroup[] = [
       { id: 'regulatory-trace', label: '监管全链追溯', icon: '监', roles: ['super-admin', 'regulator'] },
       { id: 'complaint-management', label: '投诉处理管理', icon: '诉', roles: ['super-admin', 'regulator'], desc: '受理消费者投诉，跟踪处理全过程，记录处理日志' },
       { id: 'audit-log', label: '操作日志审计', icon: '志', roles: ['super-admin', 'regulator'] },
-      { id: 'warnings', label: '异常预警推送', icon: '警', roles: ['super-admin', 'regulator', 'manufacturer'], desc: '汇总冷链温度预警、质检不合格、环境异常等实时预警信息' },
     ],
   },
 ]

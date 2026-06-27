@@ -81,6 +81,33 @@ public class TraceCodeServiceImpl extends ServiceImpl<RegulationTraceCodeMapper,
         log.info("溯源码已作废: traceCode={}, reason={}", traceCode, reason);
     }
 
+    @Override
+    public void restoreTraceCode(String traceCode) {
+        LambdaUpdateWrapper<TraceCode> wrapper = new LambdaUpdateWrapper<>();
+        wrapper.eq(TraceCode::getTraceCode, traceCode)
+               .set(TraceCode::getTraceCodeStatus, 0) // 0-正常
+               .set(TraceCode::getDisableReason, null)
+               .set(TraceCode::getVoidReason, null)
+               .set(TraceCode::getUpdateTime, LocalDateTime.now());
+        this.update(wrapper);
+        log.info("溯源码已恢复: traceCode={}", traceCode);
+    }
+
+    @Override
+    public List<TraceCode> listAll() {
+        LambdaQueryWrapper<TraceCode> wrapper = new LambdaQueryWrapper<>();
+        wrapper.orderByDesc(TraceCode::getCreateTime);
+        return this.list(wrapper);
+    }
+
+    @Override
+    public List<TraceCode> listByEnterpriseName(String enterpriseName) {
+        LambdaQueryWrapper<TraceCode> wrapper = new LambdaQueryWrapper<>();
+        wrapper.like(TraceCode::getEnterpriseName, enterpriseName)
+               .orderByDesc(TraceCode::getCreateTime);
+        return this.list(wrapper);
+    }
+
     private String sha256(String input) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");

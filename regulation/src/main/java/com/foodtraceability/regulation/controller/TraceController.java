@@ -75,4 +75,26 @@ public class TraceController {
         traceCodeService.voidTraceCode(traceCode, reason);
         return Result.success("溯源码已作废");
     }
+
+    @Operation(summary = "恢复溯源码（从禁用/作废恢复为正常）")
+    @PutMapping("/restore/{traceCode}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'REGULATOR')")
+    public Result<Void> restore(@PathVariable String traceCode) {
+        traceCodeService.restoreTraceCode(traceCode);
+        return Result.success("溯源码已恢复正常");
+    }
+
+    @Operation(summary = "查询所有溯源码")
+    @GetMapping("/all")
+    @PreAuthorize("hasAnyRole('ADMIN', 'REGULATOR', 'MANUFACTURER')")
+    public Result<List<TraceCode>> listAll() {
+        return Result.success(traceCodeService.listAll());
+    }
+
+    @Operation(summary = "按企业名称模糊查询溯源码")
+    @GetMapping("/search")
+    @PreAuthorize("hasAnyRole('ADMIN', 'REGULATOR', 'MANUFACTURER')")
+    public Result<List<TraceCode>> searchByEnterpriseName(@RequestParam String name) {
+        return Result.success(traceCodeService.listByEnterpriseName(name));
+    }
 }
