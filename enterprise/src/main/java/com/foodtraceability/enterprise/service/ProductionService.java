@@ -121,6 +121,7 @@ public class ProductionService {
 
     public int updateTemplate(TechTemplate template) {
         template.setUpdateTime(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+        template.setUpdateBy(currentUserUtil.getCurrentUsername());
         return techTemplateMapper.updateById(template);
     }
 
@@ -128,6 +129,7 @@ public class ProductionService {
         TechTemplate template = techTemplateMapper.selectById(templateId);
         if (template != null) {
             template.setIsDeleted(1);
+            template.setUpdateBy(currentUserUtil.getCurrentUsername());
             return techTemplateMapper.updateById(template);
         }
         return 0;
@@ -219,6 +221,7 @@ public class ProductionService {
     /** 更新生产批次 */
     public int updateProdBatch(ProdBatch prodBatch) {
         prodBatch.setUpdateTime(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+        prodBatch.setUpdateBy(currentUserUtil.getCurrentUsername());
         return prodBatchMapper.updateById(prodBatch);
     }
 
@@ -228,6 +231,7 @@ public class ProductionService {
         if (prodBatch != null && prodBatch.getBatchStatus() != null && prodBatch.getBatchStatus() == 1) {
             prodBatch.setBatchStatus(2);
             prodBatch.setUpdateTime(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+            prodBatch.setUpdateBy(currentUserUtil.getCurrentUsername());
             return prodBatchMapper.updateById(prodBatch);
         }
         return 0;
@@ -251,6 +255,7 @@ public class ProductionService {
             prodBatch.setCodeStatus(1);
             prodBatch.setBatchStatus(3);
             prodBatch.setUpdateTime(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+            prodBatch.setUpdateBy(currentUserUtil.getCurrentUsername());
             return prodBatchMapper.updateById(prodBatch);
         }
         return 0;
@@ -261,6 +266,7 @@ public class ProductionService {
         ProdBatch prodBatch = prodBatchMapper.selectById(prodBatchId);
         if (prodBatch != null) {
             prodBatch.setIsDeleted(1);
+            prodBatch.setUpdateBy(currentUserUtil.getCurrentUsername());
             return prodBatchMapper.updateById(prodBatch);
         }
         return 0;
@@ -294,15 +300,27 @@ public class ProductionService {
 
     public int recordMaterialInput(ProdMaterialInput input) {
         String now = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-        input.setCreateTime(now);
         input.setUpdateTime(now);
-        input.setCreateBy(currentUserUtil.getCurrentUsername());
         input.setUpdateBy(currentUserUtil.getCurrentUsername());
+        // 查询是否已存在同原料批次的投料记录，存在则更新，不存在则插入
+        QueryWrapper<ProdMaterialInput> qw = new QueryWrapper<>();
+        qw.eq("raw_batch_no", input.getRawBatchNo());
+        qw.eq("is_deleted", 0);
+        ProdMaterialInput exist = prodMaterialInputMapper.selectOne(qw);
+        if (exist != null) {
+            input.setInputId(exist.getInputId());
+            input.setCreateTime(exist.getCreateTime());
+            input.setCreateBy(exist.getCreateBy());
+            return prodMaterialInputMapper.updateById(input);
+        }
+        input.setCreateTime(now);
+        input.setCreateBy(currentUserUtil.getCurrentUsername());
         return prodMaterialInputMapper.insert(input);
     }
 
     public int updateMaterialInput(ProdMaterialInput input) {
         input.setUpdateTime(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+        input.setUpdateBy(currentUserUtil.getCurrentUsername());
         return prodMaterialInputMapper.updateById(input);
     }
 
@@ -390,6 +408,7 @@ public class ProductionService {
 
     public int updateInspection(QualityInspection inspection) {
         inspection.setUpdateTime(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+        inspection.setUpdateBy(currentUserUtil.getCurrentUsername());
         return qualityInspectionMapper.updateById(inspection);
     }
 
@@ -401,6 +420,7 @@ public class ProductionService {
         if (prodBatch != null) {
             prodBatch.setCheckResult(checkResult);
             prodBatch.setUpdateTime(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+            prodBatch.setUpdateBy(currentUserUtil.getCurrentUsername());
             prodBatchMapper.updateById(prodBatch);
         }
     }
