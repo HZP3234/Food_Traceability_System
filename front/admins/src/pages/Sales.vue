@@ -11,13 +11,14 @@ const isManufacturer = computed(() => currentRole.value === 'manufacturer' || cu
 
 // 当前登录用户信息
 let currentUser = ''
+let enterpriseUuid = ''
 let enterpriseName = ''
 try {
   const raw = sessionStorage.getItem('fts-admin-user')
   if (raw) {
     const parsed = JSON.parse(raw)
     currentUser = parsed.realName || parsed.username || ''
-    enterpriseName = parsed.enterpriseName || currentUser
+    enterpriseUuid = parsed.enterpriseUuid || ''
   }
 } catch { currentUser = sessionStorage.getItem('fts-admin-user') || '' }
 
@@ -139,6 +140,13 @@ const uploadStats = computed(() => ({
 async function loadUploadData() {
   loadingUp.value = true
   try {
+    if (!enterpriseName) {
+      const allEnterprises = await enterpriseApi.search('')
+      if (Array.isArray(allEnterprises)) {
+        const mine = allEnterprises.find((e: any) => e.enterpriseUuid === enterpriseUuid)
+        if (mine) enterpriseName = mine.enterpriseName || ''
+      }
+    }
     const myName = enterpriseName || currentUser
     const all = await salesOrderApi.listOrder({ buyerName: myName })
     const data = Array.isArray(all) ? all : []
@@ -184,16 +192,15 @@ function confirmDeleteO(id: number) { deletingOId.value = id; showOConfirm.value
 async function doDeleteO() { try { await salesOrderApi.deleteOrder(deletingOId.value!); notify('success', '已删除'); showOConfirm.value = false; loadOrders() } catch (e: any) { notify('error', '删除失败') } }
 
 // Order Detail
-async function openDetailUpload(row: any) {
+function openDetailUpload(row: any) {
   editingOD.value = null;
   const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
   odForm.value = { detailCode: '', salesOrderId: row.salesOrderId ?? '', salesOrderCode: row.salesOrderCode ?? '', temperature: '', humidity: '', storageMethod: 0, lightCondition: 0, shelfLife: '', locationCode: '', inboundTime: now, actualQuantity: row.orderQuantity ?? '', salesDate: '', detailStatus: 1, operator: '', remark: '' };
-  // 如果已有详情则加载
-  try {
-    const detail = await salesOrderApi.queryOrderDetail(row.salesOrderCode);
-    if (detail && detail.detailId) { editingOD.value = detail; orderDetail.value = detail; odForm.value = { detailCode: detail.detailCode ?? '', salesOrderId: detail.salesOrderId ?? row.salesOrderId, salesOrderCode: detail.salesOrderCode ?? row.salesOrderCode, temperature: detail.temperature ?? '', humidity: detail.humidity ?? '', storageMethod: detail.storageMethod ?? 0, lightCondition: detail.lightCondition ?? 0, shelfLife: detail.shelfLife ?? '', locationCode: detail.locationCode ?? '', inboundTime: detail.inboundTime ?? now, actualQuantity: detail.actualQuantity ?? row.orderQuantity, salesDate: detail.salesDate ?? '', detailStatus: detail.detailStatus ?? 1, operator: detail.operator ?? '', remark: detail.remark ?? '' } }
-  } catch { /* 还没有详情，使用默认值 */ }
   showODModal.value = true
+  // 异步加载已有详情
+  salesOrderApi.queryOrderDetail(row.salesOrderCode).then(detail => {
+    if (detail && detail.detailId) { editingOD.value = detail; odForm.value = { detailCode: detail.detailCode ?? '', salesOrderId: detail.salesOrderId ?? row.salesOrderId, salesOrderCode: detail.salesOrderCode ?? row.salesOrderCode, temperature: detail.temperature ?? '', humidity: detail.humidity ?? '', storageMethod: detail.storageMethod ?? 0, lightCondition: detail.lightCondition ?? 0, shelfLife: detail.shelfLife ?? '', locationCode: detail.locationCode ?? '', inboundTime: detail.inboundTime ?? now, actualQuantity: detail.actualQuantity ?? row.orderQuantity, salesDate: detail.salesDate ?? '', detailStatus: detail.detailStatus ?? 1, operator: detail.operator ?? '', remark: detail.remark ?? '' } }
+  }).catch(() => {})
 }
 async function submitOD() { try { const data: Record<string, any> = { ...odForm.value }; if (editingOD.value) { data.detailId = editingOD.value.detailId; await salesOrderApi.updateOrderDetail(data); notify('success', '详情更新成功') } else { await salesOrderApi.createOrderDetail(data); notify('success', '销售详情上传成功') } showODModal.value = false; if (tab.value === 'upload') loadUploadData(); else loadOrders() } catch (e: any) { notify('error', '操作失败: ' + (e.message || '')) } }
 
@@ -377,29 +384,6 @@ onMounted(() => { if (isSeller.value) loadUploadData(); else loadOrders() })
         </section>
       </div>
 
-      <!-- Order Detail Modal -->
-      <div v-if="showODModal" class="trace-modal-backdrop" @click.self="showODModal = false">
-        <section class="trace-modal" style="width:760px"><header><div><p>销售详情</p><h2>{{ editingOD ? '编辑销售详情' : '补充销售详情' }}</h2></div><button @click="showODModal = false"><el-icon><Close /></el-icon></button></header>
-          <div class="modal-body">
-            <div class="grid-form">
-              <label>订单编码<code>{{ odForm.salesOrderCode }}</code></label>
-              <label>入库温度<input v-model="odForm.temperature" placeholder="2-6℃" /></label>
-              <label>入库湿度<input v-model="odForm.humidity" placeholder="45-65%RH" /></label>
-              <label>储存方式<select v-model.number="odForm.storageMethod"><option :value="0">常温</option><option :value="1">冷藏</option><option :value="2">冷冻</option></select></label>
-              <label>光照条件<select v-model.number="odForm.lightCondition"><option :value="0">避光</option><option :value="1">散光</option><option :value="2">光照</option></select></label>
-              <label>上架保质期<input v-model="odForm.shelfLife" placeholder="上架后7天" /></label>
-              <label>仓库/柜位编号<input v-model="odForm.locationCode" /></label>
-              <label>入库时间<input v-model="odForm.inboundTime" /></label>
-              <label>实际数量<input v-model="odForm.actualQuantity" type="number" /></label>
-              <label>销售日期<input v-model="odForm.salesDate" type="date" /></label>
-              <label>操作员<input v-model="odForm.operator" /></label>
-            </div>
-            <label style="display:grid;gap:6px;color:#718ba6;font-size:12px;font-weight:700;margin-top:15px">备注<textarea v-model="odForm.remark" style="width:100%;padding:9px;border:1px solid #d7e4f0;border-radius:7px;min-height:60px" /></label>
-          </div>
-          <footer><button class="secondary" @click="showODModal = false"><el-icon><Close /></el-icon> 取消</button><button class="primary" @click="submitOD"><el-icon><Upload /></el-icon> {{ editingOD ? '保存更改' : '提交详情' }}</button></footer>
-        </section>
-      </div>
-
       <!-- Order Delete Confirm -->
       <div v-if="showOConfirm" class="trace-confirm-overlay" @click.self="showOConfirm = false">
         <div class="trace-confirm-box"><h3>确认删除</h3><p>确定要删除该销售订单吗？</p><div class="trace-confirm-actions"><button class="secondary" @click="showOConfirm = false"><el-icon><Close /></el-icon> 取消</button><button class="primary danger-fill" @click="doDeleteO"><el-icon><Close /></el-icon> 确认删除</button></div></div>
@@ -540,6 +524,29 @@ onMounted(() => { if (isSeller.value) loadUploadData(); else loadOrders() })
         </section>
       </div>
     </template>
+
+    <!-- Order Detail Modal -->
+    <div v-if="showODModal" class="trace-modal-backdrop" @click.self="showODModal = false">
+      <section class="trace-modal" style="width:760px"><header><div><p>销售详情</p><h2>{{ editingOD ? '编辑销售详情' : '补充销售详情' }}</h2></div><button @click="showODModal = false"><el-icon><Close /></el-icon></button></header>
+        <div class="modal-body">
+          <div class="grid-form">
+            <label>订单编码<input :value="odForm.salesOrderCode" readonly style="background:#f5f7fa;color:#8195aa" /></label>
+            <label>入库温度 (℃)<input v-model="odForm.temperature" placeholder="2-6" /></label>
+            <label>入库湿度 (%RH)<input v-model="odForm.humidity" placeholder="45-65" /></label>
+            <label>储存方式<select v-model.number="odForm.storageMethod"><option :value="0">常温</option><option :value="1">冷藏</option><option :value="2">冷冻</option></select></label>
+            <label>光照条件<select v-model.number="odForm.lightCondition"><option :value="0">避光</option><option :value="1">散光</option><option :value="2">光照</option></select></label>
+            <label>上架保质期<input v-model="odForm.shelfLife" placeholder="上架后7天" /></label>
+            <label>仓库/柜位编号<input v-model="odForm.locationCode" /></label>
+            <label>入库时间<input v-model="odForm.inboundTime" /></label>
+            <label>实际数量<input v-model="odForm.actualQuantity" type="number" /></label>
+            <label>销售日期<input v-model="odForm.salesDate" type="date" /></label>
+            <label>操作员<input v-model="odForm.operator" /></label>
+          </div>
+          <label style="display:grid;gap:6px;color:#718ba6;font-size:12px;font-weight:700;margin-top:15px">备注<textarea v-model="odForm.remark" style="width:100%;padding:9px;border:1px solid #d7e4f0;border-radius:7px;min-height:60px" /></label>
+        </div>
+        <footer><button class="secondary" @click="showODModal = false"><el-icon><Close /></el-icon> 取消</button><button class="primary" @click="submitOD"><el-icon><Upload /></el-icon> {{ editingOD ? '保存更改' : '提交详情' }}</button></footer>
+      </section>
+    </div>
 
     <!-- 删除确认 -->
     <div v-if="showTConfirm" class="trace-confirm-overlay" @click.self="showTConfirm = false">

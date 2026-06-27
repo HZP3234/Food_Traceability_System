@@ -281,9 +281,9 @@ export const coldChainApi = {
   traceColdChain: (orderNo: string) => get('/ColdChain/traceColdChain', { orderNo }),
   traceByProdBatch: (prodBatchNo: string) => get('/ColdChain/traceByProdBatch', { prodBatchNo }),
 
-  // Transport pending matching (by logistics)
-  matchTransportPending: (transportOrderNo: string, rawBatchNo: string) =>
-    post('/ColdChain/matchTransportPending', { transportOrderNo, rawBatchNo }),
+  // Transport matching
+  listPendingTransport: () => get('/ColdChain/listPendingTransport'),
+  matchTransport: (transportId: number, plateNo: string) => post('/ColdChain/matchTransport', { transportId, plateNo }),
 }
 
 // ==================== SalesOrder (销售订单) ====================
