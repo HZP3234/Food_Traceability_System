@@ -1,3 +1,9 @@
+// 图形验证码
+export interface CaptchaCodeDTO {
+  captchaKey: string
+  imageBase64: string
+}
+
 // 通用响应
 export interface Result<T> {
   code: number

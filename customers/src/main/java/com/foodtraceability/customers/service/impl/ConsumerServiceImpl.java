@@ -1,6 +1,7 @@
 package com.foodtraceability.customers.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.foodtraceability.customers.component.CaptchaManager;
 import com.foodtraceability.customers.dto.ConsumerUpdateDTO;
 import com.foodtraceability.customers.entity.Consumer;
 import com.foodtraceability.customers.mapper.ConsumerMapper;
@@ -17,6 +18,7 @@ import java.util.UUID;
 public class ConsumerServiceImpl implements ConsumerService {
 
     private final ConsumerMapper consumerMapper;
+    private final CaptchaManager captchaManager;
 
     @Override
     public void sendCode(String phone) {
@@ -24,9 +26,9 @@ public class ConsumerServiceImpl implements ConsumerService {
     }
 
     @Override
-    public Consumer login(String phone, String code) {
-        if (!"123456".equals(code)) {
-            throw new RuntimeException("验证码错误");
+    public Consumer login(String phone, String code, String captchaKey) {
+        if (!captchaManager.verify(captchaKey, code)) {
+            throw new RuntimeException("图形验证码错误");
         }
         Consumer consumer = consumerMapper.selectOne(
                 new LambdaQueryWrapper<Consumer>().eq(Consumer::getPhone, phone));

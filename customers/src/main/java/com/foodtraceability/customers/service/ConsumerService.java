@@ -7,7 +7,7 @@ public interface ConsumerService {
 
     void sendCode(String phone);
 
-    Consumer login(String phone, String code);
+    Consumer login(String phone, String code, String captchaKey);
 
     Consumer getByPhone(String phone);
 

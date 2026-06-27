@@ -26,7 +26,7 @@ public class ConsumerController {
 
     @PostMapping("/login")
     public Result<Consumer> login(@Valid @RequestBody LoginDTO dto) {
-        Consumer consumer = consumerService.login(dto.getPhone(), dto.getCode());
+        Consumer consumer = consumerService.login(dto.getPhone(), dto.getCode(), dto.getCaptchaKey());
         return Result.success(consumer);
     }
 
