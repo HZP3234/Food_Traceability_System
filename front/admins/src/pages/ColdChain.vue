@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, inject, type Ref } from 'vue'
 import { Check, Close, Delete, Download, Edit, Plus, Search, Select, Upload, Van, Warning } from '@element-plus/icons-vue'
-import { coldChainApi, productionApi } from '../services/api'
+import { coldChainApi, productionApi, enterpriseApi } from '../services/api'
 import Pagination from '../components/Pagination.vue'
 import type { RoleKey } from '../config/navigation'
 
@@ -10,6 +10,7 @@ const isLogistics = computed(() => currentRole?.value === 'logistics' || current
 const isOtherEnterprise = computed(() => !isLogistics.value)
 
 const toast = ref<{ type: 'success' | 'error'; text: string } | null>(null)
+
 
 // ==================== Tabs ====================
 const tab = ref<'transport' | 'vehicle' | 'shipping' | 'pending'>('transport')
@@ -22,6 +23,7 @@ const tForm = ref({ orderNo: '', plateNo: '', productName: '', prodBatchNo: '', 
 const transportMethodLabels = ['', '公路', '铁路', '航空', '海运']
 const transportStatusLabels = ['待匹配', '待发运', '运输中', '已签收', '温度预警', '异常关闭']
 const vehicleOptions = ref<any[]>([])
+const enterpriseOptions = ref<any[]>([])
 
 const tStats = computed(() => ({
   inTransit: transports.value.filter((r: any) => r.transportStatus === 2).length,
@@ -103,6 +105,13 @@ async function loadVehicleOptions() {
   } catch { vehicleOptions.value = [] }
 }
 
+async function loadEnterpriseOptions() {
+  try {
+    const data = await enterpriseApi.search('')
+    enterpriseOptions.value = Array.isArray(data) ? data : []
+  } catch { enterpriseOptions.value = [] }
+}
+
 // ==================== Pending Transport (物流商匹配) ====================
 const pendingTransports = ref<any[]>([])
 const loadingP = ref(false)
@@ -145,7 +154,7 @@ async function loadTransports() {
 async function openCreateT() {
   editingT.value = null
   batchSearchText.value = ''
-  await loadBatchOptions()
+  await Promise.all([loadBatchOptions(), loadEnterpriseOptions()])
   tForm.value = { orderNo: '', plateNo: '', productName: '', prodBatchNo: '', departureName: '', destinationName: '', transportMethod: 0, remark: '' }
   showTModal.value = true
 }
@@ -354,7 +363,10 @@ onMounted(loadTransports)
                   </div>
                 </label>
                 <label>产品名称<input :value="tForm.productName" readonly style="background:#f8fafc;color:#8195aa" placeholder="由批次自动带入" /></label>
-                <label>发运地<input v-model="tForm.departureName" placeholder="发运地址" /></label>
+                <label>发运地
+                  <input v-model="tForm.departureName" list="enterprise-list" placeholder="输入或选择企业" @focus="loadEnterpriseOptions()" />
+                  <datalist id="enterprise-list"><option v-for="e in enterpriseOptions" :key="e.enterpriseUuid" :value="e.enterpriseName" /></datalist>
+                </label>
                 <label>目的地 <span class="required">*</span><input v-model="tForm.destinationName" placeholder="目的地地址" /></label>
                 <label>运输方式<select v-model.number="tForm.transportMethod"><option :value="0">请选择</option><option :value="1">公路</option><option :value="2">铁路</option><option :value="3">航空</option><option :value="4">海运</option></select></label>
               </div>

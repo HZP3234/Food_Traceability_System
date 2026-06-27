@@ -9,6 +9,7 @@ const currentRole = inject<Ref<RoleKey>>('currentRole')!
 const isSeller = computed(() => currentRole.value === 'seller')
 const isManufacturer = computed(() => currentRole.value === 'manufacturer' || currentRole.value === 'super-admin')
 
+
 // 当前登录用户信息
 let currentUser = ''
 let enterpriseUuid = ''
