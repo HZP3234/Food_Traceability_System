@@ -3,6 +3,7 @@ package com.foodtraceability.enterprise.entity;
 import java.math.BigDecimal;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 //
@@ -32,6 +33,7 @@ public class CcTransport {
     private BigDecimal humidLower;
     private String alertMethod;
     private int transportStatus;
+    @TableField(exist = false)
     private String logisticsCompany;
     private String dataHash;
     private String chainHash;

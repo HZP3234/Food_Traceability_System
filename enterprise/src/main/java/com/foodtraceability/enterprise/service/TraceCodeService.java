@@ -180,6 +180,17 @@ public class TraceCodeService {
         int count = dto.getGenerateCount() != null ? dto.getGenerateCount() : 1;
         int maxLimit = traceCodeProperties.getBatchMaxLimit();
 
+        // 必填字段校验
+        if (dto.getProductId() == null || dto.getProductId().isBlank()) {
+            throw new RuntimeException("产品ID不能为空");
+        }
+        if (dto.getEnterpriseId() == null || dto.getEnterpriseId().isBlank()) {
+            throw new RuntimeException("企业ID不能为空");
+        }
+        if (dto.getBatchNo() == null || dto.getBatchNo().isBlank()) {
+            throw new RuntimeException("生产批次号不能为空");
+        }
+
         // 超出上限
         if (count > maxLimit) {
             throw new RuntimeException(
@@ -755,6 +766,9 @@ public class TraceCodeService {
      * 校验不通过抛出异常。
      */
     private void validateBusinessData(TraceCodeGenerateDTO dto) {
+        if (dto.getProductId() == null || dto.getProductId().isBlank()) {
+            throw new RuntimeException("产品ID不能为空");
+        }
         if (dto.getEnterpriseId() == null || dto.getEnterpriseId().isBlank()) {
             throw new RuntimeException("企业ID不能为空");
         }
