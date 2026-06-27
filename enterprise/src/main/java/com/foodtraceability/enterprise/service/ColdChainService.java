@@ -29,6 +29,7 @@ import com.foodtraceability.enterprise.util.CurrentUserUtil;
 //
 @Service
 public class ColdChainService {
+
     @Autowired
     private WarehouseMapper warehouseMapper;
     @Autowired

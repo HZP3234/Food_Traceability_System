@@ -23,6 +23,7 @@ public class ColdChainController {
 
     // ==================== t_warehouse ====================
 
+
     // 按名称查询仓库
     @RequestMapping("/queryWarehouse")
     @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'REGULATOR', 'MANUFACTURER', 'SUPPLIER')")

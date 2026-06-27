@@ -29,6 +29,7 @@ import com.foodtraceability.enterprise.util.CurrentUserUtil;
  */
 @Service
 public class ProductionService {
+
     @Autowired
     private TechTemplateMapper techTemplateMapper;
     @Autowired
