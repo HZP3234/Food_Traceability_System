@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, inject, type Ref } from 'vue'
-import { Box, Check, Close, Delete, Download, Edit, Plus, Search, Select, Upload, Van, Warning } from '@element-plus/icons-vue'
-import { coldChainApi, rawApi, enterpriseApi } from '../services/api'
+import { Check, Close, Delete, Download, Edit, Plus, Search, Select, Upload, Van, Warning } from '@element-plus/icons-vue'
+import { coldChainApi, productionApi, enterpriseApi } from '../services/api'
 import Pagination from '../components/Pagination.vue'
 import type { RoleKey } from '../config/navigation'
 
@@ -12,14 +12,17 @@ const isOtherEnterprise = computed(() => !isLogistics.value)
 const toast = ref<{ type: 'success' | 'error'; text: string } | null>(null)
 
 // ==================== Tabs ====================
-const tab = ref<'transport' | 'vehicle' | 'warehouse' | 'shipping' | 'transportPending'>('transport')
+const tab = ref<'transport' | 'vehicle' | 'shipping' | 'pending'>('transport')
 
 // ==================== Transport ====================
 const loadingT = ref(false); const transports = ref<any[]>([])
 const tFilters = ref({ transportStatus: '', prodBatchNo: '', plateNo: '' })
 const showTModal = ref(false); const editingT = ref<any>(null); const showTConfirm = ref(false); const deletingTId = ref<number | null>(null)
-const tForm = ref({ orderNo: '', plateNo: '', driverName: '', driverPhone: '', productName: '', prodBatchNo: '', departureId: '', departureName: '', destinationId: '', destinationName: '', loadingTemp: '', departTime: '', estimatedArrival: '', transportMethod: 0, collectInterval: '', tempUpper: '', tempLower: '', humidUpper: '', humidLower: '', alertMethod: '', remark: '' })
-const transportStatusLabels = ['', '待发运', '运输中', '已签收', '温度预警', '异常关闭']
+const tForm = ref({ orderNo: '', plateNo: '', productName: '', prodBatchNo: '', departureName: '', destinationName: '', transportMethod: 0, logisticsCompany: '', remark: '' })
+const transportMethodLabels = ['', '公路', '铁路', '航空', '海运']
+const transportStatusLabels = ['待匹配', '待发运', '运输中', '已签收', '温度预警', '异常关闭']
+const logisticsOptions = ref<any[]>([])
+const vehicleOptions = ref<any[]>([])
 
 const tStats = computed(() => ({
   inTransit: transports.value.filter((r: any) => r.transportStatus === 2).length,
@@ -31,16 +34,9 @@ const tStats = computed(() => ({
 const loadingV = ref(false); const vehicles = ref<any[]>([])
 const vFilters = ref({ vehicleStatus: '', ownerName: '', coldType: '' })
 const showVModal = ref(false); const editingV = ref<any>(null); const showVConfirm = ref(false); const deletingVId = ref<number | null>(null)
-const vForm = ref({ plateNo: '', vehicleModel: '', driverName: '', driverPhone: '', ownerName: '', coldType: '', tempRange: '', remark: '' })
+const vForm = ref({ plateNo: '', vehicleModel: '', driverName: '', driverPhone: '', coldType: '', tempMin: '', tempMax: '', remark: '' })
+const coldTypeOptions = ['冷藏', '冷冻', '恒温', '常温']
 const vehicleStatusLabels = ['', '空闲', '运输中', '维修中']
-
-// ==================== Warehouse ====================
-const loadingW = ref(false); const warehouses = ref<any[]>([])
-const wFilters = ref({ warehouseType: '', warehouseStatus: '' })
-const showWModal = ref(false); const editingW = ref<any>(null); const showWConfirm = ref(false); const deletingWId = ref<number | null>(null)
-const wForm = ref({ warehouseName: '', warehouseType: 0, address: '', capacity: '', manager: '', tempRange: '', humidityRange: '', warehouseStatus: 0, remark: '' })
-const warehouseTypeLabels = ['', '原料仓', '成品仓', '冷链仓', '中转仓']
-const warehouseStatusLabels = ['', '启用', '停用']
 
 // ==================== Shipping (发运签收) ====================
 const shippingOrders = ref<any[]>([])
@@ -67,40 +63,14 @@ function statusClass(s: string) {
   return 'status-active'
 }
 
-// ==================== Batch / Enterprise search for forms ====================
+// ==================== Batch / Vehicle search for forms ====================
 const batchOptions = ref<any[]>([])
-const enterpriseOptions = ref<any[]>([])
-const selectedDestination = ref('')
-const destSearchText = ref('')
-const destDropdownVisible = ref(false)
 const batchSearchText = ref('')
 const batchDropdownVisible = ref(false)
 
-// 获取当前用户的企业信息
-async function loadCurrentUserEnterprise() {
-  try {
-    const raw = sessionStorage.getItem('fts-admin-user')
-    if (raw) {
-      const user = JSON.parse(raw)
-      const name = user.realName || user.username || ''
-      if (name) {
-        const list = await enterpriseApi.search(name)
-        if (Array.isArray(list) && list.length > 0) {
-          const self = list.find((e: any) => e.enterpriseName === name) || list[0]
-          return self
-        }
-      }
-    }
-  } catch {}
-  return null
-}
-
 async function loadBatchOptions() {
   try {
-    const isSupplier = currentRole?.value === 'supplier'
-    // 供应商：不传筛选条件，加载所有批次让下拉有内容
-    // 非供应商：不传筛选条件，加载所有批次供选择
-    const data = await rawApi.list({})
+    const data = await productionApi.listProdBatch({})
     batchOptions.value = Array.isArray(data) ? data : []
   } catch { batchOptions.value = [] }
 }
@@ -127,37 +97,53 @@ function onBatchFocus() { batchDropdownVisible.value = true; if (batchOptions.va
 function onBatchInput() { batchDropdownVisible.value = true }
 function onBatchBlur() { setTimeout(() => batchDropdownVisible.value = false, 200) }
 
-async function loadEnterpriseOptions() {
+async function loadVehicleOptions() {
   try {
-    const data = await enterpriseApi.search(destSearchText.value || '')
-    enterpriseOptions.value = Array.isArray(data) ? data : []
-  } catch { enterpriseOptions.value = [] }
+    const data = await coldChainApi.listVehicle({})
+    vehicleOptions.value = Array.isArray(data) ? data : []
+  } catch { vehicleOptions.value = [] }
 }
 
-const filteredEnterpriseOptions = computed(() => {
-  if (!destSearchText.value) return enterpriseOptions.value
-  const q = destSearchText.value.toLowerCase()
-  return enterpriseOptions.value.filter((e: any) =>
-    (e.enterpriseName || '').toLowerCase().includes(q) ||
-    (e.address || '').toLowerCase().includes(q)
-  )
-})
-
-function onDestinationSelect() {
-  destDropdownVisible.value = false
-  if (selectedDestination.value) {
-    try {
-      const ent = JSON.parse(selectedDestination.value)
-      destSearchText.value = ent.enterpriseName || ''
-      tForm.value.destinationName = ent.address || ent.enterpriseName || ''
-      tForm.value.destinationId = ent.enterpriseUuid || ''
-    } catch {}
-  }
+async function loadLogisticsOptions() {
+  try {
+    const data = await enterpriseApi.search('')
+    logisticsOptions.value = Array.isArray(data) ? data.filter((e: any) => e.enterpriseType == 3) : []
+  } catch { logisticsOptions.value = [] }
 }
 
-function onDestFocus() { destDropdownVisible.value = true; if (enterpriseOptions.value.length === 0) loadEnterpriseOptions() }
-function onDestBlur() { setTimeout(() => destDropdownVisible.value = false, 200) }
-function onDestInput() { destDropdownVisible.value = true; loadEnterpriseOptions() }
+// ==================== Pending Transport (物流商匹配) ====================
+const pendingTransports = ref<any[]>([])
+const loadingP = ref(false)
+const showMatchModal = ref(false)
+const matchTarget = ref<any>(null)
+const matchPlateNo = ref('')
+
+async function loadPendingTransports() {
+  loadingP.value = true
+  try {
+    const data = await coldChainApi.listPendingTransport()
+    pendingTransports.value = Array.isArray(data) ? data : []
+  } catch { pendingTransports.value = [] }
+  finally { loadingP.value = false }
+}
+
+function openMatchModal(row: any) {
+  matchTarget.value = row
+  matchPlateNo.value = ''
+  loadVehicleOptions()
+  showMatchModal.value = true
+}
+
+async function submitMatch() {
+  if (!matchTarget.value || !matchPlateNo.value) { notify('error', '请选择运输车辆'); return }
+  try {
+    await coldChainApi.matchTransport(matchTarget.value.transportId, matchPlateNo.value)
+    notify('success', '运输订单匹配成功')
+    showMatchModal.value = false
+    loadPendingTransports()
+    loadTransports()
+  } catch (e: any) { notify('error', '匹配失败: ' + e.message) }
+}
 
 // ==================== Transport CRUD ====================
 async function loadTransports() {
@@ -166,34 +152,27 @@ async function loadTransports() {
 }
 async function openCreateT() {
   editingT.value = null
-  selectedDestination.value = ''
   batchSearchText.value = ''
-  destSearchText.value = ''
-  await Promise.all([loadBatchOptions(), loadEnterpriseOptions()])
-  const self = await loadCurrentUserEnterprise()
-  const autoDeparture = self?.address || self?.enterpriseName || ''
-  tForm.value = { orderNo: '', plateNo: '', driverName: '', driverPhone: '', productName: '', prodBatchNo: '', departureId: '', departureName: autoDeparture, destinationId: '', destinationName: '', loadingTemp: '', departTime: '', estimatedArrival: new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString().slice(0, 16), transportMethod: 0, collectInterval: '', tempUpper: '', tempLower: '', humidUpper: '', humidLower: '', alertMethod: '', remark: '' }
+  await Promise.all([loadBatchOptions(), loadLogisticsOptions()])
+  tForm.value = { orderNo: '', plateNo: '', productName: '', prodBatchNo: '', departureName: '', destinationName: '', transportMethod: 0, logisticsCompany: '', remark: '' }
   showTModal.value = true
 }
 function openEditT(row: any) {
-  if (isOtherEnterprise.value) { notify('error', '仅冷链物流商可编辑运输详情'); return }
   editingT.value = row
-  selectedDestination.value = ''
   batchSearchText.value = row.prodBatchNo || ''
-  destSearchText.value = row.destinationName || ''
   loadBatchOptions()
-  loadEnterpriseOptions()
-  tForm.value = { orderNo: row.orderNo ?? '', plateNo: row.plateNo ?? '', driverName: row.driverName ?? '', driverPhone: row.driverPhone ?? '', productName: row.productName ?? '', prodBatchNo: row.prodBatchNo ?? '', departureId: row.departureId ?? '', departureName: row.departureName ?? '', destinationId: row.destinationId ?? '', destinationName: row.destinationName ?? '', loadingTemp: row.loadingTemp ?? '', departTime: row.departTime ?? '', estimatedArrival: row.estimatedArrival ?? '', transportMethod: row.transportMethod ?? 0, collectInterval: row.collectInterval ?? '', tempUpper: row.tempUpper ?? '', tempLower: row.tempLower ?? '', humidUpper: row.humidUpper ?? '', humidLower: row.humidLower ?? '', alertMethod: row.alertMethod ?? '', remark: row.remark ?? '' }
+  if (isLogistics.value) loadVehicleOptions()
+  tForm.value = { orderNo: row.orderNo ?? '', plateNo: row.plateNo ?? '', productName: row.productName ?? '', prodBatchNo: row.prodBatchNo ?? '', departureName: row.departureName ?? '', destinationName: row.destinationName ?? '', transportMethod: row.transportMethod ?? 0, logisticsCompany: row.logisticsCompany ?? '', remark: row.remark ?? '' }
   showTModal.value = true
 }
 async function submitT() {
-  if (!tForm.value.prodBatchNo.trim()) { notify('error', '请选择关联批次'); return }
-  if (!tForm.value.destinationName.trim()) { notify('error', '请选择目的地企业'); return }
+  if (!tForm.value.prodBatchNo.trim()) { notify('error', '请选择关联生产批次'); return }
+  if (!tForm.value.destinationName.trim()) { notify('error', '请填写目的地'); return }
+  if (!editingT.value && !tForm.value.logisticsCompany.trim()) { notify('error', '请选择物流公司'); return }
   try {
     const data: Record<string, any> = { ...tForm.value }
-    // 非物流角色提交时不验证 orderNo——后端自动生成
     if (editingT.value) { data.transportId = editingT.value.transportId; await coldChainApi.updateTransport(data); notify('success', '运输订单更新成功') }
-    else { await coldChainApi.createTransport(data); notify('success', '运输单号已创建，等待冷链物流商完善信息') }
+    else { await coldChainApi.createTransport(data); notify('success', '运输订单已提交，等待物流公司匹配车辆') }
     showTModal.value = false; loadTransports()
   } catch (e: any) { notify('error', '操作失败: ' + e.message) }
 }
@@ -208,8 +187,8 @@ async function stateAction(action: string, id: number) {
 
 // ==================== Vehicle CRUD (仅物流商) ====================
 async function loadVehicles() { loadingV.value = true; try { const p: Record<string, any> = {}; if (vFilters.value.vehicleStatus) p.vehicleStatus = Number(vFilters.value.vehicleStatus); if (vFilters.value.ownerName) p.ownerName = vFilters.value.ownerName; if (vFilters.value.coldType) p.coldType = vFilters.value.coldType; const data = await coldChainApi.listVehicle(p); vehicles.value = Array.isArray(data) ? data : []; vPage.value = 1 } catch (e: any) { notify('error', '加载车辆失败') } finally { loadingV.value = false } }
-function openCreateV() { if (isOtherEnterprise.value) { notify('error', '仅冷链物流商可注册车辆'); return }; editingV.value = null; vForm.value = { plateNo: '', vehicleModel: '', driverName: '', driverPhone: '', ownerName: '', coldType: '', tempRange: '', remark: '' }; showVModal.value = true }
-function openEditV(row: any) { if (isOtherEnterprise.value) { notify('error', '仅冷链物流商可编辑车辆'); return }; editingV.value = row; vForm.value = { plateNo: row.plateNo ?? '', vehicleModel: row.vehicleModel ?? '', driverName: row.driverName ?? '', driverPhone: row.driverPhone ?? '', ownerName: row.ownerName ?? '', coldType: row.coldType ?? '', tempRange: row.tempRange ?? '', remark: row.remark ?? '' }; showVModal.value = true }
+function openCreateV() { editingV.value = null; vForm.value = { plateNo: '', vehicleModel: '', driverName: '', driverPhone: '', coldType: '', tempMin: '', tempMax: '', remark: '' }; showVModal.value = true }
+function openEditV(row: any) { editingV.value = row; vForm.value = { plateNo: row.plateNo ?? '', vehicleModel: row.vehicleModel ?? '', driverName: row.driverName ?? '', driverPhone: row.driverPhone ?? '', coldType: row.coldType ?? '', tempMin: row.tempMin ?? row.tempRange ?? '', tempMax: row.tempMax ?? '', remark: row.remark ?? '' }; showVModal.value = true }
 async function submitV() { try { const data: Record<string, any> = { ...vForm.value }; if (editingV.value) { data.vehicleId = editingV.value.vehicleId; await coldChainApi.updateVehicle(data); notify('success', '车辆信息更新成功') } else { await coldChainApi.createVehicle(data); notify('success', '冷链车辆注册成功') } showVModal.value = false; loadVehicles() } catch (e: any) { notify('error', '操作失败') } }
 function confirmDeleteV(id: number) { if (isOtherEnterprise.value) { notify('error', '仅冷链物流商可删除'); return }; deletingVId.value = id; showVConfirm.value = true }
 async function doDeleteV() { try { await coldChainApi.deleteVehicle(deletingVId.value!); notify('success', '车辆删除成功'); showVConfirm.value = false; loadVehicles() } catch (e: any) { notify('error', '删除失败') } }
@@ -291,9 +270,8 @@ function switchTab(t: typeof tab.value) {
   tab.value = t
   if (t === 'transport') loadTransports()
   else if (t === 'vehicle') loadVehicles()
-  else if (t === 'warehouse') loadWarehouses()
   else if (t === 'shipping') loadShippingOrders()
-  else if (t === 'transportPending') loadTransportPendings()
+  else if (t === 'pending') loadPendingTransports()
 }
 onMounted(loadTransports)
 </script>
@@ -320,17 +298,16 @@ onMounted(loadTransports)
     <!-- Tabs -->
     <div class="trace-tabs">
       <button class="trace-tab-btn" :class="{ active: tab === 'transport' }" @click="switchTab('transport')"><el-icon><Van /></el-icon> 运输订单</button>
+      <button v-if="isLogistics" class="trace-tab-btn" :class="{ active: tab === 'pending' }" @click="switchTab('pending')"><el-icon><Select /></el-icon> 待匹配运输</button>
       <button class="trace-tab-btn" :class="{ active: tab === 'shipping' }" @click="switchTab('shipping')"><el-icon><Check /></el-icon> 发运签收</button>
-      <button class="trace-tab-btn" :class="{ active: tab === 'transportPending' }" @click="switchTab('transportPending')"><el-icon><Select /></el-icon> 运输待匹配</button>
-      <button v-if="isLogistics" class="trace-tab-btn" :class="{ active: tab === 'vehicle' }" @click="switchTab('vehicle')"><el-icon><Van /></el-icon> 冷链车辆</button>
-      <button v-if="isLogistics" class="trace-tab-btn" :class="{ active: tab === 'warehouse' }" @click="switchTab('warehouse')"><el-icon><Box /></el-icon> 仓库管理</button>
+      <button class="trace-tab-btn" :class="{ active: tab === 'vehicle' }" @click="switchTab('vehicle')"><el-icon><Van /></el-icon> 冷链车辆</button>
     </div>
 
     <!-- ==================== Transport ==================== -->
     <template v-if="tab === 'transport'">
       <section class="trace-panel filter-panel">
         <div class="filter-grid-4">
-          <label>状态<select v-model="tFilters.transportStatus"><option value="">全部</option><option value="1">待发运</option><option value="2">运输中</option><option value="3">已签收</option><option value="4">温度预警</option><option value="5">异常关闭</option></select></label>
+          <label>状态<select v-model="tFilters.transportStatus"><option value="">全部</option><option value="0">待匹配</option><option value="1">待发运</option><option value="2">运输中</option><option value="3">已签收</option><option value="4">温度预警</option><option value="5">异常关闭</option></select></label>
           <label>生产批次<input v-model="tFilters.prodBatchNo" @keyup.enter="loadTransports" /></label>
           <label>车牌号<input v-model="tFilters.plateNo" @keyup.enter="loadTransports" /></label>
           <div class="filter-actions"><button class="primary" @click="loadTransports"><el-icon><Search /></el-icon> 查询</button></div>
@@ -339,30 +316,27 @@ onMounted(loadTransports)
       <section class="trace-panel list-panel">
         <header class="panel-header">
           <div><p>运输台账</p><h2>运输订单列表</h2></div>
-          <button class="primary create" @click="openCreateT"><el-icon><Plus /></el-icon> {{ isLogistics ? '创建运输订单' : '新建运输单号' }}</button>
+          <button v-if="!isLogistics" class="primary create" @click="openCreateT"><el-icon><Plus /></el-icon> 新建运输订单</button>
         </header>
-        <div class="table-wrap"><table><thead><tr><th>订单号</th><th>车牌</th><th>原料批次</th><th>产品</th><th>发运地</th><th>目的地</th><th>温度(℃)</th><th>状态</th><th>发运时间</th><th>预计到达</th><th>操作</th></tr></thead>
+        <div class="table-wrap"><table><thead><tr><th>订单号</th><th>{{ isLogistics ? '运输车辆' : '物流公司' }}</th><th>生产批次</th><th>产品</th><th>发运地</th><th>目的地</th><th>运输方式</th><th>状态</th><th>操作</th></tr></thead>
           <tbody>
-            <tr v-if="loadingT"><td colspan="13" class="empty">加载中...</td></tr>
-            <tr v-else-if="!transports.length"><td colspan="13" class="empty">暂无运输订单，点击"新建运输单号"开始</td></tr>
+            <tr v-if="loadingT"><td colspan="9" class="empty">加载中...</td></tr>
+            <tr v-else-if="!transports.length"><td colspan="9" class="empty">暂无运输订单，点击"创建运输订单"开始</td></tr>
             <tr v-for="row in paginatedTransports" :key="row.transportId">
               <td><code>{{ row.orderNo }}</code></td>
-              <td>{{ row.plateNo || '待分配' }}</td>
+              <td>{{ isLogistics ? (row.plateNo || '待分配') : (row.logisticsCompany || '待匹配') }}</td>
               <td><code>{{ row.prodBatchNo || '-' }}</code></td>
               <td>{{ row.productName || '-' }}</td>
               <td>{{ row.departureName || '-' }}</td>
               <td>{{ row.destinationName || '-' }}</td>
-              <td>{{ row.loadingTemp ? row.loadingTemp + '℃' : '-' }}</td>
+              <td>{{ transportMethodLabels[row.transportMethod] || '-' }}</td>
               <td><span class="status" :class="statusClass(transportStatusLabels[row.transportStatus] || '')">{{ transportStatusLabels[row.transportStatus] || '-' }}</span></td>
-              <td>{{ row.departTime || '-' }}</td>
-              <td>{{ row.estimatedArrival || '-' }}</td>
               <td class="actions">
-                <button v-if="isLogistics" @click="openEditT(row)"><el-icon><Edit /></el-icon> 编辑</button>
-                <button v-else @click="openEditT(row)"><el-icon><Search /></el-icon> 查看</button>
-                <button v-if="isLogistics && row.transportStatus === 1" @click="stateAction('depart', row.transportId)"><el-icon><Upload /></el-icon> 发运</button>
-                <button v-if="isLogistics && row.transportStatus === 2" @click="stateAction('arrive', row.transportId)"><el-icon><Download /></el-icon> 签收</button>
-                <button v-if="isLogistics && row.transportStatus === 4" class="danger" @click="stateAction('close', row.transportId)"><el-icon><Close /></el-icon> 关闭</button>
-                <button v-if="isLogistics" class="danger" @click="confirmDeleteT(row.transportId)"><el-icon><Delete /></el-icon> 删除</button>
+                <button @click="openEditT(row)"><el-icon><Edit /></el-icon> 编辑</button>
+                <button v-if="row.transportStatus === 1" @click="stateAction('depart', row.transportId)"><el-icon><Upload /></el-icon> 发运</button>
+                <button v-if="row.transportStatus === 2" @click="stateAction('arrive', row.transportId)"><el-icon><Download /></el-icon> 签收</button>
+                <button v-if="row.transportStatus === 4" class="danger" @click="stateAction('close', row.transportId)"><el-icon><Close /></el-icon> 关闭</button>
+                <button class="danger" @click="confirmDeleteT(row.transportId)"><el-icon><Delete /></el-icon> 删除</button>
               </td>
             </tr>
           </tbody></table></div>
@@ -371,99 +345,47 @@ onMounted(loadTransports)
 
       <!-- Transport Modal -->
       <div v-if="showTModal" class="trace-modal-backdrop" @click.self="showTModal = false">
-        <section class="trace-modal" :style="{ width: isLogistics ? '760px' : '520px' }">
-          <header><div><p>{{ isLogistics ? '运输管理' : '运输单号' }}</p><h2>{{ editingT ? (isLogistics ? '编辑运输订单' : '查看运输详情') : (isLogistics ? '创建运输订单' : '新建运输单号') }}</h2></div><button @click="showTModal = false"><el-icon><Close /></el-icon></button></header>
+        <section class="trace-modal" style="width:520px">
+          <header><div><p>运输管理</p><h2>{{ editingT ? '编辑运输订单' : '创建运输订单' }}</h2></div><button @click="showTModal = false"><el-icon><Close /></el-icon></button></header>
           <div class="modal-body">
-
-            <!-- 非物流商：简化表单 -->
-            <template v-if="isOtherEnterprise">
-              <div class="trace-hint info">选择关联批次和目的企业即可发起运输请求。车辆分配、运输环境等由冷链物流商后续完善。</div>
-              <div class="form-section">
-                <div class="form-section-title"><span class="section-ico">运</span>运输基本信息</div>
-                <div class="grid-form">
-                  <label>运输单号<span style="color:#8195aa">（自动生成）</span><input :value="tForm.orderNo" readonly style="background:#f8fafc;color:#8195aa" placeholder="提交后系统自动生成" /></label>
-                  <label>关联批次 <span class="required">*</span>
-                    <div class="searchable-select">
-                      <input v-model="batchSearchText" placeholder="输入批次号或产品名搜索..." @focus="onBatchFocus" @blur="onBatchBlur" @input="onBatchInput" />
-                      <div v-if="batchDropdownVisible && filteredBatchOptions.length" class="select-dropdown">
-                        <div v-for="r in filteredBatchOptions" :key="r.batchNo" class="select-option" @mousedown.prevent="tForm.prodBatchNo = r.batchNo; onBatchSelect()">
-                          <strong>{{ r.batchNo }}</strong> — {{ r.productName }} <small style="color:#8195aa">{{ r.supplierName || '' }}</small>
-                        </div>
+            <div class="form-section">
+              <div class="form-section-title"><span class="section-ico">运</span>运输信息</div>
+              <div class="grid-form">
+                <label>订单号<span style="color:#8195aa">（自动生成）</span><input :value="tForm.orderNo" readonly style="background:#f8fafc;color:#8195aa" placeholder="提交后自动生成" /></label>
+                <template v-if="isLogistics && editingT">
+                  <label>运输车辆
+                    <el-select v-model="tForm.plateNo" filterable clearable placeholder="搜索选择车辆" style="width:100%" @focus="loadVehicleOptions()">
+                      <el-option v-for="v in vehicleOptions" :key="v.plateNo" :label="v.plateNo + ' (' + (v.vehicleModel||'') + ')'" :value="v.plateNo" />
+                    </el-select>
+                  </label>
+                </template>
+                <template v-else>
+                  <label>物流公司 <span class="required">*</span>
+                    <input v-model="tForm.logisticsCompany" list="logistics-list" placeholder="输入或选择物流公司" @focus="loadLogisticsOptions()" />
+                    <datalist id="logistics-list"><option v-for="lc in logisticsOptions" :key="lc.enterpriseUuid" :value="lc.enterpriseName" /></datalist>
+                  </label>
+                </template>
+                <label>关联生产批次 <span class="required">*</span>
+                  <div class="searchable-select">
+                    <input v-model="batchSearchText" placeholder="输入批次号或产品名搜索..." @focus="onBatchFocus" @blur="onBatchBlur" @input="onBatchInput" />
+                    <div v-if="batchDropdownVisible && filteredBatchOptions.length" class="select-dropdown">
+                      <div v-for="r in filteredBatchOptions" :key="r.batchNo" class="select-option" @mousedown.prevent="tForm.prodBatchNo = r.batchNo; onBatchSelect()">
+                        <strong>{{ r.batchNo }}</strong> — {{ r.productName }}
                       </div>
                     </div>
-                  </label>
-                  <label>产品名称<input :value="tForm.productName" readonly style="background:#f8fafc;color:#8195aa" placeholder="由批次自动带入" /></label>
-                  <label>发运地<input :value="tForm.departureName" readonly style="background:#f8fafc;color:#8195aa" placeholder="自动填入本企业地址" /></label>
-                  <label>目的地 <span class="required">*</span>
-                    <div class="searchable-select">
-                      <input v-model="destSearchText" placeholder="输入企业名搜索..." @focus="onDestFocus" @blur="onDestBlur" @input="onDestInput" />
-                      <div v-if="destDropdownVisible && filteredEnterpriseOptions.length" class="select-dropdown">
-                        <div v-for="ent in filteredEnterpriseOptions" :key="ent.enterpriseUuid" class="select-option" @mousedown.prevent="selectedDestination = JSON.stringify(ent); onDestinationSelect()">
-                          <strong>{{ ent.enterpriseName }}</strong> — {{ ent.address || '地址未登记' }} <small style="color:#8195aa">{{ ['','供应商','加工商','物流商','零售商'][ent.enterpriseType] || '' }}</small>
-                        </div>
-                      </div>
-                    </div>
-                  </label>
-                  <label>预计到达时间<input :value="tForm.estimatedArrival" readonly style="background:#f8fafc;color:#8195aa" title="系统自动估算，不可修改" /></label>
-                </div>
+                  </div>
+                </label>
+                <label>产品名称<input :value="tForm.productName" readonly style="background:#f8fafc;color:#8195aa" placeholder="由批次自动带入" /></label>
+                <label>发运地<input v-model="tForm.departureName" placeholder="发运地址" /></label>
+                <label>目的地 <span class="required">*</span><input v-model="tForm.destinationName" placeholder="目的地地址" /></label>
+                <label>运输方式<select v-model.number="tForm.transportMethod"><option :value="0">请选择</option><option :value="1">公路</option><option :value="2">铁路</option><option :value="3">航空</option><option :value="4">海运</option></select></label>
               </div>
-              <div class="trace-hint info" style="background:#fff8ed;">提交后冷链物流商将分配车辆并完善运输环境信息，您可在此<strong>实时查看</strong>运输进度。</div>
-            </template>
-
-            <!-- 物流商：完整表单 -->
-            <template v-else>
-              <div class="form-section">
-                <div class="form-section-title"><span class="section-ico">运</span>运输基础信息</div>
-                <div class="grid-form">
-                  <label>订单号<input v-model="tForm.orderNo" placeholder="留空自动生成LO...YMMDDXXXX" /></label>
-                  <label>车牌号 *<input v-model="tForm.plateNo" placeholder="分配冷链车辆" /></label>
-                  <label>关联批次 *
-                    <div class="searchable-select">
-                      <input v-model="batchSearchText" placeholder="输入批次号或产品名搜索..." @focus="onBatchFocus" @blur="onBatchBlur" @input="onBatchInput" />
-                      <div v-if="batchDropdownVisible && filteredBatchOptions.length" class="select-dropdown">
-                        <div v-for="r in filteredBatchOptions" :key="r.batchNo" class="select-option" @mousedown.prevent="tForm.prodBatchNo = r.batchNo; onBatchSelect()">
-                          <strong>{{ r.batchNo }}</strong> — {{ r.productName }} <small style="color:#8195aa">{{ r.supplierName || '' }}</small>
-                        </div>
-                      </div>
-                    </div>
-                  </label>
-                  <label>产品名称<input :value="tForm.productName" readonly style="background:#f8fafc;color:#8195aa" placeholder="由批次自动带入" /></label>
-                  <label>驾驶员<input v-model="tForm.driverName" /></label>
-                  <label>联系电话<input v-model="tForm.driverPhone" /></label>
-                  <label>发运地<input v-model="tForm.departureName" :placeholder="isLogistics ? '可修改' : '自动填入本企业地址'" /></label>
-                  <label>目的地 *
-                    <div class="searchable-select">
-                      <input v-model="destSearchText" placeholder="输入企业名搜索..." @focus="onDestFocus" @blur="onDestBlur" @input="onDestInput" />
-                      <div v-if="destDropdownVisible && filteredEnterpriseOptions.length" class="select-dropdown">
-                        <div v-for="ent in filteredEnterpriseOptions" :key="ent.enterpriseUuid" class="select-option" @mousedown.prevent="selectedDestination = JSON.stringify(ent); onDestinationSelect()">
-                          <strong>{{ ent.enterpriseName }}</strong> — {{ ent.address || '地址未登记' }} <small style="color:#8195aa">{{ ['','供应商','加工商','物流商','零售商'][ent.enterpriseType] || '' }}</small>
-                        </div>
-                      </div>
-                    </div>
-                  </label>
-                  <label>装载温度 (℃)<input v-model="tForm.loadingTemp" /></label>
-                  <label>发运时间<input v-model="tForm.departTime" /></label>
-                  <label>预计到达<input v-model="tForm.estimatedArrival" :readonly="!isLogistics" :style="!isLogistics ? 'background:#f8fafc;color:#8195aa' : ''" :title="!isLogistics ? '系统自动估算，不可修改' : ''" /></label>
-                  <label>运输方式<select v-model.number="tForm.transportMethod"><option :value="0">请选择</option><option :value="1">公路冷链</option><option :value="2">铁路冷链</option><option :value="3">航空冷链</option><option :value="4">海运冷链</option></select></label>
-                </div>
-              </div>
-              <div class="form-section">
-                <div class="form-section-title"><span class="section-ico">环</span>运输环境监测</div>
-                <div class="grid-form">
-                  <label>采集间隔 (min)<input v-model="tForm.collectInterval" placeholder="如：30" /></label>
-                  <label>温度上限 (℃)<input v-model="tForm.tempUpper" placeholder="如：6.0" /></label>
-                  <label>温度下限 (℃)<input v-model="tForm.tempLower" placeholder="如：2.0" /></label>
-                  <label>湿度上限 (%RH)<input v-model="tForm.humidUpper" placeholder="如：75" /></label>
-                  <label>湿度下限 (%RH)<input v-model="tForm.humidLower" placeholder="如：55" /></label>
-                  <label>预警推送方式<input v-model="tForm.alertMethod" placeholder="短信+系统消息" /></label>
-                </div>
-              </div>
-            </template>
-            <label style="display:grid;gap:6px;color:#718ba6;font-size:12px;font-weight:700;margin-top:10px">备注<textarea v-model="tForm.remark" :placeholder="isLogistics ? '请输入运输相关说明。' : '请输入补充说明。'" style="width:100%;padding:9px;border:1px solid #d7e4f0;border-radius:7px;min-height:60px" /></label>
+            </div>
+            <label style="display:grid;gap:6px;color:#718ba6;font-size:12px;font-weight:700;margin-top:10px">备注<textarea v-model="tForm.remark" placeholder="请输入运输相关说明。" style="width:100%;padding:9px;border:1px solid #d7e4f0;border-radius:7px;min-height:60px" /></label>
           </div>
           <footer>
             <button class="secondary" @click="showTModal = false"><el-icon><Close /></el-icon> 取消</button>
-            <button v-if="!isOtherEnterprise || !editingT" class="primary" @click="submitT"><el-icon><Check /></el-icon> {{ editingT ? '保存' : '提交' }}</button>
+            <button class="primary" @click="submitT"><el-icon><Check /></el-icon> {{ editingT ? '保存' : '提交' }}</button>
           </footer>
         </section>
       </div>
@@ -590,21 +512,64 @@ onMounted(loadTransports)
       </div>
     </template>
 
-    <!-- ==================== Vehicle (仅物流商) ==================== -->
-    <template v-if="tab === 'vehicle' && isLogistics">
+    <!-- ==================== Pending Transport (物流商待匹配) ==================== -->
+    <template v-if="tab === 'pending' && isLogistics">
+      <section class="trace-panel list-panel">
+        <header class="panel-header">
+          <div><p>待匹配运输</p><h2>其他企业提交的运输订单</h2></div>
+          <button class="primary" @click="loadPendingTransports"><el-icon><Search /></el-icon> 刷新</button>
+        </header>
+        <div v-if="loadingP" class="trace-empty-state" style="margin:18px"><p>加载中...</p></div>
+        <div v-else-if="!pendingTransports.length" class="trace-empty-state" style="margin:18px">
+          <div class="empty-icon">🚚</div>
+          <p>暂无待匹配的运输订单</p>
+        </div>
+        <div v-else class="table-wrap"><table><thead><tr><th>订单号</th><th>生产批次</th><th>产品</th><th>发运地</th><th>目的地</th><th>运输方式</th><th>提交方</th><th>操作</th></tr></thead>
+          <tbody>
+            <tr v-for="row in pendingTransports" :key="row.transportId">
+              <td><code>{{ row.orderNo }}</code></td>
+              <td><code>{{ row.prodBatchNo || '-' }}</code></td>
+              <td>{{ row.productName || '-' }}</td>
+              <td>{{ row.departureName || '-' }}</td>
+              <td>{{ row.destinationName || '-' }}</td>
+              <td>{{ transportMethodLabels[row.transportMethod] || '-' }}</td>
+              <td>{{ row.createBy }}</td>
+              <td><button class="primary btn-sm" @click="openMatchModal(row)"><el-icon><Select /></el-icon> 分配车辆</button></td>
+            </tr>
+          </tbody></table></div>
+      </section>
+
+      <!-- Match Modal -->
+      <div v-if="showMatchModal" class="trace-modal-backdrop" @click.self="showMatchModal = false">
+        <section class="trace-modal" style="width:460px">
+          <header><div><p>运输匹配</p><h2>分配车辆到运输订单</h2></div><button @click="showMatchModal = false"><el-icon><Close /></el-icon></button></header>
+          <div class="modal-body">
+            <label style="display:grid;gap:6px;color:#718ba6;font-size:12px;font-weight:700;margin-bottom:16px">运输订单号<input :value="matchTarget?.orderNo" readonly style="background:#f8fafc;width:100%;padding:9px;border:1px solid #d7e4f0;border-radius:7px" /></label>
+            <label style="display:grid;gap:6px;color:#718ba6;font-size:12px;font-weight:700;margin-bottom:16px">选择运输车辆 <span class="required">*</span>
+              <el-select v-model="matchPlateNo" filterable clearable placeholder="搜索选择车辆" style="width:100%" @focus="loadVehicleOptions()">
+                <el-option v-for="v in vehicleOptions" :key="v.plateNo" :label="v.plateNo + ' (' + (v.vehicleModel||'') + ')'" :value="v.plateNo" />
+              </el-select>
+            </label>
+          </div>
+          <footer><button class="secondary" @click="showMatchModal = false"><el-icon><Close /></el-icon> 取消</button><button class="primary" @click="submitMatch"><el-icon><Check /></el-icon> 确认匹配</button></footer>
+        </section>
+      </div>
+    </template>
+
+    <!-- ==================== Vehicle ==================== -->
+    <template v-if="tab === 'vehicle'">
       <section class="trace-panel filter-panel">
         <div class="filter-grid-4">
           <label>状态<select v-model="vFilters.vehicleStatus"><option value="">全部</option><option value="1">空闲</option><option value="2">运输中</option><option value="3">维修中</option></select></label>
-          <label>所属企业<input v-model="vFilters.ownerName" @keyup.enter="loadVehicles" /></label>
-          <label>冷链类型<input v-model="vFilters.coldType" @keyup.enter="loadVehicles" /></label>
+          <label>冷链类型<select v-model="vFilters.coldType"><option value="">全部</option><option v-for="ct in coldTypeOptions" :key="ct" :value="ct">{{ ct }}</option></select></label>
           <div class="filter-actions"><button class="primary" @click="loadVehicles"><el-icon><Search /></el-icon> 查询</button></div>
         </div>
       </section>
       <section class="trace-panel list-panel">
         <header class="panel-header"><div><p>车辆台账</p><h2>冷链车辆管理</h2></div><button class="primary create" @click="openCreateV"><el-icon><Plus /></el-icon> 注册车辆</button></header>
-        <div class="table-wrap"><table><thead><tr><th>车牌号</th><th>车型</th><th>驾驶员</th><th>电话</th><th>企业</th><th>冷链类型</th><th>温控</th><th>状态</th><th>操作</th></tr></thead>
-          <tbody><tr v-if="loadingV"><td colspan="9" class="empty">加载中...</td></tr><tr v-else-if="!vehicles.length"><td colspan="9" class="empty">暂无冷链车辆</td></tr>
-            <tr v-for="row in paginatedVehicles" :key="row.vehicleId"><td><strong>{{ row.plateNo }}</strong></td><td>{{ row.vehicleModel || '-' }}</td><td>{{ row.driverName }}</td><td>{{ row.driverPhone }}</td><td>{{ row.ownerName }}</td><td>{{ row.coldType }}</td><td>{{ row.tempRange || '-' }}</td>
+        <div class="table-wrap"><table><thead><tr><th>车牌号</th><th>车型</th><th>驾驶员</th><th>电话</th><th>冷链类型</th><th>温控范围</th><th>状态</th><th>操作</th></tr></thead>
+          <tbody><tr v-if="loadingV"><td colspan="8" class="empty">加载中...</td></tr><tr v-else-if="!vehicles.length"><td colspan="8" class="empty">暂无冷链车辆</td></tr>
+            <tr v-for="row in paginatedVehicles" :key="row.vehicleId"><td><strong>{{ row.plateNo }}</strong></td><td>{{ row.vehicleModel || '-' }}</td><td>{{ row.driverName }}</td><td>{{ row.driverPhone }}</td><td>{{ row.coldType }}</td><td>{{ row.tempRange || '-' }}</td>
               <td><span class="status" :class="statusClass(vehicleStatusLabels[row.vehicleStatus] || '')">{{ vehicleStatusLabels[row.vehicleStatus] || '-' }}</span></td>
               <td class="actions"><button @click="openEditV(row)"><el-icon><Edit /></el-icon> 编辑</button><button class="danger" @click="confirmDeleteV(row.vehicleId)"><el-icon><Delete /></el-icon> 删除</button></td></tr></tbody></table></div>
       <Pagination v-model="vPage" :total="vehicles.length" :page-size="pageSize" />
@@ -614,8 +579,9 @@ onMounted(loadTransports)
           <div class="modal-body grid-form">
             <label>车牌号 *<input v-model="vForm.plateNo" /></label><label>车型<input v-model="vForm.vehicleModel" /></label>
             <label>驾驶员<input v-model="vForm.driverName" /></label><label>联系电话<input v-model="vForm.driverPhone" /></label>
-            <label>所属企业<input v-model="vForm.ownerName" /></label><label>冷链类型<input v-model="vForm.coldType" placeholder="冷藏/冷冻/恒温" /></label>
-            <label>温控范围<input v-model="vForm.tempRange" placeholder="-18℃ ~ -10℃" /></label>
+            <label>冷链类型<select v-model="vForm.coldType"><option value="">请选择</option><option v-for="ct in coldTypeOptions" :key="ct" :value="ct">{{ ct }}</option></select></label>
+            <label>最低温度 (℃)<input v-model="vForm.tempMin" placeholder="-18" /></label>
+            <label>最高温度 (℃)<input v-model="vForm.tempMax" placeholder="-10" /></label>
           </div>
           <label style="display:grid;gap:6px;color:#718ba6;font-size:12px;font-weight:700;margin:0 23px">备注<textarea v-model="vForm.remark" style="width:100%;padding:9px;border:1px solid #d7e4f0;border-radius:7px;min-height:60px" /></label>
           <footer><button class="secondary" @click="showVModal = false"><el-icon><Close /></el-icon> 取消</button><button class="primary" @click="submitV"><el-icon><Plus /></el-icon> {{ editingV ? '保存' : '注册' }}</button></footer>

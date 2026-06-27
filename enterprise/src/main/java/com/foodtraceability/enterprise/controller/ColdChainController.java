@@ -387,13 +387,20 @@ public class ColdChainController {
         return coldChainService.traceByProdBatch(prodBatchNo);
     }
 
-    // ==================== 原料运输待匹配 ====================
+    // ==================== 运输订单匹配 ====================
 
-    // 冷链物流商匹配供应商预先上传的运输单号
-    @RequestMapping("/matchTransportPending")
+    // 物流商查询待匹配的运输订单（其他企业指定本公司承运的）
+    @RequestMapping("/listPendingTransport")
     @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS')")
-    public String matchTransportPending(String transportOrderNo, String rawBatchNo) {
-        coldChainService.matchTransportPending(transportOrderNo, rawBatchNo);
-        return "运输单号匹配成功";
+    public List<CcTransport> listPendingTransport() {
+        return coldChainService.listPendingForLogistics();
+    }
+
+    // 物流商匹配运输订单到车辆
+    @RequestMapping("/matchTransport")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS')")
+    public String matchTransport(Long transportId, String plateNo) {
+        int num = coldChainService.matchTransport(transportId, plateNo);
+        return num == 1 ? "运输订单匹配成功，已分配车辆" : "匹配失败：订单不存在或已匹配";
     }
 }

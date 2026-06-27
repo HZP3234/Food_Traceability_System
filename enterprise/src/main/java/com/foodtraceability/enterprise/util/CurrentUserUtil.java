@@ -52,6 +52,13 @@ public class CurrentUserUtil {
     }
 
     /**
+     * 当前用户是否为物流商
+     */
+    public boolean isLogistics() {
+        return hasRole("ROLE_LOGISTICS") && !hasRole("ROLE_ADMIN");
+    }
+
+    /**
      * 判断当前用户是否拥有指定角色
      */
     private boolean hasRole(String role) {

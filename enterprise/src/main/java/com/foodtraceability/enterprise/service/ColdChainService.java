@@ -25,6 +25,7 @@ import com.foodtraceability.enterprise.mapper.CcTransportNodeMapper;
 import com.foodtraceability.enterprise.mapper.CcReceiptMapper;
 import com.foodtraceability.enterprise.entity.RawTransportPending;
 import com.foodtraceability.enterprise.mapper.RawTransportPendingMapper;
+import com.foodtraceability.enterprise.util.CurrentUserUtil;
 //
 @Service
 public class ColdChainService {
@@ -42,6 +43,8 @@ public class ColdChainService {
     private CcReceiptMapper ccReceiptMapper;
     @Autowired
     private RawTransportPendingMapper rawTransportPendingMapper;
+    @Autowired
+    private CurrentUserUtil currentUserUtil;
 
     // 生成运输订单号 LO + yyyyMMdd + 4位序号
     public String generateTransportOrderNo() {
@@ -134,10 +137,13 @@ public class ColdChainService {
         return ccVehicleMapper.selectList(qw);
     }
 
-    // 条件列表查询
+    // 条件列表查询：物流公司看全部，其他公司只看自己创建的
     public List<CcVehicle> listVehicle(Integer vehicleStatus, String ownerName, String coldType) {
         QueryWrapper<CcVehicle> qw = new QueryWrapper<>();
         qw.eq("is_deleted", 0);
+        if (!currentUserUtil.isAdmin() && !currentUserUtil.isLogistics()) {
+            qw.eq("create_by", currentUserUtil.getCurrentUsername());
+        }
         if (vehicleStatus != null)
             qw.eq("vehicle_status", vehicleStatus);
         if (ownerName != null && !ownerName.isBlank())
@@ -148,14 +154,16 @@ public class ColdChainService {
         return ccVehicleMapper.selectList(qw);
     }
 
-    // 注册冷链车辆
+    // 注册冷链车辆（车辆属于当前账号/公司）
     public int createVehicle(CcVehicle vehicle) {
         if (vehicle.getVehicleStatus() == null) vehicle.setVehicleStatus(1); // 默认空闲
         String now = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        vehicle.setOwnerId(currentUserUtil.getCurrentUsername());
+        vehicle.setOwnerName(currentUserUtil.getCurrentUsername());
         vehicle.setCreateTime(now);
         vehicle.setUpdateTime(now);
-        vehicle.setCreateBy("SYSTEM");
-        vehicle.setUpdateBy("SYSTEM");
+        vehicle.setCreateBy(currentUserUtil.getCurrentUsername());
+        vehicle.setUpdateBy(currentUserUtil.getCurrentUsername());
         return ccVehicleMapper.insert(vehicle);
     }
 
@@ -214,11 +222,14 @@ public class ColdChainService {
         return ccTransportMapper.selectList(qw);
     }
 
-    // 条件列表查询
+    // 条件列表查询：物流公司看全部，其他公司只看自己创建的
     public List<CcTransport> listTransport(Integer transportStatus, String prodBatchNo,
                                             String plateNo, Integer transportMethod) {
         QueryWrapper<CcTransport> qw = new QueryWrapper<>();
         qw.eq("is_deleted", 0);
+        if (!currentUserUtil.isAdmin() && !currentUserUtil.isLogistics()) {
+            qw.eq("create_by", currentUserUtil.getCurrentUsername());
+        }
         if (transportStatus != null)
             qw.eq("transport_status", transportStatus);
         if (prodBatchNo != null && !prodBatchNo.isBlank())
@@ -231,18 +242,45 @@ public class ColdChainService {
         return ccTransportMapper.selectList(qw);
     }
 
-    // 创建运输订单
+    // 创建运输订单：非物流商创建→待匹配(0)，物流商不允许创建
     public int createTransport(CcTransport transport) {
+        if (currentUserUtil.isLogistics()) {
+            throw new RuntimeException("物流商不能直接创建运输订单，请等待其他企业提交后匹配");
+        }
         if (transport.getOrderNo() == null || transport.getOrderNo().isBlank()) {
             transport.setOrderNo(generateTransportOrderNo());
         }
-        if (transport.getTransportStatus() == 0) transport.setTransportStatus(1);
+        transport.setTransportStatus(0); // 待匹配
         String now = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         transport.setCreateTime(now);
         transport.setUpdateTime(now);
-        transport.setCreateBy("SYSTEM");
-        transport.setUpdateBy("SYSTEM");
+        transport.setCreateBy(currentUserUtil.getCurrentUsername());
+        transport.setUpdateBy(currentUserUtil.getCurrentUsername());
         return ccTransportMapper.insert(transport);
+    }
+
+    // 物流商查询待匹配的运输订单（本公司被指定的）
+    public List<CcTransport> listPendingForLogistics() {
+        QueryWrapper<CcTransport> qw = new QueryWrapper<>();
+        qw.eq("transport_status", 0);
+        qw.eq("logistics_company", currentUserUtil.getCurrentUsername());
+        qw.eq("is_deleted", 0);
+        qw.orderByDesc("create_time");
+        return ccTransportMapper.selectList(qw);
+    }
+
+    // 物流商匹配运输订单到车辆
+    @Transactional
+    public int matchTransport(Long transportId, String plateNo) {
+        CcTransport transport = ccTransportMapper.selectById(transportId);
+        if (transport == null || transport.getTransportStatus() != 0) return 0;
+        CcVehicle vehicle = getByPlateNo(plateNo);
+        if (vehicle == null) return 0;
+        String now = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        transport.setPlateNo(plateNo);
+        transport.setTransportStatus(1); // 待发运
+        transport.setUpdateTime(now);
+        return ccTransportMapper.updateById(transport);
     }
 
     // 更新运输订单
