@@ -64,14 +64,22 @@ public class ProductionService {
         QueryWrapper<TechTemplate> qw = new QueryWrapper<>();
         qw.eq("template_name", templateName);
         qw.eq("is_deleted", 0);
+        // 生产加工商只能查看自己创建的工艺模板
+        if (currentUserUtil.isManufacturer()) {
+            qw.eq("create_by", currentUserUtil.getCurrentUsername());
+        }
         return techTemplateMapper.selectOne(qw);
     }
 
     public List<TechTemplate> listByApplicableProduct(String applicableProduct) {
         QueryWrapper<TechTemplate> qw = new QueryWrapper<>();
         qw.eq("is_deleted", 0);
+        // 生产加工商只能查看自己创建的工艺模板
+        if (currentUserUtil.isManufacturer()) {
+            qw.eq("create_by", currentUserUtil.getCurrentUsername());
+        }
         if (applicableProduct != null && !applicableProduct.isBlank())
-            qw.eq("applicable_product", applicableProduct);
+            qw.like("applicable_product", applicableProduct);
         qw.orderByDesc("create_time");
         return techTemplateMapper.selectList(qw);
     }
@@ -79,8 +87,12 @@ public class ProductionService {
     public List<TechTemplate> listTemplate(String applicableProduct, Integer templateStatus) {
         QueryWrapper<TechTemplate> qw = new QueryWrapper<>();
         qw.eq("is_deleted", 0);
+        // 生产加工商只能查看自己创建的工艺模板
+        if (currentUserUtil.isManufacturer()) {
+            qw.eq("create_by", currentUserUtil.getCurrentUsername());
+        }
         if (applicableProduct != null && !applicableProduct.isBlank())
-            qw.eq("applicable_product", applicableProduct);
+            qw.like("applicable_product", applicableProduct);
         if (templateStatus != null)
             qw.eq("template_status", templateStatus);
         qw.orderByDesc("create_time");
@@ -95,8 +107,8 @@ public class ProductionService {
         String now = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         template.setCreateTime(now);
         template.setUpdateTime(now);
-        template.setCreateBy(template.getCreateBy() != null ? template.getCreateBy() : "SYSTEM");
-        template.setUpdateBy(template.getUpdateBy() != null ? template.getUpdateBy() : "SYSTEM");
+        template.setCreateBy(currentUserUtil.getCurrentUsername());
+        template.setUpdateBy(currentUserUtil.getCurrentUsername());
         if (template.getPressure() == null) template.setPressure("");
         if (template.getCoolTemp() == null) template.setCoolTemp("");
         if (template.getFillTemp() == null) template.setFillTemp("");
@@ -259,12 +271,20 @@ public class ProductionService {
         QueryWrapper<ProdMaterialInput> qw = new QueryWrapper<>();
         qw.eq("raw_batch_no", rawBatchNo);
         qw.eq("is_deleted", 0);
+        // 生产加工商只能查看自己的投料记录
+        if (currentUserUtil.isManufacturer()) {
+            qw.eq("create_by", currentUserUtil.getCurrentUsername());
+        }
         return prodMaterialInputMapper.selectOne(qw);
     }
 
     public List<ProdMaterialInput> listMaterialInput(String materialName) {
         QueryWrapper<ProdMaterialInput> qw = new QueryWrapper<>();
         qw.eq("is_deleted", 0);
+        // 生产加工商只能查看自己的投料记录
+        if (currentUserUtil.isManufacturer()) {
+            qw.eq("create_by", currentUserUtil.getCurrentUsername());
+        }
         if (materialName != null && !materialName.isBlank())
             qw.eq("material_name", materialName);
         qw.orderByDesc("create_time");
@@ -275,8 +295,8 @@ public class ProductionService {
         String now = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         input.setCreateTime(now);
         input.setUpdateTime(now);
-        input.setCreateBy("SYSTEM");
-        input.setUpdateBy("SYSTEM");
+        input.setCreateBy(currentUserUtil.getCurrentUsername());
+        input.setUpdateBy(currentUserUtil.getCurrentUsername());
         return prodMaterialInputMapper.insert(input);
     }
 
@@ -300,6 +320,10 @@ public class ProductionService {
         QueryWrapper<QualityInspection> qw = new QueryWrapper<>();
         qw.eq("inspection_no", inspectionNo);
         qw.eq("is_deleted", 0);
+        // 生产加工商只能查看自己的质检记录
+        if (currentUserUtil.isManufacturer()) {
+            qw.eq("create_by", currentUserUtil.getCurrentUsername());
+        }
         return qualityInspectionMapper.selectOne(qw);
     }
 
@@ -308,6 +332,10 @@ public class ProductionService {
         qw.eq("biz_type", bizType);
         qw.eq("biz_batch_no", bizBatchNo);
         qw.eq("is_deleted", 0);
+        // 生产加工商只能查看自己的质检记录
+        if (currentUserUtil.isManufacturer()) {
+            qw.eq("create_by", currentUserUtil.getCurrentUsername());
+        }
         qw.orderByDesc("create_time");
         return qualityInspectionMapper.selectList(qw);
     }
@@ -316,6 +344,10 @@ public class ProductionService {
         QueryWrapper<QualityInspection> qw = new QueryWrapper<>();
         qw.eq("biz_type", bizType);
         qw.eq("is_deleted", 0);
+        // 生产加工商只能查看自己的质检记录
+        if (currentUserUtil.isManufacturer()) {
+            qw.eq("create_by", currentUserUtil.getCurrentUsername());
+        }
         qw.orderByDesc("create_time");
         return qualityInspectionMapper.selectList(qw);
     }
@@ -324,6 +356,10 @@ public class ProductionService {
                                                    Integer inspectionType, Integer inspectionResult) {
         QueryWrapper<QualityInspection> qw = new QueryWrapper<>();
         qw.eq("is_deleted", 0);
+        // 生产加工商只能查看自己的质检记录
+        if (currentUserUtil.isManufacturer()) {
+            qw.eq("create_by", currentUserUtil.getCurrentUsername());
+        }
         if (bizType != null)
             qw.eq("biz_type", bizType);
         if (bizBatchNo != null && !bizBatchNo.isBlank())
@@ -344,8 +380,8 @@ public class ProductionService {
         String now = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         inspection.setCreateTime(now);
         inspection.setUpdateTime(now);
-        inspection.setCreateBy("SYSTEM");
-        inspection.setUpdateBy("SYSTEM");
+        inspection.setCreateBy(currentUserUtil.getCurrentUsername());
+        inspection.setUpdateBy(currentUserUtil.getCurrentUsername());
         if (inspection.getInspector() == null) inspection.setInspector("");
         if (inspection.getRemark() == null) inspection.setRemark("");
         return qualityInspectionMapper.insert(inspection);

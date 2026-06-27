@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { Check, Close, Connection, Delete, DocumentChecked, Edit, Link, Plus, Search, VideoPlay } from '@element-plus/icons-vue'
-import { productionApi } from '../services/api'
+import { productionApi, rawApi } from '../services/api'
 import Pagination from '../components/Pagination.vue'
 
 const tab = ref<'prod' | 'template' | 'input' | 'inspection'>('prod')
@@ -38,6 +38,9 @@ const form = ref({
 })
 
 const materialInputRows = ref<any[]>([])
+const rawBatchOptions = ref<any[]>([])
+const rawBatchLoading = ref(false)
+const templateOptions = ref<any[]>([])
 const qcFirst = ref({ inspector: '', time: '', result: '合格' })
 const qcProcess = ref({ inspector: '', time: '', result: '合格' })
 const qcFinal = ref({ inspector: '', time: '', result: '合格' })
@@ -112,6 +115,8 @@ function openCreateProd() {
   qcFirst.value = { inspector: '', time: '', result: '合格' };
   qcProcess.value = { inspector: '', time: '', result: '合格' };
   qcFinal.value = { inspector: '', time: '', result: '合格' };
+  templateOptions.value = []
+  loadRawBatchOptions()
   showModal.value = true
 }
 
@@ -132,6 +137,7 @@ function openEditProd(row: any) {
   qcFirst.value = row.qcFirst ?? { inspector: '', time: '', result: '合格' };
   qcProcess.value = row.qcProcess ?? { inspector: '', time: '', result: '合格' };
   qcFinal.value = row.qcFinal ?? { inspector: '', time: '', result: '合格' };
+  loadRawBatchOptions()
   showModal.value = true
 }
 
@@ -186,6 +192,48 @@ function doConfirm() { if (confirmCallback.value) { confirmCallback.value() } }
 // 投料明细行操作
 function addMaterialRow() { materialInputRows.value.push({ rawBatchNo: '', materialName: '', inputAmount: '', unit: 'kg', status: '合格' }) }
 function removeMaterialRow(index: number) { if (materialInputRows.value.length > 1) materialInputRows.value.splice(index, 1) }
+
+// 加载本公司原料批次选项（供投料明细下拉搜索使用）
+async function loadRawBatchOptions() {
+  rawBatchLoading.value = true
+  try {
+    const data = await rawApi.list({})
+    rawBatchOptions.value = Array.isArray(data) ? data : []
+  } catch { rawBatchOptions.value = [] }
+  finally { rawBatchLoading.value = false }
+}
+
+// 选中原料批次时自动填充原料名称
+function onRawBatchSelect(row: any, selectedBatchNo: string) {
+  row.rawBatchNo = selectedBatchNo
+  const batch = rawBatchOptions.value.find((r: any) => r.batchNo === selectedBatchNo)
+  if (batch) {
+    row.materialName = batch.productName || ''
+  }
+}
+
+// 根据产品名称加载对应的工艺模板（供新建生产计划中工艺参数选择）
+async function loadTemplateOptions() {
+  try {
+    const data = await productionApi.listTemplate({})
+    templateOptions.value = Array.isArray(data) ? data : []
+  } catch { templateOptions.value = [] }
+}
+
+// 选中工艺模板时自动填充工艺参数
+function onTemplateSelect(templateName: string) {
+  const tpl = templateOptions.value.find((t: any) => t.templateName === templateName)
+  if (!tpl) return
+  form.value.templateName = tpl.templateName || ''
+  form.value.actualTemp = tpl.targetTemp || ''
+  form.value.actualDuration = tpl.duration || ''
+  form.value.actualPressure = tpl.pressure || ''
+  form.value.actualCoolTemp = tpl.coolTemp || ''
+  form.value.actualFillTemp = tpl.fillTemp || ''
+  form.value.stirDuration = tpl.stirSpeed || ''
+  form.value.actualPh = tpl.phValue || ''
+  form.value.actualViscosity = tpl.viscosity || ''
+}
 
 onMounted(loadProdBatch)
 </script>
@@ -322,7 +370,6 @@ onMounted(loadProdBatch)
               <label>生产批次号<input v-model="form.batchNo" placeholder="留空自动生成" /></label>
               <label>产品名称 *<input v-model="form.productName" placeholder="如：鲜牛奶" /></label>
               <label>生产线 *<input v-model="form.productionLine" placeholder="如：L-05 自动化线" /></label>
-              <label>原料批次号<input v-model="form.rawBatchNo" placeholder="关联原料批次" /></label>
               <label>计划产量<input v-model="form.plannedAmount" type="number" placeholder="如：5000" /></label>
               <label>生产日期 *<input v-model="form.productionDate" type="date" /></label>
               <label>加工日期<input v-model="form.processDate" /></label>
@@ -338,8 +385,28 @@ onMounted(loadProdBatch)
                 <thead><tr><th>原料批次</th><th>名称</th><th>投料量</th><th>单位</th><th>状态</th><th style="width:60px">操作</th></tr></thead>
                 <tbody>
                   <tr v-for="(row, idx) in materialInputRows" :key="idx">
-                    <td><input v-model="row.rawBatchNo" placeholder="YL20240101001" /></td>
-                    <td><input v-model="row.materialName" placeholder="原料名称" /></td>
+                    <td>
+                      <el-select
+                        v-model="row.rawBatchNo"
+                        placeholder="搜索原料批次"
+                        filterable
+                        :loading="rawBatchLoading"
+                        clearable
+                        style="width:100%"
+                        @change="(val: string) => onRawBatchSelect(row, val)"
+                      >
+                        <el-option
+                          v-for="opt in rawBatchOptions"
+                          :key="opt.batchNo"
+                          :label="opt.batchNo + ' — ' + (opt.productName || '')"
+                          :value="opt.batchNo"
+                        >
+                          <span style="font-weight:600">{{ opt.batchNo }}</span>
+                          <span style="color:#8195aa;margin-left:6px;font-size:12px">{{ opt.productName || '-' }} ({{ opt.supplierName || '' }})</span>
+                        </el-option>
+                      </el-select>
+                    </td>
+                    <td><input v-model="row.materialName" placeholder="原料名称" readonly /></td>
                     <td><input v-model="row.inputAmount" type="number" placeholder="0" /></td>
                     <td><input v-model="row.unit" placeholder="kg" /></td>
                     <td><span class="status status-active">{{ row.status }}</span></td>
@@ -354,24 +421,18 @@ onMounted(loadProdBatch)
           <!-- Section: 工艺参数 -->
           <div class="form-section">
             <div class="form-section-title"><span class="section-ico">参</span>工艺参数</div>
-            <div class="grid-form">
-              <label>杀菌温度 (℃)<input v-model="form.actualTemp" placeholder="如：121.5" /></label>
-              <label>杀菌时长 (s)<input v-model="form.actualDuration" placeholder="如：15" /></label>
-              <label>均质压力 (MPa)<input v-model="form.actualPressure" placeholder="如：18" /></label>
-              <label>搅拌时长 (min)<input v-model="form.stirDuration" placeholder="如：45" /></label>
-              <label>真空度 (MPa)<input v-model="form.vacuumDegree" placeholder="如：-0.08" /></label>
-              <label>灌装温度 (℃)<input v-model="form.actualFillTemp" placeholder="如：85.0" /></label>
-              <label>冷却温度 (℃)<input v-model="form.actualCoolTemp" placeholder="如：4.0" /></label>
-              <label>pH 值<input v-model="form.actualPh" placeholder="如：6.8" /></label>
-              <label>粘度 (mPa·s)<input v-model="form.actualViscosity" placeholder="如：2.8" /></label>
-              <label>环境洁净度
-                <select>
-                  <option value="十万级">十万级</option>
-                  <option value="万级">万级</option>
-                  <option value="千级">千级</option>
-                </select>
-              </label>
-            </div>
+            <label style="display:grid;gap:6px;color:#718ba6;font-size:12px;font-weight:700">选择工艺模板
+              <el-select
+                v-model="form.templateName"
+                filterable clearable
+                placeholder="选择产品对应的工艺模板"
+                style="width:100%"
+                @focus="loadTemplateOptions()"
+                @change="(val: string) => onTemplateSelect(val)"
+              >
+                <el-option v-for="tpl in templateOptions" :key="tpl.templateName" :label="tpl.templateName + ' (V' + (tpl.version || '') + ')'" :value="tpl.templateName" />
+              </el-select>
+            </label>
           </div>
 
           <!-- Section: 三级质检报告 -->
@@ -426,7 +487,7 @@ onMounted(loadProdBatch)
       <section class="trace-modal"><header><div><p>模板管理</p><h2>{{ editingTemplate ? '编辑工艺模板' : '新增工艺模板' }}</h2></div><button @click="showTemplateModal = false"><el-icon><Close /></el-icon></button></header>
         <div class="modal-body grid-form">
           <label>模板名称 *<input v-model="templateForm.templateName" /></label><label>版本<input v-model="templateForm.version" /></label>
-          <label>适用产品<input v-model="templateForm.applicableProduct" /></label><label>杀菌温度 (℃)<input v-model="templateForm.targetTemp" /></label>
+          <label>适用产品<input v-model="templateForm.applicableProduct" placeholder="如：有机西红柿" /></label><label>杀菌温度 (℃)<input v-model="templateForm.targetTemp" /></label>
           <label>时长 (s)<input v-model="templateForm.duration" /></label><label>压力 (MPa)<input v-model="templateForm.pressure" /></label>
           <label>冷却温度 (℃)<input v-model="templateForm.coolTemp" /></label><label>灌装温度 (℃)<input v-model="templateForm.fillTemp" /></label>
           <label>搅拌速度 (rpm)<input v-model="templateForm.stirSpeed" /></label><label>pH 值<input v-model="templateForm.phValue" /></label>
@@ -589,6 +650,30 @@ onMounted(loadProdBatch)
 .btn-remove:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+/* el-select 在投料明细表格中的适配 */
+.inline-table td :deep(.el-select) {
+  width: 100%;
+}
+
+.inline-table td :deep(.el-select .el-input__wrapper) {
+  min-height: 30px;
+  border: 1px solid #d7e4f0;
+  border-radius: 5px;
+  padding: 0 6px;
+  font-size: 12px;
+  background: #fff;
+  box-shadow: none;
+}
+
+.inline-table td :deep(.el-select .el-input__wrapper:hover) {
+  border-color: #b8cee8;
+}
+
+.inline-table td :deep(.el-select .el-input__inner) {
+  font-size: 12px;
+  color: #294b6e;
 }
 
 /* 三级质检卡片 */
