@@ -7,9 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 @Mapper
-public interface CcTransportMapper {
-
-    List<Map<String, Object>> selectByProdBatchNo(@Param("prodBatchNo") String prodBatchNo);
+public interface CustSalesStockMapper {
 
     List<Map<String, Object>> selectByProductName(@Param("productName") String productName, @Param("prodBatchNo") String prodBatchNo);
 }

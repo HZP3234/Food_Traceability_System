@@ -26,6 +26,12 @@ public class TraceabilityVO {
     /** 产地 */
     private String origin;
 
+    /** 供应商名称 */
+    private String supplierName;
+
+    /** 原料批次号 */
+    private String rawBatchNo;
+
     /** 生产日期 */
     private String productionDate;
 

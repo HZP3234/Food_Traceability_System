@@ -20,6 +20,8 @@ public class ProdBatch implements Serializable {
 
     private String processBatchNo;
 
+    private String rawBatchNo;
+
     private String productionLine;
 
     private Integer plannedAmount;
