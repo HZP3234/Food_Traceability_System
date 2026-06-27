@@ -16,6 +16,7 @@ const confirmCallback = ref<null | (() => void)>(null)
 
 const list = ref<any[]>([]); const templates = ref<any[]>([]); const materialInputs = ref<any[]>([]); const inspections = ref<any[]>([])
 
+
 // Pagination
 const prodPage = ref(1); const tplPage = ref(1); const inputPage = ref(1); const inspPage = ref(1); const pageSize = ref(10)
 const paginatedList = computed(() => { const s = (prodPage.value - 1) * pageSize.value; return list.value.slice(s, s + pageSize.value) })
@@ -32,7 +33,7 @@ const qcForm = ref({
   resultDesc: '',
 })
 
-const filters = ref({ productName: '', productionLine: '', checkResult: '', batchStatus: '', codeStatus: '', rawBatchNo: '' })
+const filters = ref({ productName: '', productionLine: '', checkResult: '', batchStatus: '', codeStatus: '' })
 const templateFilters = ref({ applicableProduct: '', templateStatus: '' })
 const inspFilters = ref({ bizType: '', bizBatchNo: '', inspectionType: '', inspectionResult: '' })
 
@@ -105,7 +106,6 @@ async function loadProdBatch() {
     if (filters.value.checkResult) p.checkResult = Number(filters.value.checkResult);
     if (filters.value.batchStatus) p.batchStatus = Number(filters.value.batchStatus);
     if (filters.value.codeStatus) p.codeStatus = Number(filters.value.codeStatus);
-    if (filters.value.rawBatchNo) p.rawBatchNo = filters.value.rawBatchNo;
     const data = await productionApi.listProdBatch(p); list.value = Array.isArray(data) ? data : []; prodPage.value = 1
   } catch (e: any) { notify('error', '加载失败: ' + e.message) } finally { loading.value = false }
 }
@@ -141,7 +141,13 @@ function openEditProd(row: any) {
     actualAmount: row.actualAmount ?? '', productionDate: row.productionDate ?? '', remark: row.remark ?? '',
     stirDuration: row.stirDuration ?? '', vacuumDegree: row.vacuumDegree ?? ''
   };
-  materialInputRows.value = row.materialInputs?.length ? row.materialInputs : [{ rawBatchNo: '', materialName: '', inputAmount: '', unit: 'kg', status: '合格' }];
+  // 加载已有的投料记录
+  materialInputRows.value = [{ rawBatchNo: '', materialName: '', inputAmount: '', unit: 'kg', status: '合格' }];
+  if (row.rawBatchNo) {
+    productionApi.queryMaterialInput(row.rawBatchNo).then((input: any) => {
+      if (input && input.rawBatchNo) materialInputRows.value = [{ rawBatchNo: input.rawBatchNo || '', materialName: input.materialName || '', inputAmount: String(input.inputAmount || ''), unit: 'kg', status: input.inputStatus || '合格' }]
+    }).catch(() => {})
+  }
   qcFirst.value = row.qcFirst ?? { inspector: '', time: '', result: '合格' };
   qcProcess.value = row.qcProcess ?? { inspector: '', time: '', result: '合格' };
   qcFinal.value = row.qcFinal ?? { inspector: '', time: '', result: '合格' };
@@ -159,8 +165,23 @@ function submitProdBatch() {
     try {
       const data: Record<string, any> = { ...form.value };
       if (!data.plannedAmount) data.plannedAmount = '0'; if (!data.actualAmount) data.actualAmount = '0'
-      if (editing.value) { data.prodBatchId = editing.value.prodBatchId; await productionApi.updateProdBatch(data); notify('success', '生产批次更新成功') }
-      else { await productionApi.createProdBatch(data); notify('success', '生产批次创建成功') }
+      const validRows = materialInputRows.value.filter((r: any) => r.rawBatchNo && r.materialName && r.inputAmount)
+      if (validRows.length === 0) { notify('error', '请填写完整投料明细'); showConfirm.value = false; return }
+      if (validRows[0]) data.rawBatchNo = validRows[0].rawBatchNo
+      if (editing.value) {
+        data.prodBatchId = editing.value.prodBatchId;
+        await productionApi.updateProdBatch(data);
+        for (const row of validRows) {
+          await productionApi.recordMaterialInput({ rawBatchNo: row.rawBatchNo, materialName: row.materialName, inputAmount: Number(row.inputAmount), inputStatus: row.status || '已投入' })
+        }
+        notify('success', '生产批次更新成功，已保存'+validRows.length+'条投料记录')
+      } else {
+        await productionApi.createProdBatch(data);
+        for (const row of validRows) {
+          await productionApi.recordMaterialInput({ rawBatchNo: row.rawBatchNo, materialName: row.materialName, inputAmount: Number(row.inputAmount), inputStatus: row.status || '已投入' })
+        }
+        notify('success', '生产批次创建成功，已保存'+validRows.length+'条投料记录')
+      }
       showModal.value = false; showConfirm.value = false; loadProdBatch()
     } catch (e: any) { notify('error', '操作失败: ' + e.message) }
   }; showConfirm.value = true
@@ -306,7 +327,6 @@ onMounted(loadProdBatch)
         <div class="filter-grid">
           <label>产品名称<input v-model="filters.productName" placeholder="产品名称" @keyup.enter="loadProdBatch" /></label>
           <label>生产线<input v-model="filters.productionLine" placeholder="生产线" @keyup.enter="loadProdBatch" /></label>
-          <label>原料批次<input v-model="filters.rawBatchNo" placeholder="原料批次号" @keyup.enter="loadProdBatch" /></label>
           <label>质检<select v-model="filters.checkResult"><option value="">全部</option><option value="1">合格</option><option value="2">不合格</option></select></label>
           <label>状态<select v-model="filters.batchStatus"><option value="">全部</option><option value="1">待生产</option><option value="2">生产中</option><option value="3">生产完成</option></select></label>
           <label>绑码<select v-model="filters.codeStatus"><option value="">全部</option><option value="1">已绑码</option><option value="0">未绑定</option></select></label>
@@ -315,13 +335,13 @@ onMounted(loadProdBatch)
       </section>
       <section class="trace-panel list-panel">
         <header class="panel-header"><div><p>生产台账</p><h2>生产批次列表</h2></div><button class="primary create" @click="openCreateProd"><el-icon><Plus /></el-icon> 新增生产批次</button></header>
-        <div class="table-wrap"><table><thead><tr><th>生产批次号</th><th>产品名称</th><th>原料批次</th><th>工艺模板</th><th>生产线</th><th>计划/实际</th><th>生产日期</th><th>质检</th><th>状态</th><th>绑码</th><th>操作</th></tr></thead>
+        <div class="table-wrap"><table><thead><tr><th>生产批次号</th><th>产品名称</th><th>工艺模板</th><th>生产线</th><th>计划/实际</th><th>生产日期</th><th>质检</th><th>状态</th><th>绑码</th><th>操作</th></tr></thead>
           <tbody>
-            <tr v-if="loading"><td colspan="11" class="empty">加载中...</td></tr>
-            <tr v-else-if="!list.length"><td colspan="11" class="empty">暂无生产批次数据</td></tr>
+            <tr v-if="loading"><td colspan="10" class="empty">加载中...</td></tr>
+            <tr v-else-if="!list.length"><td colspan="10" class="empty">暂无生产批次数据</td></tr>
             <tr v-for="row in paginatedList" :key="row.prodBatchId">
               <td><code>{{ row.batchNo }}</code></td><td><strong>{{ row.productName }}</strong></td>
-              <td><code>{{ row.rawBatchNo || '-' }}</code></td><td>{{ row.templateName || '-' }}</td><td>{{ row.productionLine }}</td>
+              <td>{{ row.templateName || '-' }}</td><td>{{ row.productionLine }}</td>
               <td>{{ row.plannedAmount }}/{{ row.actualAmount }}</td><td>{{ row.productionDate }}</td>
               <td><span class="status" :class="statusClass(checkResultLabels[row.checkResult] || '未检测')">{{ checkResultLabels[row.checkResult] || '未检测' }}</span></td>
               <td><span class="status" :class="statusClass(prodBatchStatusLabels[row.batchStatus] || '')">{{ prodBatchStatusLabels[row.batchStatus] || '-' }}</span></td>
