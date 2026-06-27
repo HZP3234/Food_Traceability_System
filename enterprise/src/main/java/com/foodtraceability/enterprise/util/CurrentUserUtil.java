@@ -52,6 +52,17 @@ public class CurrentUserUtil {
     }
 
     /**
+     * 获取当前用户的企业UUID（从JWT中提取）
+     */
+    public String getEnterpriseUuid() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getDetails() instanceof String details) {
+            return details.isBlank() ? null : details;
+        }
+        return null;
+    }
+
+    /**
      * 当前用户是否为物流商
      */
     public boolean isLogistics() {

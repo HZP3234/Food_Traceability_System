@@ -48,6 +48,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 String username = jwtUtil.getUsername(token);
                 String roleType = jwtUtil.getRoleType(token);
                 Integer enterpriseType = jwtUtil.getEnterpriseType(token);
+                String enterpriseUuid = jwtUtil.getEnterpriseUuid(token);
 
                 List<SimpleGrantedAuthority> authorities = new ArrayList<>();
 
@@ -70,6 +71,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(username, null, authorities);
+                if (enterpriseUuid != null && !enterpriseUuid.isBlank()) {
+                    authentication.setDetails(enterpriseUuid);
+                }
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             }
         }

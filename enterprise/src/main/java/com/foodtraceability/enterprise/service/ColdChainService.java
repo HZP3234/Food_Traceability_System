@@ -261,11 +261,15 @@ public class ColdChainService {
         return ccTransportMapper.insert(transport);
     }
 
-    // 物流商查询待匹配的运输订单（所有待匹配订单）
+    // 物流商查询待匹配的运输订单（指定给本公司的）
     public List<CcTransport> listPendingForLogistics() {
         QueryWrapper<CcTransport> qw = new QueryWrapper<>();
         qw.eq("transport_status", 0);
         qw.eq("is_deleted", 0);
+        String myUuid = currentUserUtil.getEnterpriseUuid();
+        if (myUuid != null && !myUuid.isBlank()) {
+            qw.eq("logistics_company", myUuid);
+        }
         qw.orderByDesc("create_time");
         return ccTransportMapper.selectList(qw);
     }

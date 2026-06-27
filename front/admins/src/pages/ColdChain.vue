@@ -19,7 +19,8 @@ const tab = ref<'transport' | 'vehicle' | 'shipping' | 'pending'>('transport')
 const loadingT = ref(false); const transports = ref<any[]>([])
 const tFilters = ref({ transportStatus: '', prodBatchNo: '', plateNo: '' })
 const showTModal = ref(false); const editingT = ref<any>(null); const showTConfirm = ref(false); const deletingTId = ref<number | null>(null)
-const tForm = ref({ orderNo: '', plateNo: '', productName: '', prodBatchNo: '', departureName: '', destinationName: '', transportMethod: 0, remark: '' })
+const tForm = ref({ orderNo: '', plateNo: '', productName: '', prodBatchNo: '', departureName: '', destinationName: '', transportMethod: 0, logisticsCompany: '', remark: '' })
+const logisticsOptions = ref<any[]>([])
 const transportMethodLabels = ['', '公路', '铁路', '航空', '海运']
 const transportStatusLabels = ['待匹配', '待发运', '运输中', '已签收', '温度预警', '异常关闭']
 const vehicleOptions = ref<any[]>([])
@@ -112,6 +113,13 @@ async function loadEnterpriseOptions() {
   } catch { enterpriseOptions.value = [] }
 }
 
+async function loadLogisticsOptions() {
+  try {
+    const data = await enterpriseApi.search('')
+    logisticsOptions.value = Array.isArray(data) ? data.filter((e: any) => e.enterpriseType == 3) : []
+  } catch { logisticsOptions.value = [] }
+}
+
 // ==================== Pending Transport (物流商匹配) ====================
 const pendingTransports = ref<any[]>([])
 const loadingP = ref(false)
@@ -154,8 +162,8 @@ async function loadTransports() {
 async function openCreateT() {
   editingT.value = null
   batchSearchText.value = ''
-  await Promise.all([loadBatchOptions(), loadEnterpriseOptions()])
-  tForm.value = { orderNo: '', plateNo: '', productName: '', prodBatchNo: '', departureName: '', destinationName: '', transportMethod: 0, remark: '' }
+  await Promise.all([loadBatchOptions(), loadEnterpriseOptions(), loadLogisticsOptions()])
+  tForm.value = { orderNo: '', plateNo: '', productName: '', prodBatchNo: '', departureName: '', destinationName: '', transportMethod: 0, logisticsCompany: '', remark: '' }
   showTModal.value = true
 }
 function openEditT(row: any) {
@@ -163,12 +171,13 @@ function openEditT(row: any) {
   batchSearchText.value = row.prodBatchNo || ''
   loadBatchOptions()
   if (isLogistics.value) loadVehicleOptions()
-  tForm.value = { orderNo: row.orderNo ?? '', plateNo: row.plateNo ?? '', productName: row.productName ?? '', prodBatchNo: row.prodBatchNo ?? '', departureName: row.departureName ?? '', destinationName: row.destinationName ?? '', transportMethod: row.transportMethod ?? 0, remark: row.remark ?? '' }
+  tForm.value = { orderNo: row.orderNo ?? '', plateNo: row.plateNo ?? '', productName: row.productName ?? '', prodBatchNo: row.prodBatchNo ?? '', departureName: row.departureName ?? '', destinationName: row.destinationName ?? '', transportMethod: row.transportMethod ?? 0, logisticsCompany: row.logisticsCompany ?? '', remark: row.remark ?? '' }
   showTModal.value = true
 }
 async function submitT() {
   if (!tForm.value.prodBatchNo.trim()) { notify('error', '请选择关联生产批次'); return }
   if (!tForm.value.destinationName.trim()) { notify('error', '请填写目的地'); return }
+  if (!editingT.value && !tForm.value.logisticsCompany.trim()) { notify('error', '请选择物流公司'); return }
   try {
     const data: Record<string, any> = { ...tForm.value }
     if (editingT.value) { data.transportId = editingT.value.transportId; await coldChainApi.updateTransport(data); notify('success', '运输订单更新成功') }
@@ -352,6 +361,10 @@ onMounted(loadTransports)
               <div class="form-section-title"><span class="section-ico">运</span>运输信息</div>
               <div class="grid-form">
                 <label>订单号<span style="color:#8195aa">（自动生成）</span><input :value="tForm.orderNo" readonly style="background:#f8fafc;color:#8195aa" placeholder="提交后自动生成" /></label>
+                <label>物流公司 <span class="required">*</span>
+                  <input v-model="tForm.logisticsCompany" list="logistics-list" placeholder="输入或选择物流公司" @focus="loadLogisticsOptions()" />
+                  <datalist id="logistics-list"><option v-for="lc in logisticsOptions" :key="lc.enterpriseUuid" :value="lc.enterpriseUuid">{{ lc.enterpriseName }}</option></datalist>
+                </label>
                 <label>关联生产批次 <span class="required">*</span>
                   <div class="searchable-select">
                     <input v-model="batchSearchText" placeholder="输入批次号或产品名搜索..." @focus="onBatchFocus" @blur="onBatchBlur" @input="onBatchInput" />
