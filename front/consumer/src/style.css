@@ -63,3 +63,10 @@ textarea {
   background: #fff !important;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 }
+
+/* 登录提示 Toast：黑字 + 浅色背景 */
+.toast-black-text {
+  color: #323233 !important;
+  background: #fff !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}

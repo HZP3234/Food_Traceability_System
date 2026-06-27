@@ -3,12 +3,14 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import { useAppStore } from '@/store/app'
+import { useAuth } from '@/composables/useAuth'
 import { queryTraceability, recordScan } from '@/api/traceability'
 import type { TraceabilityVO } from '@/types'
 
 const route = useRoute()
 const router = useRouter()
 const store = useAppStore()
+const { requireLogin } = useAuth()
 const loading = ref(true)
 const data = ref<TraceabilityVO | null>(null)
 
@@ -25,6 +27,7 @@ function formatDateTime(dateStr: string) {
 }
 
 function goComplaint() {
+  if (!requireLogin()) return
   if (!data.value) return
   router.push({
     name: 'ComplaintSubmit',
