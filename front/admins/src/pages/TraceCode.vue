@@ -4,7 +4,7 @@ import {
   Check, CircleClose, Close, Clock, Connection, Document,
   Plus, Refresh, Search, View, Download,
 } from '@element-plus/icons-vue'
-import { traceCodeApi } from '../services/api'
+import { traceCodeApi, productionApi } from '../services/api'
 import Pagination from '../components/Pagination.vue'
 import QRCode from 'qrcode'
 
@@ -81,12 +81,21 @@ const qrCache = reactive<Record<string, { dataUrl: string; blobUrl: string }>>({
 const filters = ref({
   traceCode: '', productName: '', batchNo: '', traceCodeStatus: '', isOnChain: '',
 })
+// 从 sessionStorage 获取当前企业信息
+let currentUser: { enterpriseUuid: string; enterpriseName: string; realName: string; username: string; roleType: string } | null = null
+try {
+  const raw = sessionStorage.getItem('fts-admin-user')
+  if (raw) currentUser = JSON.parse(raw)
+} catch { /* ignore */ }
 const generateForm = ref({
-  productId: '', productName: '', enterpriseId: '', enterpriseName: '', batchNo: '',
+  productName: '', enterpriseId: currentUser?.enterpriseUuid || '', enterpriseName: currentUser?.enterpriseName || '', batchNo: '',
   codeType: 1, packageLevel: 1, generateCount: 1, qualityResult: 1,
-  expireTime: '', operator: 'admin',
+  expireTime: '', operator: currentUser?.realName || currentUser?.username || 'admin',
 })
-const statusForm = ref({ reason: '', operator: 'admin' })
+const statusForm = ref({ reason: '', operator: currentUser?.realName || currentUser?.username || 'admin' })
+// 批次下拉选项
+const batchOptions = ref<{ batchNo: string; productName: string }[]>([])
+const batchLoading = ref(false)
 
 // ---- Computed ----
 const stats = computed(() => ({
@@ -226,14 +235,29 @@ async function toggleExpand(row: TraceCodeRow) {
 }
 
 // ---- Generate ----
+async function openGenerate() {
+  generateForm.value = {
+    productName: '', enterpriseId: currentUser?.enterpriseUuid || '', enterpriseName: currentUser?.enterpriseName || '', batchNo: '',
+    codeType: 1, packageLevel: 1, generateCount: 1, qualityResult: 1,
+    expireTime: '', operator: currentUser?.realName || currentUser?.username || 'admin',
+  }
+  // 加载生产批次下拉选项
+  batchLoading.value = true
+  try {
+    const data = await productionApi.listProdBatch({})
+    batchOptions.value = Array.isArray(data) ? data : []
+  } catch { batchOptions.value = [] }
+  finally { batchLoading.value = false }
+  showGenerate.value = true
+}
+
 async function submitGenerate() {
   if (
-    !generateForm.value.productId ||
     !generateForm.value.productName ||
     !generateForm.value.enterpriseId ||
     !generateForm.value.batchNo
   ) {
-    notify('error', '请填写产品、企业与生产批次信息')
+    notify('error', '请填写产品名称、企业与生产批次信息')
     return
   }
   try {
@@ -354,7 +378,7 @@ onMounted(loadList)
     <section class="trace-panel list-panel">
       <header class="panel-header">
         <div><p>编码台账</p><h2>溯源码列表</h2></div>
-        <button class="primary create" @click="showGenerate = true"><el-icon><Plus /></el-icon> 批量生成溯源码</button>
+        <button class="primary create" @click="openGenerate"><el-icon><Plus /></el-icon> 批量生成溯源码</button>
       </header>
       <div class="table-wrap">
         <table>
@@ -483,11 +507,17 @@ onMounted(loadList)
           <button @click="showGenerate = false"><el-icon><Close /></el-icon></button>
         </header>
         <div class="modal-body grid-form">
-          <label>产品 ID *<input v-model="generateForm.productId" placeholder="PROD2026001" /></label>
           <label>产品名称 *<input v-model="generateForm.productName" placeholder="产品名称" /></label>
-          <label>企业 ID *<input v-model="generateForm.enterpriseId" placeholder="企业 UUID" /></label>
-          <label>企业名称<input v-model="generateForm.enterpriseName" placeholder="企业全称" /></label>
-          <label>生产批次 *<input v-model="generateForm.batchNo" placeholder="PB20260601" /></label>
+          <label>企业名称<input v-model="generateForm.enterpriseName" placeholder="企业全称" disabled /></label>
+          <label>企业 ID<input v-model="generateForm.enterpriseId" placeholder="企业 UUID" disabled /></label>
+          <label>生产批次 *
+            <select v-model="generateForm.batchNo" :disabled="batchLoading">
+              <option value="">{{ batchLoading ? '加载中…' : '请选择生产批次' }}</option>
+              <option v-for="b in batchOptions" :key="b.batchNo" :value="b.batchNo">
+                {{ b.batchNo }}{{ b.productName ? ' - ' + b.productName : '' }}
+              </option>
+            </select>
+          </label>
           <label>生成数量 *<input v-model.number="generateForm.generateCount" min="1" max="10000" type="number" /></label>
           <label>码类型<select v-model.number="generateForm.codeType"><option :value="1">单品码</option><option :value="2">批次码</option><option :value="3">箱码</option><option :value="4">托盘码</option></select></label>
           <label>包装层级<select v-model.number="generateForm.packageLevel"><option :value="1">最小销售单元</option><option :value="2">外箱</option><option :value="3">托盘</option></select></label>
