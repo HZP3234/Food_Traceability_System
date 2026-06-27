@@ -94,8 +94,17 @@ const generateForm = ref({
 })
 const statusForm = ref({ reason: '', operator: currentUser?.realName || currentUser?.username || 'admin' })
 // 批次下拉选项
-const batchOptions = ref<{ batchNo: string; productName: string }[]>([])
+const batchOptions = ref<{ batchNo: string; productName: string; checkResult?: number }[]>([])
 const batchLoading = ref(false)
+// 选中批次时自动同步产品名称和质检结果
+function onBatchSelect(batchNo: string) {
+  const batch = batchOptions.value.find(b => b.batchNo === batchNo)
+  if (batch) {
+    generateForm.value.productName = batch.productName || ''
+    // 使用批次已有的质检结果，默认为待检(3)
+    generateForm.value.qualityResult = batch.checkResult != null && batch.checkResult > 0 ? batch.checkResult : 3
+  }
+}
 
 // ---- Computed ----
 const stats = computed(() => ({
@@ -238,7 +247,7 @@ async function toggleExpand(row: TraceCodeRow) {
 async function openGenerate() {
   generateForm.value = {
     productName: '', enterpriseId: currentUser?.enterpriseUuid || '', enterpriseName: currentUser?.enterpriseName || '', batchNo: '',
-    codeType: 1, packageLevel: 1, generateCount: 1, qualityResult: 1,
+    codeType: 1, packageLevel: 1, generateCount: 1, qualityResult: 3,
     expireTime: '', operator: currentUser?.realName || currentUser?.username || 'admin',
   }
   // 加载生产批次下拉选项
@@ -511,17 +520,16 @@ onMounted(loadList)
           <label>企业名称<input v-model="generateForm.enterpriseName" placeholder="企业全称" disabled /></label>
           <label>企业 ID<input v-model="generateForm.enterpriseId" placeholder="企业 UUID" disabled /></label>
           <label>生产批次 *
-            <select v-model="generateForm.batchNo" :disabled="batchLoading">
+            <select v-model="generateForm.batchNo" :disabled="batchLoading" @change="(e: Event) => onBatchSelect((e.target as HTMLSelectElement).value)">
               <option value="">{{ batchLoading ? '加载中…' : '请选择生产批次' }}</option>
               <option v-for="b in batchOptions" :key="b.batchNo" :value="b.batchNo">
-                {{ b.batchNo }}{{ b.productName ? ' - ' + b.productName : '' }}
+                {{ b.batchNo }}{{ b.productName ? ' - ' + b.productName : '' }}{{ b.checkResult && b.checkResult > 0 ? (b.checkResult === 1 ? ' [合格]' : ' [不合格]') : '' }}
               </option>
             </select>
           </label>
           <label>生成数量 *<input v-model.number="generateForm.generateCount" min="1" max="10000" type="number" /></label>
           <label>码类型<select v-model.number="generateForm.codeType"><option :value="1">单品码</option><option :value="2">批次码</option><option :value="3">箱码</option><option :value="4">托盘码</option></select></label>
           <label>包装层级<select v-model.number="generateForm.packageLevel"><option :value="1">最小销售单元</option><option :value="2">外箱</option><option :value="3">托盘</option></select></label>
-          <label>质检结果<select v-model.number="generateForm.qualityResult"><option :value="1">合格</option><option :value="3">待检</option><option :value="2">不合格</option></select></label>
           <label>有效期<input v-model="generateForm.expireTime" placeholder="2027-06-24 23:59:59" /></label>
         </div>
         <footer>

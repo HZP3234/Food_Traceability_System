@@ -22,7 +22,15 @@ const paginatedList = computed(() => { const s = (prodPage.value - 1) * pageSize
 const paginatedTemplates = computed(() => { const s = (tplPage.value - 1) * pageSize.value; return templates.value.slice(s, s + pageSize.value) })
 const paginatedInputs = computed(() => { const s = (inputPage.value - 1) * pageSize.value; return materialInputs.value.slice(s, s + pageSize.value) })
 const paginatedInspections = computed(() => { const s = (inspPage.value - 1) * pageSize.value; return inspections.value.slice(s, s + pageSize.value) })
-const editing = ref<any>(null); const editingTemplate = ref<any>(null); const qcTarget = ref<any>(null); const qcResult = ref(1); const chainData = ref<any>(null)
+const editing = ref<any>(null); const editingTemplate = ref<any>(null); const qcTarget = ref<any>(null); const chainData = ref<any>(null)
+// QC modal form
+const qcForm = ref({
+  checkResult: 1,      // 1合格 2不合格
+  inspector: '',
+  inspectionTime: '',
+  inspectionType: 1,    // 1自检 2抽检 3全检
+  resultDesc: '',
+})
 
 const filters = ref({ productName: '', productionLine: '', checkResult: '', batchStatus: '', codeStatus: '', rawBatchNo: '' })
 const templateFilters = ref({ applicableProduct: '', templateStatus: '' })
@@ -161,10 +169,46 @@ function submitProdBatch() {
 function startProd(id: number) { confirmTitle.value = '确认开始生产'; confirmMsg.value = '确认开始该批次的生产？'; confirmBtnLabel.value = '确认开始'; confirmBtnClass.value = 'primary'; confirmCallback.value = async () => { try { await productionApi.startProdBatch(id); notify('success', '生产已开始'); showConfirm.value = false; loadProdBatch() } catch (e: any) { notify('error', '操作失败: ' + e.message) } }; showConfirm.value = true }
 function completeProd(id: number) { confirmTitle.value = '确认完成'; confirmMsg.value = '确认完成该生产批次？'; confirmBtnLabel.value = '确认完成'; confirmBtnClass.value = 'primary'; confirmCallback.value = async () => { try { await productionApi.completeProdBatch(id); notify('success', '生产批次已完成'); showConfirm.value = false; loadProdBatch() } catch (e: any) { notify('error', '操作失败: ' + e.message) } }; showConfirm.value = true }
 function bindCode(id: number) { confirmTitle.value = '确认绑码'; confirmMsg.value = '确认为该生产批次绑定溯源码？'; confirmBtnLabel.value = '确认绑码'; confirmBtnClass.value = 'primary'; confirmCallback.value = async () => { try { await productionApi.bindCode(id); notify('success', '溯源码绑定完成'); showConfirm.value = false; loadProdBatch() } catch (e: any) { notify('error', '绑码失败: ' + e.message) } }; showConfirm.value = true }
-function openQcProd(row: any) { qcTarget.value = row; qcResult.value = 1; showQcProdModal.value = true }
-function submitQcProd() {
-  const resultLabel = qcResult.value === 1 ? '合格' : '不合格'; confirmTitle.value = '确认质检'; confirmMsg.value = `确认将该批次质检结果标记为"${resultLabel}"？`; confirmBtnLabel.value = `确认${resultLabel}`; confirmBtnClass.value = qcResult.value === 1 ? 'primary' : 'danger-fill'
-  confirmCallback.value = async () => { try { await productionApi.qualityCheckProd(qcTarget.value.batchNo, qcResult.value); notify('success', `质检结果已录入（${resultLabel}）`); showQcProdModal.value = false; showConfirm.value = false; loadProdBatch() } catch (e: any) { notify('error', '质检失败: ' + e.message) } }; showConfirm.value = true
+function openQcProd(row: any) {
+  qcTarget.value = row
+  qcForm.value = {
+    checkResult: row.checkResult || 1,
+    inspector: currentUser || '',
+    inspectionTime: new Date().toISOString().slice(0, 16),
+    inspectionType: 1,
+    resultDesc: '',
+  }
+  showQcProdModal.value = true
+}
+async function submitQcProd() {
+  if (!qcForm.value.inspector.trim()) { notify('error', '请填写质检人'); return }
+  if (!qcForm.value.inspectionTime.trim()) { notify('error', '请选择检验日期'); return }
+  const resultLabel = qcForm.value.checkResult === 1 ? '合格' : '不合格'
+  confirmTitle.value = '确认质检'
+  confirmMsg.value = `确认将该批次质检结果标记为"${resultLabel}"？`
+  confirmBtnLabel.value = `确认${resultLabel}`
+  confirmBtnClass.value = qcForm.value.checkResult === 1 ? 'primary' : 'danger-fill'
+  confirmCallback.value = async () => {
+    try {
+      // 1. 更新生产批次质检结果
+      await productionApi.qualityCheckProd(qcTarget.value.batchNo, qcForm.value.checkResult)
+      // 2. 创建质检记录
+      await productionApi.createInspection({
+        bizType: 3,  // 3=生产
+        bizBatchNo: qcTarget.value.batchNo,
+        inspectionType: qcForm.value.inspectionType,
+        inspector: qcForm.value.inspector,
+        inspectionDate: qcForm.value.inspectionTime,
+        inspectionResult: qcForm.value.checkResult,
+        resultDesc: qcForm.value.resultDesc,
+      })
+      notify('success', `质检结果已录入（${resultLabel}）`)
+      showQcProdModal.value = false
+      showConfirm.value = false
+      loadProdBatch()
+    } catch (e: any) { notify('error', '质检失败: ' + e.message) }
+  }
+  showConfirm.value = true
 }
 async function traceChain(batchNo: string) { try { const result = await productionApi.traceProcessChain(batchNo); chainData.value = result; showChainModal.value = true } catch (e: any) { notify('error', '追溯失败: ' + e.message) } }
 
@@ -528,13 +572,18 @@ onMounted(loadProdBatch)
 
     <!-- QC Modal -->
     <div v-if="showQcProdModal" class="trace-modal-backdrop" @click.self="showQcProdModal = false">
-      <section class="trace-modal" style="width:460px"><header><div><p>质检</p><h2>生产批次质检</h2></div><button @click="showQcProdModal = false"><el-icon><Close /></el-icon></button></header>
+      <section class="trace-modal" style="width:480px"><header><div><p>质检</p><h2>生产批次质检</h2></div><button @click="showQcProdModal = false"><el-icon><Close /></el-icon></button></header>
         <div class="modal-body">
           <p style="color:#6c84a3;margin:0 0 16px;font-size:13px">批次号：<code>{{ qcTarget?.batchNo }}</code><br/>产品：<strong>{{ qcTarget?.productName }}</strong></p>
-          <label style="display:grid;gap:6px;color:#718ba6;font-size:12px;font-weight:700;margin-bottom:16px">质检结果 *<select v-model.number="qcResult" style="width:100%;padding:9px;border:1px solid #d7e4f0;border-radius:7px"><option :value="1">✓ 合格</option><option :value="2">✗ 不合格</option></select></label>
-          <div class="trace-hint info">操作人：<strong>{{ currentUser || '当前用户' }}</strong></div>
+          <div class="grid-form">
+            <label>质检结果 *<select v-model.number="qcForm.checkResult" style="width:100%;padding:9px;border:1px solid #d7e4f0;border-radius:7px"><option :value="1">✓ 合格</option><option :value="2">✗ 不合格</option></select></label>
+            <label>质检人 *<input v-model="qcForm.inspector" placeholder="如：张宏伟" /></label>
+            <label>检验日期 *<input v-model="qcForm.inspectionTime" type="datetime-local" /></label>
+            <label>检验类型<select v-model.number="qcForm.inspectionType" style="width:100%;padding:9px;border:1px solid #d7e4f0;border-radius:7px"><option :value="1">自检</option><option :value="2">抽检</option><option :value="3">全检</option></select></label>
+          </div>
+          <label style="display:grid;gap:6px;color:#718ba6;font-size:12px;font-weight:700;margin-top:14px">结果描述<textarea v-model="qcForm.resultDesc" placeholder="请描述检验具体情况…" style="width:100%;padding:9px;border:1px solid #d7e4f0;border-radius:7px;min-height:60px" /></label>
         </div>
-        <footer><button class="secondary" @click="showQcProdModal = false"><el-icon><Close /></el-icon> 取消</button><button class="primary" :class="qcResult === 1 ? '' : 'danger-fill'" @click="submitQcProd"><el-icon><Check /></el-icon> 确认{{ qcResult === 1 ? '合格' : '不合格' }}</button></footer>
+        <footer><button class="secondary" @click="showQcProdModal = false"><el-icon><Close /></el-icon> 取消</button><button class="primary" :class="qcForm.checkResult === 1 ? '' : 'danger-fill'" @click="submitQcProd"><el-icon><Check /></el-icon> 确认{{ qcForm.checkResult === 1 ? '合格' : '不合格' }}</button></footer>
       </section>
     </div>
 
