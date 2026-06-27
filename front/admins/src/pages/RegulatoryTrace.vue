@@ -28,6 +28,10 @@ const chainData = ref<{
 }>({ rawMaterials: [], productionBatches: [], coldChainTransports: [], salesOrders: [] })
 
 const codeTypeLabels: Record<number, string> = { 1: '单品码', 2: '箱码', 3: '托盘码' }
+const storageLabels: Record<number, string> = { 0: '常温', 1: '冷藏', 2: '冷冻' }
+const shiftLabels: Record<number, string> = { 1: '早班', 2: '中班', 3: '晚班' }
+const transportMethodLabels: Record<number, string> = { 1: '公路', 2: '铁路', 3: '冷链专线' }
+const orderStatusLabels: Record<number, string> = { 1: '待补充', 2: '已补充', 3: '已完成' }
 
 function notify(type: 'success' | 'error', text: string) { toast.value = { type, text }; setTimeout(() => (toast.value = null), 2600) }
 
@@ -203,10 +207,18 @@ onMounted(loadAll)
                 <div class="chain-node-label">原料环节</div>
                 <div v-if="chainData.rawMaterials.length === 0" class="chain-node-empty">暂无原料数据</div>
                 <div v-for="(r, i) in chainData.rawMaterials" :key="i" class="chain-node-card">
-                  <div class="chain-node-row"><span>原料批次</span><code>{{ r.batchNo || '-' }}</code></div>
-                  <div class="chain-node-row"><span>产品名称</span><b>{{ r.productName || '-' }}</b></div>
-                  <div class="chain-node-row"><span>供应商</span><b>{{ r.supplierName || '-' }}</b></div>
-                  <div class="chain-node-row"><span>质检结果</span><b :style="{ color: r.checkResult === 1 ? '#198658' : r.checkResult === 2 ? '#c04550' : '#92a6b9' }">{{ r.checkResult === 1 ? '合格' : r.checkResult === 2 ? '不合格' : '未检测' }}</b></div>
+                  <div class="chain-node-row chain-node-row-hl"><span>原料批次</span><code>{{ r.batchNo || '-' }}</code></div>
+                  <div class="chain-node-card-grid">
+                    <div class="chain-node-row"><span>产品名称</span><b>{{ r.productName || '-' }}</b></div>
+                    <div class="chain-node-row"><span>产品类别</span><b>{{ r.productCategory || '-' }}</b></div>
+                    <div class="chain-node-row"><span>供应商</span><b>{{ r.supplierName || '-' }}</b></div>
+                    <div class="chain-node-row"><span>数量</span><b>{{ r.amount != null ? r.amount + (r.unit || '') : '-' }}</b></div>
+                    <div class="chain-node-row"><span>仓库</span><b>{{ r.warehouse || '-' }}</b></div>
+                    <div class="chain-node-row"><span>储存方式</span><b>{{ storageLabels[r.storageMethod] || '-' }}</b></div>
+                    <div class="chain-node-row"><span>保质期</span><b>{{ r.shelfLife || '-' }}</b></div>
+                    <div class="chain-node-row"><span>采购日期</span><b>{{ r.purchaseDate || '-' }}</b></div>
+                    <div class="chain-node-row full-width"><span>质检结果</span><b :style="{ color: r.checkResult === 1 ? '#198658' : r.checkResult === 2 ? '#c04550' : '#92a6b9' }">{{ r.checkResult === 1 ? '✅ 合格' : r.checkResult === 2 ? '❌ 不合格' : '⚠ 未检测' }}</b></div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -218,11 +230,31 @@ onMounted(loadAll)
                 <div class="chain-node-label">生产环节</div>
                 <div v-if="chainData.productionBatches.length === 0" class="chain-node-empty">暂无生产数据</div>
                 <div v-for="(p, i) in chainData.productionBatches" :key="i" class="chain-node-card">
-                  <div class="chain-node-row"><span>生产批次</span><code>{{ p.batchNo || p.prodBatchNo || '-' }}</code></div>
-                  <div class="chain-node-row"><span>产品名称</span><b>{{ p.productName || '-' }}</b></div>
-                  <div class="chain-node-row"><span>工艺模板</span><b>{{ p.templateName || '-' }}</b></div>
-                  <div class="chain-node-row"><span>生产状态</span><b>{{ p.batchStatus === 1 ? '待生产' : p.batchStatus === 2 ? '生产中' : p.batchStatus === 3 ? '已完成' : '-' }}</b></div>
-                  <div class="chain-node-row"><span>生产日期</span><b>{{ p.productionDate || p.createTime || '-' }}</b></div>
+                  <div class="chain-node-row chain-node-row-hl"><span>生产批次</span><code>{{ p.batchNo || p.prodBatchNo || '-' }}</code></div>
+                  <div class="chain-node-card-grid">
+                    <div class="chain-node-row"><span>产品名称</span><b>{{ p.productName || '-' }}</b></div>
+                    <div class="chain-node-row"><span>工艺模板</span><b>{{ p.templateName || '-' }}</b></div>
+                    <div class="chain-node-row"><span>关联原料</span><code>{{ p.rawBatchNo || '-' }}</code></div>
+                    <div class="chain-node-row"><span>产线</span><b>{{ p.productionLine || '-' }}</b></div>
+                    <div class="chain-node-row"><span>操作员</span><b>{{ p.operator || '-' }}</b></div>
+                    <div class="chain-node-row"><span>班次</span><b>{{ shiftLabels[p.shift] || '-' }}</b></div>
+                    <div class="chain-node-row"><span>计划数量</span><b>{{ p.plannedAmount ?? '-' }}</b></div>
+                    <div class="chain-node-row"><span>实际数量</span><b>{{ p.actualAmount ?? '-' }}</b></div>
+                    <div class="chain-node-row"><span>生产日期</span><b>{{ p.productionDate || '-' }}</b></div>
+                    <div class="chain-node-row"><span>加工日期</span><b>{{ p.processDate || '-' }}</b></div>
+                    <div class="chain-node-row"><span>生产状态</span><b :style="{ color: p.batchStatus === 3 ? '#198658' : p.batchStatus === 2 ? '#2467df' : '#a4730a' }">{{ p.batchStatus === 1 ? '待生产' : p.batchStatus === 2 ? '生产中' : p.batchStatus === 3 ? '已完成' : p.batchStatus === 4 ? '已废弃' : '-' }}</b></div>
+                    <div class="chain-node-row"><span>质检结果</span><b :style="{ color: p.checkResult === 1 ? '#198658' : p.checkResult === 2 ? '#c04550' : '#92a6b9' }">{{ p.checkResult === 1 ? '✅ 合格' : p.checkResult === 2 ? '❌ 不合格' : '⚠ 未检测' }}</b></div>
+                  </div>
+                  <div class="chain-node-section-title">🔧 加工参数</div>
+                  <div class="chain-node-card-grid">
+                    <div class="chain-node-row"><span>杀菌温度</span><b>{{ p.actualTemp ? p.actualTemp + '℃' : '-' }}</b></div>
+                    <div class="chain-node-row"><span>杀菌时长</span><b>{{ p.actualDuration ? p.actualDuration + 's' : '-' }}</b></div>
+                    <div class="chain-node-row"><span>均质压力</span><b>{{ p.actualPressure ? p.actualPressure + 'MPa' : '-' }}</b></div>
+                    <div class="chain-node-row"><span>冷却温度</span><b>{{ p.actualCoolTemp ? p.actualCoolTemp + '℃' : '-' }}</b></div>
+                    <div class="chain-node-row"><span>灌装温度</span><b>{{ p.actualFillTemp ? p.actualFillTemp + '℃' : '-' }}</b></div>
+                    <div class="chain-node-row"><span>pH值</span><b>{{ p.actualPh || '-' }}</b></div>
+                    <div class="chain-node-row"><span>粘度</span><b>{{ p.actualViscosity ? p.actualViscosity + 'mPa·s' : '-' }}</b></div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -234,11 +266,30 @@ onMounted(loadAll)
                 <div class="chain-node-label">冷链物流环节</div>
                 <div v-if="chainData.coldChainTransports.length === 0" class="chain-node-empty">暂无冷链数据</div>
                 <div v-for="(c, i) in chainData.coldChainTransports" :key="i" class="chain-node-card">
-                  <div class="chain-node-row"><span>运输单号</span><code>{{ c.orderNo || '-' }}</code></div>
-                  <div class="chain-node-row"><span>车牌号</span><b>{{ c.plateNo || '-' }}</b></div>
-                  <div class="chain-node-row"><span>发运地</span><b>{{ c.departureName || '-' }}</b></div>
-                  <div class="chain-node-row"><span>目的地</span><b>{{ c.destinationName || '-' }}</b></div>
-                  <div class="chain-node-row"><span>运输状态</span><b>{{ c.transportStatus === 0 ? '待发运' : c.transportStatus === 1 ? '运输中' : c.transportStatus === 2 ? '已到达' : c.transportStatus === 3 ? '已签收' : c.transportStatus === 4 ? '温度预警' : '-' }}</b></div>
+                  <div class="chain-node-row chain-node-row-hl"><span>运输单号</span><code>{{ c.orderNo || '-' }}</code></div>
+                  <div class="chain-node-card-grid">
+                    <div class="chain-node-row"><span>产品名称</span><b>{{ c.productName || '-' }}</b></div>
+                    <div class="chain-node-row"><span>车牌号</span><b>{{ c.plateNo || '-' }}</b></div>
+                    <div class="chain-node-row"><span>驾驶员</span><b>{{ c.driverName || '-' }}</b></div>
+                    <div class="chain-node-row"><span>联系电话</span><b>{{ c.driverPhone || '-' }}</b></div>
+                    <div class="chain-node-row"><span>运输方式</span><b>{{ transportMethodLabels[c.transportMethod] || '-' }}</b></div>
+                    <div class="chain-node-row"><span>装载温度</span><b>{{ c.loadingTemp || '-' }}</b></div>
+                    <div class="chain-node-row"><span>发运地</span><b>{{ c.departureName || '-' }}</b></div>
+                    <div class="chain-node-row"><span>目的地</span><b>{{ c.destinationName || '-' }}</b></div>
+                    <div class="chain-node-row"><span>发运时间</span><b>{{ c.departTime || '-' }}</b></div>
+                    <div class="chain-node-row"><span>预计到达</span><b>{{ c.estimatedArrival || '-' }}</b></div>
+                    <div class="chain-node-row"><span>实际到达</span><b>{{ c.actualArrival || '-' }}</b></div>
+                    <div class="chain-node-row"><span>采集间隔</span><b>{{ c.collectInterval || '-' }}</b></div>
+                    <div class="chain-node-row full-width"><span>运输状态</span><b :style="{ color: c.transportStatus === 3 ? '#198658' : c.transportStatus === 4 ? '#c04550' : '#2467df' }">{{ c.transportStatus === 0 ? '📦 待发运' : c.transportStatus === 1 ? '🚚 运输中' : c.transportStatus === 2 ? '📬 已到达' : c.transportStatus === 3 ? '✅ 已签收' : c.transportStatus === 4 ? '⚠ 温度预警' : '-' }}</b></div>
+                  </div>
+                  <div class="chain-node-section-title">🌡 温湿度监控</div>
+                  <div class="chain-node-card-grid">
+                    <div class="chain-node-row"><span>温度上限</span><b>{{ c.tempUpper != null ? c.tempUpper + '℃' : '-' }}</b></div>
+                    <div class="chain-node-row"><span>温度下限</span><b>{{ c.tempLower != null ? c.tempLower + '℃' : '-' }}</b></div>
+                    <div class="chain-node-row"><span>湿度上限</span><b>{{ c.humidUpper != null ? c.humidUpper + '%' : '-' }}</b></div>
+                    <div class="chain-node-row"><span>湿度下限</span><b>{{ c.humidLower != null ? c.humidLower + '%' : '-' }}</b></div>
+                    <div class="chain-node-row full-width"><span>预警方式</span><b>{{ c.alertMethod || '-' }}</b></div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -250,10 +301,17 @@ onMounted(loadAll)
                 <div class="chain-node-label">销售环节</div>
                 <div v-if="chainData.salesOrders.length === 0" class="chain-node-empty">暂无销售数据</div>
                 <div v-for="(s, i) in chainData.salesOrders" :key="i" class="chain-node-card">
-                  <div class="chain-node-row"><span>销售单号</span><code>{{ s.salesOrderCode || '-' }}</code></div>
-                  <div class="chain-node-row"><span>购买方</span><b>{{ s.buyerEnterpriseName || '-' }}</b></div>
-                  <div class="chain-node-row"><span>销售数量</span><b>{{ s.orderQuantity ?? '-' }}</b></div>
-                  <div class="chain-node-row"><span>销售日期</span><b>{{ s.orderDate || '-' }}</b></div>
+                  <div class="chain-node-row chain-node-row-hl"><span>销售单号</span><code>{{ s.salesOrderCode || '-' }}</code></div>
+                  <div class="chain-node-card-grid">
+                    <div class="chain-node-row"><span>产品名称</span><b>{{ s.productName || '-' }}</b></div>
+                    <div class="chain-node-row"><span>购买方</span><b>{{ s.buyerEnterpriseName || '-' }}</b></div>
+                    <div class="chain-node-row"><span>销售方</span><b>{{ s.sellerEnterpriseName || '-' }}</b></div>
+                    <div class="chain-node-row"><span>订单日期</span><b>{{ s.orderDate || '-' }}</b></div>
+                    <div class="chain-node-row"><span>销售数量</span><b>{{ s.orderQuantity ?? '-' }}</b></div>
+                    <div class="chain-node-row"><span>单价</span><b>{{ s.unitPrice != null ? '¥' + s.unitPrice : '-' }}</b></div>
+                    <div class="chain-node-row"><span>总金额</span><b style="color:#c04550;font-size:14px">{{ s.totalAmount != null ? '¥' + s.totalAmount : '-' }}</b></div>
+                    <div class="chain-node-row full-width"><span>订单状态</span><b :style="{ color: s.orderStatus === 3 ? '#198658' : s.orderStatus === 2 ? '#2467df' : '#a4730a' }">{{ orderStatusLabels[s.orderStatus] || '-' }}</b></div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -299,11 +357,16 @@ onMounted(loadAll)
 .chain-node-content { flex: 1; min-width: 0; }
 .chain-node-label { font-size: 14px; font-weight: 700; color: #25486b; margin-bottom: 8px; }
 .chain-node-empty { padding: 10px 12px; border-radius: 8px; background: #f8fbfe; color: #92a6b9; font-size: 13px; }
-.chain-node-card { padding: 12px 14px; border: 1px solid #e8eff6; border-radius: 10px; background: #fcfdff; display: grid; gap: 6px; margin-bottom: 6px; }
+.chain-node-card { padding: 12px 14px; border: 1px solid #e8eff6; border-radius: 10px; background: #fcfdff; display: grid; gap: 8px; margin-bottom: 6px; }
+.chain-node-card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px 16px; }
 .chain-node-row { display: flex; gap: 10px; font-size: 13px; align-items: center; }
 .chain-node-row span { color: #91a3b4; font-size: 12px; min-width: 60px; flex-shrink: 0; }
 .chain-node-row b { color: #34536f; }
 .chain-node-row code { color: #2366d9; font-family: Consolas, monospace; font-size: 12px; }
+.chain-node-row-hl { padding-bottom: 8px; border-bottom: 1px dashed #e8eff6; margin-bottom: 2px; }
+.chain-node-row-hl code { font-size: 13px; font-weight: 700; }
+.chain-node-row.full-width { grid-column: 1 / -1; }
+.chain-node-section-title { padding: 8px 0 2px; color: #4b83d7; font-size: 12px; font-weight: 700; border-top: 1px solid #edf2f7; margin-top: 4px; }
 
 .trace-page .danger-fill { color: #fff; background: #d34f59; box-shadow: 0 5px 10px #d34f5929; }
 </style>
