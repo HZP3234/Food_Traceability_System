@@ -69,7 +69,11 @@ async function openDetail(row: any) {
   chainData.value = { rawMaterials: [], productionBatches: [], coldChainTransports: [], salesOrders: [] }
 
   const batchNo = row.batchNo
-  if (!batchNo) { chainLoading.value = false; return }
+  console.log('[全链追溯] 溯源码batchNo:', batchNo)
+  if (!batchNo) {
+    console.warn('[全链追溯] batchNo为空，无法查询')
+    chainLoading.value = false; return
+  }
 
   try {
     // 1. 先查生产批次（核心：后续原料查询需要它的 rawBatchNo）
@@ -79,11 +83,16 @@ async function openDetail(row: any) {
       const prodRes = await productionApi.queryProdBatch(batchNo)
       const prodData = (prodRes as any)?.data ?? prodRes
       prodBatch = prodData ? (Array.isArray(prodData) ? prodData[0] : prodData) : null
+      console.log('[全链追溯] 生产批次查询结果:', prodBatch
+        ? `找到 batchNo=${prodBatch.batchNo}, rawBatchNo=${prodBatch.rawBatchNo || '无'}`
+        : '未找到（数据库可能没有该批次号的生产批次）')
       if (prodBatch) {
         chainData.value.productionBatches = [prodBatch]
         rawBatchNo = prodBatch.rawBatchNo || null
       }
-    } catch (e: any) { /* 生产批次查询失败不影响后续 */ }
+    } catch (e: any) {
+      console.error('[全链追溯] 生产批次查询异常:', e.message || e)
+    }
 
     // 2. 并行获取原料、冷链、销售数据
     const [rawRes, coldRes, salesRes] = await Promise.allSettled([
@@ -95,16 +104,27 @@ async function openDetail(row: any) {
     if (rawRes.status === 'fulfilled' && rawRes.value) {
       const d = (rawRes.value as any)?.data ?? rawRes.value
       chainData.value.rawMaterials = d ? (Array.isArray(d) ? d : [d]) : []
+      console.log('[全链追溯] 原料查询结果:', chainData.value.rawMaterials.length, '条, rawBatchNo=', rawBatchNo)
+    } else if (!rawBatchNo) {
+      console.warn('[全链追溯] 原料跳过：生产批次无rawBatchNo，无法关联原料')
+    } else {
+      console.warn('[全链追溯] 原料查询失败或无数据, rawBatchNo=', rawBatchNo)
     }
     if (coldRes.status === 'fulfilled') {
       const d = (coldRes.value as any)?.data ?? coldRes.value
       chainData.value.coldChainTransports = d ? (Array.isArray(d) ? d : [d]) : []
+      console.log('[全链追溯] 冷链查询结果:', chainData.value.coldChainTransports.length, '条')
+    } else {
+      console.warn('[全链追溯] 冷链查询失败')
     }
     if (salesRes.status === 'fulfilled') {
       const d = (salesRes.value as any)?.data ?? salesRes.value
       chainData.value.salesOrders = d ? (Array.isArray(d) ? d : [d]) : []
+      console.log('[全链追溯] 销售查询结果:', chainData.value.salesOrders.length, '条')
+    } else {
+      console.warn('[全链追溯] 销售查询失败')
     }
-  } catch (e: any) { /* 部分数据获取失败不影响整体展示 */ }
+  } catch (e: any) { console.error('[全链追溯] 整体异常:', e.message || e) }
   finally { chainLoading.value = false }
 }
 
