@@ -130,7 +130,7 @@ public class TraceCodeService {
         tc.setTraceCode(codeValue);
         tc.setCodeType(dto.getCodeType() != null ? dto.getCodeType() : 1);
         tc.setPackageLevel(dto.getPackageLevel() != null ? dto.getPackageLevel() : 1);
-        tc.setProductId(dto.getProductId());
+        tc.setProductId(dto.getProductId() != null && !dto.getProductId().isBlank() ? dto.getProductId() : dto.getBatchNo());
         tc.setProductName(dto.getProductName());
         tc.setEnterpriseId(dto.getEnterpriseId());
         tc.setEnterpriseName(dto.getEnterpriseName());
@@ -200,7 +200,7 @@ public class TraceCodeService {
             tc.setTraceCode(codeValue);
             tc.setCodeType(dto.getCodeType() != null ? dto.getCodeType() : 1);
             tc.setPackageLevel(dto.getPackageLevel() != null ? dto.getPackageLevel() : 1);
-            tc.setProductId(dto.getProductId());
+            tc.setProductId(dto.getProductId() != null && !dto.getProductId().isBlank() ? dto.getProductId() : dto.getBatchNo());
             tc.setProductName(dto.getProductName());
             tc.setEnterpriseId(dto.getEnterpriseId());
             tc.setEnterpriseName(dto.getEnterpriseName());
