@@ -4,28 +4,19 @@ import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import { useAppStore } from '@/store/app'
 import { queryByTraceCode } from '@/api/traceability'
+import { useAuth } from '@/composables/useAuth'
 import ScannerOverlay from '@/components/ScannerOverlay.vue'
 import headImg from '@/assets/user_head_image.png'
 
 const router = useRouter()
 const store = useAppStore()
+const { requireLogin } = useAuth()
 const showCodeDialog = ref(false)
 const traceCodeInput = ref('')
 const scannerRef = useTemplateRef<InstanceType<typeof ScannerOverlay>>('scanner')
 
-function requireLogin(action: () => void) {
-  if (!store.isLoggedIn) {
-    showToast('请先登录后再使用此功能')
-    router.push({ name: 'Login', query: { redirect: router.currentRoute.value.fullPath } })
-    return
-  }
-  action()
-}
-
 function goUserCenter() {
-  requireLogin(() => {
-    router.push('/user-center')
-  })
+  router.push('/user-center')
 }
 
 function goComplaintSubmit() {
@@ -41,6 +32,7 @@ function goComplaintQuery() {
 }
 
 function openCodeDialog() {
+  if (!requireLogin()) return
   traceCodeInput.value = ''
   showCodeDialog.value = true
 }
@@ -63,6 +55,7 @@ function handleScanResult(code: string) {
 }
 
 function onScan() {
+  if (!requireLogin()) return
   scannerRef.value?.open()
 }
 

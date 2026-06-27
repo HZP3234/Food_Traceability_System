@@ -20,7 +20,8 @@ public class ComplaintSubmitDTO {
     @NotBlank(message = "企业名称不能为空")
     private String enterpriseName;
 
-    /** 投诉人UUID */
+    /** 投诉人UUID（必须先登录获取） */
+    @NotBlank(message = "请先登录后再提交投诉")
     private String consumerUuid;
 
     /** 投诉人姓名 */
