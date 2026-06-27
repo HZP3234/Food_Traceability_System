@@ -8,6 +8,7 @@
         <result column="batch_no" property="batchNo"/>
         <result column="product_name" property="productName"/>
         <result column="process_batch_no" property="processBatchNo"/>
+        <result column="raw_batch_no" property="rawBatchNo"/>
         <result column="production_line" property="productionLine"/>
         <result column="planned_amount" property="plannedAmount"/>
         <result column="actual_amount" property="actualAmount"/>

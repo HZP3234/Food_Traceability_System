@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import { useAppStore } from '@/store/app'
 import { useAuth } from '@/composables/useAuth'
 import { queryTraceability, recordScan } from '@/api/traceability'
-import type { TraceabilityVO } from '@/types'
+import type { TraceabilityVO, TraceabilityNode } from '@/types'
 
 const route = useRoute()
 const router = useRouter()
@@ -15,6 +15,55 @@ const loading = ref(true)
 const data = ref<TraceabilityVO | null>(null)
 
 const batchNo = (route.query.batchNo as string) || ''
+
+// 四大溯源环节配置
+const sectionConfig: Record<string, { label: string; icon: string; color: string; bg: string }> = {
+  '原料':     { label: '原料供应',  icon: 'shop-o',         color: '#07c160', bg: '#f0faf4' },
+  '生产':     { label: '生产加工',  icon: 'setting-o',      color: '#1989fa', bg: '#e8f4ff' },
+  '冷链物流': { label: '冷链物流',  icon: 'logistics-o',    color: '#ff976a', bg: '#fff3ed' },
+  '销售':     { label: '销售终端',  icon: 'shop-collect-o', color: '#9c6eff', bg: '#f5f0ff' },
+}
+
+// 将节点按四大环节分组
+interface SectionGroup {
+  key: string
+  label: string
+  icon: string
+  color: string
+  bg: string
+  nodes: TraceabilityNode[]
+}
+
+const sections = computed<SectionGroup[]>(() => {
+  const nodes = data.value?.nodes
+  if (!nodes || !Array.isArray(nodes) || nodes.length === 0) return []
+  const groups: SectionGroup[] = []
+  const orderedKeys = ['原料', '生产', '冷链物流', '销售']
+  const nodeMap = new Map<string, TraceabilityNode[]>()
+  const otherNodes: TraceabilityNode[] = []
+
+  for (const n of nodes) {
+    const key = n.nodeName || '其他'
+    if (orderedKeys.includes(key)) {
+      if (!nodeMap.has(key)) nodeMap.set(key, [])
+      nodeMap.get(key)!.push(n)
+    } else {
+      otherNodes.push(n)
+    }
+  }
+  for (const key of orderedKeys) {
+    const list = nodeMap.get(key)
+    if (list && list.length) {
+      const cfg = sectionConfig[key] || { label: key, icon: 'records-o', color: '#666', bg: '#f5f5f5' }
+      groups.push({ key, label: cfg.label, icon: cfg.icon, color: cfg.color, bg: cfg.bg, nodes: list })
+    }
+  }
+  // 未归类节点放在最后
+  if (otherNodes.length) {
+    groups.push({ key: '其他', label: '其他信息', icon: 'records-o', color: '#999', bg: '#f5f5f5', nodes: otherNodes })
+  }
+  return groups
+})
 
 function formatDate(dateStr: string) {
   if (!dateStr) return '-'
@@ -97,12 +146,14 @@ onMounted(() => {
           <span>已认证</span>
         </div>
         <div class="product-name">{{ data.productName }}</div>
-        <div class="product-batch">批次号：{{ data.productBatchNo }}</div>
-
         <div class="product-grid">
           <div class="product-cell">
             <span class="cell-label">生产商</span>
             <span class="cell-value">{{ data.manufacturer || '-' }}</span>
+          </div>
+          <div class="product-cell">
+            <span class="cell-label">供应商</span>
+            <span class="cell-value">{{ data.supplierName || '-' }}</span>
           </div>
           <div class="product-cell">
             <span class="cell-label">生产日期</span>
@@ -112,12 +163,6 @@ onMounted(() => {
             <span class="cell-label">生产线</span>
             <span class="cell-value">{{ data.productionLine || '-' }}</span>
           </div>
-          <div class="product-cell">
-            <span class="cell-label">质检结果</span>
-            <span class="cell-value" :class="{ 'check-ok': data.checkResult === 1, 'check-fail': data.checkResult === 2 }">
-              {{ data.checkResult === 1 ? '合格' : data.checkResult === 2 ? '不合格' : '-' }}
-            </span>
-          </div>
         </div>
         <div v-if="data.txHash" class="blockchain-tag">
           <van-icon name="certificate" size="14" />
@@ -125,35 +170,52 @@ onMounted(() => {
         </div>
       </div>
 
-      <!-- 溯源链路时间线 -->
-      <div v-if="data.nodes && data.nodes.length" class="timeline-card">
-        <div class="timeline-title">溯源链路</div>
-        <div class="timeline">
-          <div
-            v-for="(node, index) in data.nodes"
-            :key="node.id || index"
-            class="timeline-item"
-            :class="{ last: index === data.nodes.length - 1 }"
-          >
-            <div class="timeline-dot" :class="{ active: index === 0 }">
-              <van-icon v-if="index === 0" name="checked" size="14" color="#fff" />
+      <!-- 四大溯源环节 -->
+      <div v-if="sections.length" class="sections-wrapper">
+        <div class="section-title">
+          <van-icon name="cluster-o" size="16" />
+          <span>溯源链路</span>
+        </div>
+        <div
+          v-for="(section, si) in sections"
+          :key="section.key"
+          class="section-block"
+          :style="{ borderLeftColor: section.color }"
+        >
+          <!-- 环节标题 -->
+          <div class="section-header" :style="{ background: section.bg }">
+            <div class="section-icon" :style="{ background: section.color }">
+              <van-icon :name="section.icon" size="16" color="#fff" />
             </div>
-            <div class="timeline-content">
-              <div class="node-title">{{ node.nodeName }}</div>
-              <div class="node-desc">{{ node.nodeDescription }}</div>
-              <div class="node-meta">
-                <span v-if="node.location">
-                  <van-icon name="location-o" size="11" />
-                  {{ node.location }}
-                </span>
-                <span v-if="node.nodeTime">
-                  <van-icon name="clock-o" size="11" />
-                  {{ formatDateTime(node.nodeTime) }}
-                </span>
-                <span v-if="node.operator">
-                  <van-icon name="user-o" size="11" />
-                  {{ node.operator }}
-                </span>
+            <span class="section-label" :style="{ color: section.color }">{{ section.label }}</span>
+            <span class="section-count">{{ section.nodes.length }}条记录</span>
+          </div>
+          <!-- 环节内的节点 -->
+          <div class="timeline">
+            <div
+              v-for="(node, ni) in section.nodes"
+              :key="node.id || ni"
+              class="timeline-item"
+              :class="{ last: ni === section.nodes.length - 1 }"
+            >
+              <div class="timeline-dot" :style="{ borderColor: section.color, background: ni === 0 ? section.color : '#fff' }" />
+              <div class="timeline-content">
+                <div class="node-title">{{ node.nodeName }}</div>
+                <div class="node-desc">{{ node.nodeDescription }}</div>
+                <div class="node-meta">
+                  <span v-if="node.location">
+                    <van-icon name="location-o" size="11" />
+                    {{ node.location }}
+                  </span>
+                  <span v-if="node.nodeTime">
+                    <van-icon name="clock-o" size="11" />
+                    {{ formatDateTime(node.nodeTime) }}
+                  </span>
+                  <span v-if="node.operator">
+                    <van-icon name="user-o" size="11" />
+                    {{ node.operator }}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -219,13 +281,6 @@ onMounted(() => {
   margin-bottom: 6px;
 }
 
-.product-batch {
-  font-size: 13px;
-  color: #07c160;
-  margin-bottom: 16px;
-  font-weight: 500;
-}
-
 .blockchain-tag {
   margin-top: 12px;
   padding: 8px 12px;
@@ -272,56 +327,91 @@ onMounted(() => {
   font-weight: 600;
 }
 
-/* 时间线 */
-.timeline-card {
+/* 四大溯源环节 */
+.sections-wrapper {
   margin: 16px 20px;
-  padding: 16px;
-  background: #fff;
-  border-radius: 12px;
 }
 
-.timeline-title {
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 16px;
   font-weight: 600;
   color: #323233;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
+  padding-left: 4px;
 }
 
+.section-block {
+  margin-bottom: 12px;
+  padding: 16px;
+  background: #fff;
+  border-radius: 10px;
+  border-left: 4px solid #ccc;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  margin-bottom: 14px;
+}
+
+.section-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.section-label {
+  font-size: 15px;
+  font-weight: 600;
+  flex: 1;
+}
+
+.section-count {
+  font-size: 11px;
+  color: #969799;
+}
+
+/* 时间线 */
 .timeline {
   position: relative;
+  padding-left: 4px;
 }
 
 .timeline-item {
   display: flex;
   gap: 12px;
-  padding-bottom: 20px;
+  padding-bottom: 18px;
   position: relative;
 }
 
 .timeline-item:not(.last)::before {
   content: '';
   position: absolute;
-  left: 9px;
-  top: 24px;
+  left: 8px;
+  top: 22px;
   bottom: 0;
   width: 2px;
   background: #ebedf0;
 }
 
 .timeline-dot {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
-  background: #ebedf0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  background: #fff;
+  border: 2px solid #ccc;
   flex-shrink: 0;
   margin-top: 2px;
-}
-
-.timeline-dot.active {
-  background: #07c160;
 }
 
 .timeline-content {
@@ -329,7 +419,7 @@ onMounted(() => {
 }
 
 .node-title {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   color: #323233;
   margin-bottom: 4px;

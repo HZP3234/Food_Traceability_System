@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.foodtraceability.customers.mapper.CustSalesOrderMapper">
+
+    <select id="selectByProdBatchNo" resultType="java.util.LinkedHashMap">
+        SELECT sales_order_code, product_name, buyer_enterprise_name,
+               seller_enterprise_name, order_quantity, unit_price, total_amount,
+               order_date, order_status
+        FROM t_sales_order
+        WHERE prod_batch_no = #{prodBatchNo}
+          AND is_deleted = 0
+        ORDER BY order_date DESC
+    </select>
+
+    <select id="selectByProductName" resultType="java.util.LinkedHashMap">
+        SELECT sales_order_code, product_name, buyer_enterprise_name,
+               seller_enterprise_name, order_quantity, unit_price, total_amount,
+               order_date, order_status
+        FROM t_sales_order
+        WHERE (product_name = #{productName} OR prod_batch_no = #{prodBatchNo})
+          AND is_deleted = 0
+        ORDER BY order_date DESC
+    </select>
+
+</mapper>

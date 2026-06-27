@@ -9,6 +9,7 @@ import com.foodtraceability.customers.entity.TraceCode;
 import com.foodtraceability.customers.mapper.*;
 import com.foodtraceability.customers.service.TraceabilityService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,14 +21,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TraceabilityServiceImpl implements TraceabilityService {
 
     private final ProdBatchMapper prodBatchMapper;
-    private final ProcessBatchMapper processBatchMapper;
-    private final QualityInspectionMapper qualityInspectionMapper;
+    private final CustRawMapper custRawMapper;
     private final CcTransportMapper ccTransportMapper;
+    private final CustSalesStockMapper custSalesStockMapper;
     private final TraceCodeMapper traceCodeMapper;
     private final ScanRecordMapper scanRecordMapper;
     private final ConsumerMapper consumerMapper;
@@ -67,15 +69,18 @@ public class TraceabilityServiceImpl implements TraceabilityService {
 
         ProdBatch prod = prodBatchMapper.selectByBatchNo(batchNo);
 
+        // 确定商品名称：优先从溯源码取，其次从生产批次取
+        String productName = null;
         if (tc != null) {
             vo.setProductName(tc.getProductName());
             vo.setManufacturer(tc.getEnterpriseName());
             vo.setTxHash(tc.getTxHash());
+            productName = tc.getProductName();
         }
-
         if (prod != null) {
-            if (vo.getProductName() == null || vo.getProductName().isBlank()) {
-                vo.setProductName(prod.getProductName());
+            if (productName == null || productName.isBlank()) {
+                productName = prod.getProductName();
+                vo.setProductName(productName);
             }
             vo.setProductionDate(prod.getProductionDate());
             vo.setProductionLine(prod.getProductionLine());
@@ -89,7 +94,35 @@ public class TraceabilityServiceImpl implements TraceabilityService {
             throw BusinessException.notFound("该商品没有溯源信息或溯源码被禁用");
         }
 
-        vo.setNodes(buildNodes(batchNo, prod));
+        // 通过商品名称检索原料、物流、销售信息
+        List<Map<String, Object>> rawList = new ArrayList<>();
+        List<Map<String, Object>> transportList = new ArrayList<>();
+        List<Map<String, Object>> salesList = new ArrayList<>();
+
+        if (productName != null && !productName.isBlank()) {
+            try {
+                rawList = custRawMapper.selectByProductName(productName);
+            } catch (Exception e) {
+                log.warn("查询原料失败: productName={}", productName, e);
+            }
+            transportList = ccTransportMapper.selectByProductName(productName, batchNo);
+            try {
+                salesList = custSalesStockMapper.selectByProductName(productName, batchNo);
+            } catch (Exception e) {
+                log.warn("查询销售库存失败: productName={}", productName, e);
+            }
+
+            if (!rawList.isEmpty()) {
+                Map<String, Object> firstRaw = rawList.get(0);
+                vo.setSupplierName(str(firstRaw.get("supplier_name")));
+                vo.setRawBatchNo(str(firstRaw.get("batch_no")));
+                if (vo.getManufacturer() == null || vo.getManufacturer().isBlank()) {
+                    vo.setManufacturer(str(firstRaw.get("supplier_name")));
+                }
+            }
+        }
+
+        vo.setNodes(buildNodes(batchNo, prod, rawList, transportList, salesList));
         return vo;
     }
 
@@ -99,73 +132,86 @@ public class TraceabilityServiceImpl implements TraceabilityService {
             DateTimeFormatter.ofPattern("yyyy-MM-dd")
     };
 
-    private List<TraceabilityNode> buildNodes(String batchNo, ProdBatch prod) {
+    private List<TraceabilityNode> buildNodes(String batchNo, ProdBatch prod,
+            List<Map<String, Object>> rawList,
+            List<Map<String, Object>> transportList,
+            List<Map<String, Object>> salesList) {
         List<TraceabilityNode> nodes = new ArrayList<>();
         int sort = 0;
 
-        if (prod != null && prod.getProcessBatchNo() != null) {
-            Map<String, Object> proc = processBatchMapper.selectByBatchNo(prod.getProcessBatchNo());
-            if (proc != null) {
-                sort++;
-                TraceabilityNode node = new TraceabilityNode();
-                node.setNodeName("加工");
-                node.setSortOrder(sort);
-                node.setNodeTime(parseDateTime(str(proc.get("process_date"))));
-                node.setOperator(str(proc.get("operator")));
-                node.setNodeDescription(String.format("工艺: %s，温度: %s℃，时长: %s",
-                        str(proc.get("template_name")),
-                        str(proc.get("actual_temp")),
-                        str(proc.get("actual_duration"))));
-                nodes.add(node);
-            }
+        // ========== 1. 原料 ==========
+        for (Map<String, Object> raw : rawList) {
+            sort++;
+            int checkResult = toInt(raw.get("check_result"));
+            String rawCheckTxt = checkResult == 1 ? "合格" : checkResult == 2 ? "不合格" : "未检测";
+            TraceabilityNode node = new TraceabilityNode();
+            node.setNodeName("原料");
+            node.setSortOrder(sort);
+            node.setNodeTime(parseDateTime(str(raw.get("purchase_date"))));
+            node.setLocation(str(raw.get("warehouse")));
+            node.setOperator(str(raw.get("supplier_name")));
+            node.setNodeDescription("原料批次: " + str(raw.get("batch_no"))
+                    + "，原料: " + str(raw.get("product_name"))
+                    + "，数量: " + str(raw.get("amount")) + str(raw.get("unit"))
+                    + "，质检: " + rawCheckTxt
+                    + "，保质期: " + str(raw.get("shelf_life")));
+            nodes.add(node);
         }
 
+        // ========== 2. 生产 ==========
         if (prod != null) {
             sort++;
+            int planned = prod.getPlannedAmount() != null ? prod.getPlannedAmount() : 0;
+            int actual = prod.getActualAmount() != null ? prod.getActualAmount() : 0;
+            String prodDate = prod.getProductionDate() != null ? prod.getProductionDate() : "";
             TraceabilityNode node = new TraceabilityNode();
             node.setNodeName("生产");
             node.setSortOrder(sort);
             node.setNodeTime(parseDateTime(prod.getProductionDate()));
             node.setLocation(prod.getProductionLine());
             node.setOperator(prod.getCreateBy());
-            node.setNodeDescription(String.format("产品: %s，计划量: %d，实际量: %d",
-                    prod.getProductName(), prod.getPlannedAmount(), prod.getActualAmount()));
+            node.setNodeDescription("产品: " + prod.getProductName()
+                    + "，生产批次: " + batchNo
+                    + "，生产线: " + prod.getProductionLine()
+                    + "，生产日期: " + prodDate
+                    + "，计划产量: " + planned + "，实际产量: " + actual);
             nodes.add(node);
         }
 
-        List<Map<String, Object>> inspections = qualityInspectionMapper.selectByBizBatchNo(batchNo);
-        for (Map<String, Object> insp : inspections) {
-            sort++;
-            int result = toInt(insp.get("inspection_result"));
-            TraceabilityNode node = new TraceabilityNode();
-            node.setNodeName("质检");
-            node.setSortOrder(sort);
-            node.setNodeTime(parseDateTime(str(insp.get("inspection_date"))));
-            node.setOperator(str(insp.get("inspector")));
-            node.setNodeDescription(String.format("标准: %s，结果: %s，感官: %s，微生物: %s，密封: %s",
-                    str(insp.get("standard")),
-                    result == 1 ? "合格" : result == 2 ? "不合格" : "待定",
-                    toInt(insp.get("sensory_check")) == 1 ? "合格" : "异常",
-                    toInt(insp.get("microbe_check")) == 1 ? "合格" : "异常",
-                    str(insp.get("seal_check"))));
-            nodes.add(node);
-        }
-
-        List<Map<String, Object>> transports = ccTransportMapper.selectByProdBatchNo(batchNo);
-        for (Map<String, Object> trans : transports) {
+        // ========== 3. 冷链物流 ==========
+        for (Map<String, Object> trans : transportList) {
             sort++;
             int status = toInt(trans.get("transport_status"));
             String statusName = status == 1 ? "运输中" : status == 2 ? "已到达" : status == 3 ? "已完成" : "未知";
             TraceabilityNode node = new TraceabilityNode();
-            node.setNodeName("物流");
+            node.setNodeName("冷链物流");
             node.setSortOrder(sort);
             node.setNodeTime(parseDateTime(str(trans.get("depart_time"))));
             node.setLocation(str(trans.get("departure_name")) + " → " + str(trans.get("destination_name")));
             node.setOperator(str(trans.get("driver_name")));
-            node.setNodeDescription(String.format("运单: %s，车牌: %s，状态: %s，温控: %s~%s℃",
-                    str(trans.get("order_no")), str(trans.get("plate_no")),
-                    statusName,
-                    str(trans.get("temp_lower")), str(trans.get("temp_upper"))));
+            node.setNodeDescription("运单: " + str(trans.get("order_no"))
+                    + "，车牌: " + str(trans.get("plate_no"))
+                    + "，状态: " + statusName
+                    + "，温控: " + str(trans.get("temp_lower")) + "~" + str(trans.get("temp_upper")) + "℃");
+            nodes.add(node);
+        }
+
+        // ========== 4. 销售 ==========
+        for (Map<String, Object> stock : salesList) {
+            sort++;
+            int stockStatus = toInt(stock.get("stock_status"));
+            String statusName = stockStatus == 0 ? "在库" : stockStatus == 1 ? "已上架" :
+                                stockStatus == 2 ? "已售罄" : "未知";
+            TraceabilityNode node = new TraceabilityNode();
+            node.setNodeName("销售");
+            node.setSortOrder(sort);
+            node.setNodeTime(parseDateTime(str(stock.get("received_time"))));
+            node.setLocation(str(stock.get("terminal_name")));
+            node.setOperator(str(stock.get("stock_code")));
+            node.setNodeDescription("产品: " + str(stock.get("product_name"))
+                    + "，入库数量: " + toInt(stock.get("quantity"))
+                    + "，终端: " + str(stock.get("terminal_name"))
+                    + "，状态: " + statusName);
             nodes.add(node);
         }
 

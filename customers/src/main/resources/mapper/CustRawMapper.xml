@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.foodtraceability.customers.mapper.CustRawMapper">
+
+    <select id="selectByBatchNo" resultType="java.util.LinkedHashMap">
+        SELECT batch_no, product_name, product_category, amount, unit,
+               supplier_name, warehouse, purchase_date, check_result, shelf_life
+        FROM t_raw_batch
+        WHERE batch_no = #{batchNo}
+          AND is_deleted = 0
+        LIMIT 1
+    </select>
+
+    <select id="selectByProductName" resultType="java.util.LinkedHashMap">
+        SELECT batch_no, product_name, product_category, amount, unit,
+               supplier_name, warehouse, purchase_date, check_result, shelf_life
+        FROM t_raw_batch
+        WHERE product_name = #{productName}
+          AND is_deleted = 0
+        ORDER BY purchase_date DESC
+    </select>
+
+</mapper>

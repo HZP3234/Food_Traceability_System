@@ -43,6 +43,8 @@ export interface TraceabilityVO {
   productBatchNo: string
   productName: string
   manufacturer: string
+  supplierName: string
+  rawBatchNo: string
   productionDate: string
   productionLine: string
   checkResult: number

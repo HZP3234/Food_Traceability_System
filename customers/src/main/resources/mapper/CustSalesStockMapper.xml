@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.foodtraceability.customers.mapper.CustSalesStockMapper">
+
+    <select id="selectByProductName" resultType="java.util.LinkedHashMap">
+        SELECT stock_code, terminal_name, product_name, prod_batch_no,
+               quantity, received_time, last_check_time, stock_status
+        FROM t_sales_stock
+        WHERE (product_name = #{productName} OR prod_batch_no = #{prodBatchNo})
+          AND is_deleted = 0
+        ORDER BY received_time DESC
+    </select>
+
+</mapper>
