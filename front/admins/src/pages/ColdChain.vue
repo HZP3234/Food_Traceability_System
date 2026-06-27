@@ -231,7 +231,7 @@ async function submitReceipt() {
   if (!receiptTarget.value) return
   if (!receiptForm.value.receiverName.trim()) { notify('error', '请填写签收人'); return }
   try {
-    await coldChainApi.signReceipt({ orderNo: receiptTarget.value.orderNo, signTime: receiptForm.value.arriveTime, signName: receiptForm.value.receiverName, signPhone: receiptForm.value.receiverPhone, arriveTemp: receiptForm.value.arriveTemp, packageIntact: receiptForm.value.packageIntact, quantityCheck: receiptForm.value.quantityCheck, remark: receiptForm.value.remark })
+    await coldChainApi.signReceipt({ orderNo: receiptTarget.value.orderNo, signTime: receiptForm.value.arriveTime, signer: receiptForm.value.receiverName, signPhone: receiptForm.value.receiverPhone, arriveTemp: receiptForm.value.arriveTemp, packageIntact: receiptForm.value.packageIntact, quantityCheck: receiptForm.value.quantityCheck, remark: receiptForm.value.remark })
     await coldChainApi.arriveTransport(receiptTarget.value.transportId)
     notify('success', `运输单 ${receiptTarget.value.orderNo} 已成功签收`)
     showReceiptModal.value = false; loadTransports(); loadShippingOrders()
