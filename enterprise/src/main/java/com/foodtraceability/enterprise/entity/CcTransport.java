@@ -32,7 +32,6 @@ public class CcTransport {
     private BigDecimal humidLower;
     private String alertMethod;
     private int transportStatus;
-    private String logisticsCompany;
     private String dataHash;
     private String chainHash;
     private String remark;
@@ -110,9 +109,6 @@ public class CcTransport {
 
     public int getTransportStatus() { return transportStatus; }
     public void setTransportStatus(int transportStatus) { this.transportStatus = transportStatus; }
-
-    public String getLogisticsCompany() { return logisticsCompany; }
-    public void setLogisticsCompany(String logisticsCompany) { this.logisticsCompany = logisticsCompany; }
 
     public String getDataHash() { return dataHash; }
     public void setDataHash(String dataHash) { this.dataHash = dataHash; }
