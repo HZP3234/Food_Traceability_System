@@ -181,8 +181,8 @@ public class TraceCodeService {
         int maxLimit = traceCodeProperties.getBatchMaxLimit();
 
         // 必填字段校验
-        if (dto.getProductId() == null || dto.getProductId().isBlank()) {
-            throw new RuntimeException("产品ID不能为空");
+        if (dto.getProductName() == null || dto.getProductName().isBlank()) {
+            throw new RuntimeException("产品名称不能为空");
         }
         if (dto.getEnterpriseId() == null || dto.getEnterpriseId().isBlank()) {
             throw new RuntimeException("企业ID不能为空");
@@ -766,8 +766,8 @@ public class TraceCodeService {
      * 校验不通过抛出异常。
      */
     private void validateBusinessData(TraceCodeGenerateDTO dto) {
-        if (dto.getProductId() == null || dto.getProductId().isBlank()) {
-            throw new RuntimeException("产品ID不能为空");
+        if (dto.getProductName() == null || dto.getProductName().isBlank()) {
+            throw new RuntimeException("产品名称不能为空");
         }
         if (dto.getEnterpriseId() == null || dto.getEnterpriseId().isBlank()) {
             throw new RuntimeException("企业ID不能为空");
