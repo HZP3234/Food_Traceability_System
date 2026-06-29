@@ -147,7 +147,7 @@ public class ColdChainService {
     public List<CcVehicle> listVehicle(Integer vehicleStatus, String ownerName, String coldType) {
         QueryWrapper<CcVehicle> qw = new QueryWrapper<>();
         qw.eq("is_deleted", 0);
-        if (!currentUserUtil.isAdmin() && !currentUserUtil.isLogistics()) {
+        if (!currentUserUtil.isAdmin() && !currentUserUtil.isLogistics() && !currentUserUtil.isRegulator()) {
             qw.eq("create_by", currentUserUtil.getCurrentUsername());
         }
         if (vehicleStatus != null)
@@ -233,7 +233,7 @@ public class ColdChainService {
                                             String plateNo, Integer transportMethod) {
         QueryWrapper<CcTransport> qw = new QueryWrapper<>();
         qw.eq("is_deleted", 0);
-        if (!currentUserUtil.isAdmin() && !currentUserUtil.isLogistics()) {
+        if (!currentUserUtil.isAdmin() && !currentUserUtil.isLogistics() && !currentUserUtil.isRegulator()) {
             qw.eq("create_by", currentUserUtil.getCurrentUsername());
         }
         if (transportStatus != null)
@@ -383,15 +383,6 @@ public class ColdChainService {
         return num;
     }
 
-    // 温度预警
-    public int alertTransport(Long transportId) {
-        CcTransport transport = ccTransportMapper.selectById(transportId);
-        if (transport == null) return 0;
-        transport.setTransportStatus(3);
-        transport.setUpdateTime(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
-        return ccTransportMapper.updateById(transport);
-    }
-
     // 异常关闭
     @Transactional
     public int closeTransport(Long transportId) {
@@ -481,10 +472,6 @@ public class ColdChainService {
                 if (abnormal) {
                     record.setIsAbnormal(1);
                     record.setAbnormalReason(reason.toString().trim());
-                    // 联动触发运输订单温度预警
-                    if (transport.getTransportStatus() == 2) {
-                        alertTransport(transport.getTransportId());
-                    }
                 }
             }
         }

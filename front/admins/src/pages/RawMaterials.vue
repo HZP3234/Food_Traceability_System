@@ -1,8 +1,12 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, inject, type Ref } from 'vue'
 import { Box, Check, Close, Delete, Edit, Plus, Refresh, Search, Select, Upload } from '@element-plus/icons-vue'
 import { rawApi, enterpriseApi } from '../services/api'
 import Pagination from '../components/Pagination.vue'
+import type { RoleKey } from '../config/navigation'
+
+const currentRole = inject<Ref<RoleKey>>('currentRole')
+const canEdit = computed(() => currentRole?.value === 'super-admin' || currentRole?.value === 'manufacturer' || currentRole?.value === 'supplier')
 
 let currentUser = ''
 try {
@@ -28,13 +32,12 @@ const showMatchModal = ref(false)
 const matchPendingItem = ref<any>(null)
 const matchTargetBatch = ref('')
 
-const filters = ref({ supplierName: '', productCategory: '', checkResult: '', warehouse: '', batchStatus: '', detailStatus: '' })
+const filters = ref({ supplierName: '', productCategory: '', warehouse: '', batchStatus: '', detailStatus: '' })
 
 const stats = computed(() => ({
   total: list.value.length,
   matched: list.value.filter((r: any) => r.detailStatus === 1 || r.detailStatus === 2).length,
   unmatched: list.value.filter((r: any) => !r.detailStatus || r.detailStatus === 0).length,
-  unchecked: list.value.filter((r: any) => !r.checkResult || r.checkResult === 0).length,
 }))
 
 const batchForm = ref({ batchNo: '', productName: '', productCategory: '', amount: '', unit: '', supplierId: '', supplierName: '', warehouse: '', storageMethod: 0, shelfLife: '', purchaseDate: '', remark: '' })
@@ -81,7 +84,6 @@ async function loadList() {
     const p: Record<string, any> = {}
     if (filters.value.supplierName) p.supplierName = filters.value.supplierName
     if (filters.value.productCategory) p.productCategory = filters.value.productCategory
-    if (filters.value.checkResult) p.checkResult = Number(filters.value.checkResult)
     if (filters.value.warehouse) p.warehouse = filters.value.warehouse
     if (filters.value.batchStatus) p.batchStatus = Number(filters.value.batchStatus)
     if (filters.value.detailStatus) p.detailStatus = Number(filters.value.detailStatus)
@@ -95,7 +97,7 @@ async function loadList() {
 }
 
 function resetFilters() {
-  filters.value = { supplierName: '', productCategory: '', checkResult: '', warehouse: '', batchStatus: '', detailStatus: '' }
+  filters.value = { supplierName: '', productCategory: '', warehouse: '', batchStatus: '', detailStatus: '' }
   loadList()
 }
 
@@ -149,14 +151,12 @@ onMounted(loadList)
       <article><span><el-icon><Box /></el-icon> 批次总数</span><b>{{ stats.total }}</b><em>个原料批次</em></article>
       <article class="green"><span><el-icon><Check /></el-icon> 已匹配溯源</span><b>{{ stats.matched }}</b><em>源头已关联</em></article>
       <article class="amber"><span><el-icon><Upload /></el-icon> 待匹配溯源</span><b>{{ stats.unmatched }}</b><em>等待源头信息</em></article>
-      <article :class="stats.unchecked > 0 ? 'amber' : ''"><span><el-icon><Search /></el-icon> 待质检</span><b>{{ stats.unchecked }}</b><em>需检验</em></article>
     </section>
 
     <section class="trace-panel filter-panel">
       <div class="filter-grid">
         <label>供应商<input v-model="filters.supplierName" placeholder="供应商名称" @keyup.enter="loadList" /></label>
         <label>产品类别<input v-model="filters.productCategory" @keyup.enter="loadList" /></label>
-        <label>质检<select v-model="filters.checkResult"><option value="">全部</option><option value="1">合格</option><option value="2">不合格</option></select></label>
         <label>状态<select v-model="filters.batchStatus"><option value="">全部</option><option value="1">待入库</option><option value="2">已入库</option><option value="3">已启用</option></select></label>
         <label>溯源匹配<select v-model="filters.detailStatus"><option value="">全部</option><option value="0">待上传</option><option value="1">已上传</option><option value="2">已匹配</option></select></label>
         <div class="filter-actions"><button class="secondary" @click="resetFilters"><el-icon><Refresh /></el-icon> 重置</button><button class="primary" @click="loadList"><el-icon><Search /></el-icon> 查询</button></div>
@@ -164,15 +164,14 @@ onMounted(loadList)
     </section>
 
     <section class="trace-panel list-panel" style="margin-bottom:28px">
-      <header class="panel-header"><div><p>原料台账</p><h2>原料批次列表</h2></div><button class="primary create" @click="openCreate"><el-icon><Plus /></el-icon> 创建原料批次</button></header>
-      <div class="table-wrap"><table><thead><tr><th>批次号</th><th>产品</th><th>供应商</th><th>数量</th><th>仓库</th><th>质检</th><th>状态</th><th>溯源匹配</th><th>日期</th><th>操作</th></tr></thead>
+      <header class="panel-header"><div><p>原料台账</p><h2>原料批次列表</h2></div><button v-if="canEdit" class="primary create" @click="openCreate"><el-icon><Plus /></el-icon> 创建原料批次</button></header>
+      <div class="table-wrap"><table><thead><tr><th>批次号</th><th>产品</th><th>供应商</th><th>数量</th><th>仓库</th><th>状态</th><th>溯源匹配</th><th>日期</th><th>操作</th></tr></thead>
         <tbody>
-          <tr v-if="loading"><td colspan="10" class="empty">加载中...</td></tr>
-          <tr v-else-if="!list.length"><td colspan="10" class="empty">暂无原料批次，点击"创建原料批次"开始</td></tr>
+          <tr v-if="loading"><td colspan="9" class="empty">加载中...</td></tr>
+          <tr v-else-if="!list.length"><td colspan="9" class="empty">暂无原料批次，点击"创建原料批次"开始</td></tr>
           <tr v-for="row in paginatedList" :key="row.rawBatchId">
             <td><code>{{ row.batchNo }}</code></td><td>{{ row.productName }}</td><td>{{ row.supplierName }}</td>
             <td>{{ row.amount }}{{ row.unit }}</td><td>{{ row.warehouse }}</td>
-            <td><span class="status" :class="row.checkResult === 1 ? 'status-active' : row.checkResult === 2 ? 'status-void' : 'status-pending'">{{ row.checkResult === 1 ? '合格' : row.checkResult === 2 ? '不合格' : '未检测' }}</span></td>
             <td><span class="status" :class="row.batchStatus === 2 ? 'status-active' : row.batchStatus === 1 ? 'status-pending' : 'status-active'">{{ ['','待入库','已入库','已启用'][row.batchStatus] || '-' }}</span></td>
             <td>
               <span v-if="row.detailStatus >= 1" class="status status-active">✓ 已匹配</span>
@@ -180,9 +179,9 @@ onMounted(loadList)
             </td>
             <td>{{ row.purchaseDate }}</td>
             <td class="actions">
-              <button @click="openEdit(row)"><el-icon><Edit /></el-icon> 编辑</button>
-              <button v-if="!row.checkResult" @click="openQc(row)"><el-icon><Check /></el-icon> 质检</button>
-              <button class="danger" @click="confirmDelete(row.rawBatchId)"><el-icon><Delete /></el-icon> 删除</button>
+              <button v-if="canEdit" @click="openEdit(row)"><el-icon><Edit /></el-icon> 编辑</button>
+              <button v-if="canEdit && !row.checkResult" @click="openQc(row)"><el-icon><Check /></el-icon> 质检</button>
+              <button v-if="canEdit" class="danger" @click="confirmDelete(row.rawBatchId)"><el-icon><Delete /></el-icon> 删除</button>
             </td>
           </tr>
         </tbody></table></div>
@@ -197,7 +196,7 @@ onMounted(loadList)
         <div v-for="p in pendingList" :key="p.rawPendingId" class="trace-row-card">
           <span class="trace-mini-badge amber">待</span>
           <div style="flex:1"><strong>{{ p.pendingCode }}</strong><small style="display:block;color:#96a8b9;font-size:11px">{{ p.productName || '未知原料' }} · {{ p.supplierName || '' }} · {{ p.uploadTime }}</small></div>
-          <button class="primary btn-sm" @click="openMatchPending(p)"><el-icon><Select /></el-icon> 匹配批次</button>
+          <button v-if="canEdit" class="primary btn-sm" @click="openMatchPending(p)"><el-icon><Select /></el-icon> 匹配批次</button>
         </div>
       </div>
     </section>

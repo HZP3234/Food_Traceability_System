@@ -1,8 +1,12 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, inject, type Ref } from 'vue'
 import { Check, Close, Connection, Delete, DocumentChecked, Edit, Link, Plus, Search, VideoPlay } from '@element-plus/icons-vue'
 import { productionApi, rawApi } from '../services/api'
 import Pagination from '../components/Pagination.vue'
+import type { RoleKey } from '../config/navigation'
+
+const currentRole = inject<Ref<RoleKey>>('currentRole')
+const canEdit = computed(() => currentRole?.value === 'super-admin' || currentRole?.value === 'manufacturer')
 
 const tab = ref<'prod' | 'template' | 'input' | 'inspection'>('prod')
 const loading = ref(false)
@@ -33,7 +37,7 @@ const qcForm = ref({
   resultDesc: '',
 })
 
-const filters = ref({ productName: '', productionLine: '', checkResult: '', batchStatus: '', codeStatus: '' })
+const filters = ref({ productName: '', productionLine: '', batchStatus: '', codeStatus: '' })
 const templateFilters = ref({ applicableProduct: '', templateStatus: '' })
 const inspFilters = ref({ bizType: '', bizBatchNo: '', inspectionType: '', inspectionResult: '' })
 
@@ -64,7 +68,6 @@ const stats = computed(() => {
   switch (tab.value) {
     case 'prod': return [
       { label: '生产批次总数', icon: Edit, cls: '', val: list.value.length },
-      { label: '质检合格', icon: Check, cls: 'green', val: list.value.filter((r: any) => r.checkResult === 1).length },
       { label: '生产完成', icon: DocumentChecked, cls: 'green', val: list.value.filter((r: any) => r.batchStatus === 3).length },
       { label: '已绑码', icon: Link, cls: 'amber', val: list.value.filter((r: any) => r.codeStatus > 0).length },
     ]
@@ -103,7 +106,6 @@ async function loadProdBatch() {
     const p: Record<string, any> = {};
     if (filters.value.productName) p.productName = filters.value.productName;
     if (filters.value.productionLine) p.productionLine = filters.value.productionLine;
-    if (filters.value.checkResult) p.checkResult = Number(filters.value.checkResult);
     if (filters.value.batchStatus) p.batchStatus = Number(filters.value.batchStatus);
     if (filters.value.codeStatus) p.codeStatus = Number(filters.value.codeStatus);
     const data = await productionApi.listProdBatch(p); list.value = Array.isArray(data) ? data : []; prodPage.value = 1
@@ -327,33 +329,31 @@ onMounted(loadProdBatch)
         <div class="filter-grid">
           <label>产品名称<input v-model="filters.productName" placeholder="产品名称" @keyup.enter="loadProdBatch" /></label>
           <label>生产线<input v-model="filters.productionLine" placeholder="生产线" @keyup.enter="loadProdBatch" /></label>
-          <label>质检<select v-model="filters.checkResult"><option value="">全部</option><option value="1">合格</option><option value="2">不合格</option></select></label>
           <label>状态<select v-model="filters.batchStatus"><option value="">全部</option><option value="1">待生产</option><option value="2">生产中</option><option value="3">生产完成</option></select></label>
           <label>绑码<select v-model="filters.codeStatus"><option value="">全部</option><option value="1">已绑码</option><option value="0">未绑定</option></select></label>
           <div class="filter-actions"><button class="primary" @click="loadProdBatch"><el-icon><Search /></el-icon> 查询</button></div>
         </div>
       </section>
       <section class="trace-panel list-panel">
-        <header class="panel-header"><div><p>生产台账</p><h2>生产批次列表</h2></div><button class="primary create" @click="openCreateProd"><el-icon><Plus /></el-icon> 新增生产批次</button></header>
-        <div class="table-wrap"><table><thead><tr><th>生产批次号</th><th>产品名称</th><th>工艺模板</th><th>生产线</th><th>计划/实际</th><th>生产日期</th><th>质检</th><th>状态</th><th>绑码</th><th>操作</th></tr></thead>
+        <header class="panel-header"><div><p>生产台账</p><h2>生产批次列表</h2></div><button v-if="canEdit" class="primary create" @click="openCreateProd"><el-icon><Plus /></el-icon> 新增生产批次</button></header>
+        <div class="table-wrap"><table><thead><tr><th>生产批次号</th><th>产品名称</th><th>工艺模板</th><th>生产线</th><th>计划/实际</th><th>生产日期</th><th>状态</th><th>绑码</th><th>操作</th></tr></thead>
           <tbody>
-            <tr v-if="loading"><td colspan="10" class="empty">加载中...</td></tr>
-            <tr v-else-if="!list.length"><td colspan="10" class="empty">暂无生产批次数据</td></tr>
+            <tr v-if="loading"><td colspan="9" class="empty">加载中...</td></tr>
+            <tr v-else-if="!list.length"><td colspan="9" class="empty">暂无生产批次数据</td></tr>
             <tr v-for="row in paginatedList" :key="row.prodBatchId">
               <td><code>{{ row.batchNo }}</code></td><td><strong>{{ row.productName }}</strong></td>
               <td>{{ row.templateName || '-' }}</td><td>{{ row.productionLine }}</td>
               <td>{{ row.plannedAmount }}/{{ row.actualAmount }}</td><td>{{ row.productionDate }}</td>
-              <td><span class="status" :class="statusClass(checkResultLabels[row.checkResult] || '未检测')">{{ checkResultLabels[row.checkResult] || '未检测' }}</span></td>
               <td><span class="status" :class="statusClass(prodBatchStatusLabels[row.batchStatus] || '')">{{ prodBatchStatusLabels[row.batchStatus] || '-' }}</span></td>
               <td><span class="status" :class="row.codeStatus > 0 ? 'status-active' : 'status-pending'">{{ row.codeStatus > 0 ? '已绑定' : '未绑定' }}</span></td>
               <td class="actions">
-                <button @click="openEditProd(row)"><el-icon><Edit /></el-icon> 编辑</button>
-                <button v-if="row.batchStatus === 1" @click="startProd(row.prodBatchId)"><el-icon><VideoPlay /></el-icon> 开始</button>
-                <button v-if="row.batchStatus === 2" @click="completeProd(row.prodBatchId)"><el-icon><Check /></el-icon> 完成</button>
-                <button v-if="row.batchStatus === 3 && !row.codeStatus" @click="bindCode(row.prodBatchId)"><el-icon><Link /></el-icon> 绑码</button>
-                <button v-if="!row.checkResult" @click="openQcProd(row)"><el-icon><DocumentChecked /></el-icon> 质检</button>
+                <button v-if="canEdit" @click="openEditProd(row)"><el-icon><Edit /></el-icon> 编辑</button>
+                <button v-if="canEdit && row.batchStatus === 1" @click="startProd(row.prodBatchId)"><el-icon><VideoPlay /></el-icon> 开始</button>
+                <button v-if="canEdit && row.batchStatus === 2" @click="completeProd(row.prodBatchId)"><el-icon><Check /></el-icon> 完成</button>
+                <button v-if="canEdit && row.batchStatus === 3 && !row.codeStatus" @click="bindCode(row.prodBatchId)"><el-icon><Link /></el-icon> 绑码</button>
+                <button v-if="canEdit && !row.checkResult" @click="openQcProd(row)"><el-icon><DocumentChecked /></el-icon> 质检</button>
                 <button @click="traceChain(row.batchNo)"><el-icon><Connection /></el-icon> 追溯</button>
-                <button class="danger" @click="confirmDeleteProd(row.prodBatchId)"><el-icon><Delete /></el-icon> 删除</button>
+                <button v-if="canEdit" class="danger" @click="confirmDeleteProd(row.prodBatchId)"><el-icon><Delete /></el-icon> 删除</button>
               </td>
             </tr>
           </tbody></table></div>
@@ -371,7 +371,7 @@ onMounted(loadProdBatch)
         </div>
       </section>
       <section class="trace-panel list-panel">
-        <header class="panel-header"><div><p>工艺台账</p><h2>工艺模板列表</h2></div><button class="primary create" @click="openCreateTemplate"><el-icon><Plus /></el-icon> 新增模板</button></header>
+        <header class="panel-header"><div><p>工艺台账</p><h2>工艺模板列表</h2></div><button v-if="canEdit" class="primary create" @click="openCreateTemplate"><el-icon><Plus /></el-icon> 新增模板</button></header>
         <div class="table-wrap"><table><thead><tr><th>模板名称</th><th>版本</th><th>适用产品</th><th>目标温度</th><th>时长</th><th>压力</th><th>冷却温度</th><th>灌装温度</th><th>pH值</th><th>状态</th><th>操作</th></tr></thead>
           <tbody>
             <tr v-if="!templates.length"><td colspan="11" class="empty">暂无工艺模板数据</td></tr>
@@ -379,8 +379,8 @@ onMounted(loadProdBatch)
               <td><strong>{{ row.templateName }}</strong></td><td>{{ row.version }}</td><td>{{ row.applicableProduct }}</td><td>{{ row.targetTemp || '-' }}</td><td>{{ row.duration || '-' }}</td><td>{{ row.pressure || '-' }}</td><td>{{ row.coolTemp || '-' }}</td><td>{{ row.fillTemp || '-' }}</td><td>{{ row.phValue || '-' }}</td>
               <td><span class="status" :class="row.templateStatus === 1 ? 'status-active' : 'status-disabled'">{{ row.templateStatus === 1 ? '启用' : '停用' }}</span></td>
               <td class="actions">
-                <button @click="openEditTemplate(row)"><el-icon><Edit /></el-icon> 编辑</button>
-                <button class="danger" @click="confirmDeleteTemplate(row.templateId)"><el-icon><Delete /></el-icon> 删除</button>
+                <button v-if="canEdit" @click="openEditTemplate(row)"><el-icon><Edit /></el-icon> 编辑</button>
+                <button v-if="canEdit" class="danger" @click="confirmDeleteTemplate(row.templateId)"><el-icon><Delete /></el-icon> 删除</button>
               </td>
             </tr>
           </tbody></table></div>
@@ -391,7 +391,7 @@ onMounted(loadProdBatch)
     <!-- Material Input -->
     <template v-if="tab === 'input'">
       <section class="trace-panel list-panel">
-        <header class="panel-header"><div><p>投料台账</p><h2>投料记录</h2></div><button class="primary create" @click="showInputModal = true"><el-icon><Plus /></el-icon> 记录投料</button></header>
+        <header class="panel-header"><div><p>投料台账</p><h2>投料记录</h2></div><button v-if="canEdit" class="primary create" @click="showInputModal = true"><el-icon><Plus /></el-icon> 记录投料</button></header>
         <div class="table-wrap"><table><thead><tr><th>原料批次</th><th>原料名称</th><th>投料数量</th><th>单位</th><th>操作员</th><th>投料时间</th></tr></thead>
           <tbody><tr v-if="!materialInputs.length"><td colspan="6" class="empty">暂无投料记录</td></tr>
             <tr v-for="row in paginatedInputs" :key="row.inputId"><td><code>{{ row.rawBatchNo }}</code></td><td>{{ row.materialName }}</td><td>{{ row.inputAmount }}{{ row.unit }}</td><td>{{ row.unit }}</td><td>{{ row.operator }}</td><td>{{ row.inputTime }}</td></tr>
@@ -407,7 +407,7 @@ onMounted(loadProdBatch)
           <label>业务类型<select v-model="inspFilters.bizType"><option value="">全部</option><option value="1">原料</option><option value="3">生产</option><option value="4">冷链</option><option value="5">销售</option></select></label>
           <label>业务批次<input v-model="inspFilters.bizBatchNo" placeholder="批次号" /></label>
           <label>检验结果<select v-model="inspFilters.inspectionResult"><option value="">全部</option><option value="1">合格</option><option value="2">不合格</option></select></label>
-          <div class="filter-actions"><button class="primary" @click="loadInspections"><el-icon><Search /></el-icon> 查询</button><button class="secondary" @click="showInspectionModal = true"><el-icon><Plus /></el-icon> 新增质检</button></div>
+          <div class="filter-actions"><button class="primary" @click="loadInspections"><el-icon><Search /></el-icon> 查询</button><button v-if="canEdit" class="secondary" @click="showInspectionModal = true"><el-icon><Plus /></el-icon> 新增质检</button></div>
         </div>
       </section>
       <section class="trace-panel list-panel">

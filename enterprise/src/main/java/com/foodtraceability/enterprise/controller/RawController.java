@@ -137,7 +137,7 @@ public class RawController {
 
     // 查询待匹配列表（支持按供应商+状态组合过滤，不同供应商只能看到自己的数据）
     @RequestMapping("/listPending")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPPLIER', 'MANUFACTURER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPPLIER', 'MANUFACTURER', 'REGULATOR')")
     public List<RawPending> listPending(String supplierName, Integer pendingStatus) {
         // 当同时传入 supplierName 和 pendingStatus 时，使用组合查询
         if (supplierName != null && !supplierName.isBlank()) {

@@ -257,7 +257,6 @@ export const coldChainApi = {
   updateTransport: (data: Record<string, any>) => post('/ColdChain/updateTransport', data),
   departTransport: (transportId: number) => post('/ColdChain/departTransport', { transportId }),
   arriveTransport: (transportId: number) => post('/ColdChain/arriveTransport', { transportId }),
-  alertTransport: (transportId: number) => post('/ColdChain/alertTransport', { transportId }),
   closeTransport: (transportId: number) => post('/ColdChain/closeTransport', { transportId }),
   deleteTransport: (transportId: number) => post('/ColdChain/deleteTransport', { transportId }),
 

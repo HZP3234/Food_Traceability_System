@@ -21,7 +21,6 @@ const stats = ref({
   enterprises: 0,
   auditLogs: 0,
   qualityFailures: 0,
-  coldChainAlerts: 0,
 })
 
 async function loadStats() {
@@ -36,7 +35,6 @@ async function loadStats() {
       enterpriseApi.list({ page: 1, size: 1 }),
       auditApi.list({ page: 1, size: 1 }),
       productionApi.listInspection({ inspectionResult: 2 }),
-      coldChainApi.listTransport({ transportStatus: 4 }),
     ])
 
     const getArr = (r: PromiseSettledResult<any>) => (r.status === 'fulfilled' && Array.isArray(r.value) ? r.value : [])
@@ -55,7 +53,6 @@ async function loadStats() {
     stats.value.enterprises = getPageTotal(results[5])
     stats.value.auditLogs = getPageTotal(results[6])
     stats.value.qualityFailures = getArr(results[7]).length
-    stats.value.coldChainAlerts = getArr(results[8]).length
   } catch (e: any) {} finally { loading.value = false }
 }
 
@@ -108,10 +105,10 @@ onMounted(loadStats)
       <article><span><el-icon><Box /></el-icon> 原料批次</span><b>{{ stats.rawBatches }}</b><em>个批次</em></article>
       <article class="green"><span><el-icon><SetUp /></el-icon> 生产批次</span><b>{{ stats.prodBatches + stats.processBatches }}</b><em>含加工批次</em></article>
       <article><span><el-icon><Grid /></el-icon> 溯源码</span><b>{{ stats.traceCodes }}</b><em>个编码</em></article>
-      <article :class="stats.qualityFailures > 0 || stats.coldChainAlerts > 0 ? 'red' : 'green'">
-        <span><el-icon><Warning /></el-icon> {{ stats.qualityFailures + stats.coldChainAlerts > 0 ? '待处理预警' : '系统状态' }}</span>
-        <b>{{ stats.qualityFailures + stats.coldChainAlerts > 0 ? stats.qualityFailures + stats.coldChainAlerts : '正常' }}</b>
-        <em>{{ stats.qualityFailures + stats.coldChainAlerts > 0 ? '需关注' : '运行正常' }}</em>
+      <article :class="stats.qualityFailures > 0 ? 'red' : 'green'">
+        <span><el-icon><Warning /></el-icon> {{ stats.qualityFailures > 0 ? '质检预警' : '系统状态' }}</span>
+        <b>{{ stats.qualityFailures > 0 ? stats.qualityFailures : '正常' }}</b>
+        <em>{{ stats.qualityFailures > 0 ? '需关注' : '运行正常' }}</em>
       </article>
       <article><span><el-icon><OfficeBuilding /></el-icon> 企业/终端</span><b>{{ stats.enterprises + stats.terminals }}</b><em>家</em></article>
     </section>
@@ -122,11 +119,6 @@ onMounted(loadStats)
       <section class="trace-panel" style="flex:1;padding:18px 20px">
         <h3 style="margin:0 0 16px;font-size:15px;color:#25486b"><el-icon><Warning /></el-icon> 预警摘要</h3>
         <div style="display:flex;flex-direction:column;gap:12px">
-          <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:8px" :style="stats.coldChainAlerts > 0 ? 'background:#fff5f5' : 'background:#f9fbfd'">
-            <span style="width:8px;height:8px;border-radius:50%;flex-shrink:0" :style="{ background: stats.coldChainAlerts > 0 ? '#e5484d' : '#22b46d' }"></span>
-            <div style="flex:1"><strong style="display:block;font-size:13px;color:#34536f">冷链温度预警</strong><p style="margin:2px 0 0;font-size:11px;color:#91a4bc">{{ stats.coldChainAlerts }} 条未处理</p></div>
-            <span style="font-size:18px;font-weight:700" :style="{ color: stats.coldChainAlerts > 0 ? '#e5484d' : '#22b46d' }">{{ stats.coldChainAlerts }}</span>
-          </div>
           <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:8px" :style="stats.qualityFailures > 0 ? 'background:#fff5f5' : 'background:#f9fbfd'">
             <span style="width:8px;height:8px;border-radius:50%;flex-shrink:0" :style="{ background: stats.qualityFailures > 0 ? '#e5484d' : '#22b46d' }"></span>
             <div style="flex:1"><strong style="display:block;font-size:13px;color:#34536f">质检不合格</strong><p style="margin:2px 0 0;font-size:11px;color:#91a4bc">{{ stats.qualityFailures }} 条记录</p></div>

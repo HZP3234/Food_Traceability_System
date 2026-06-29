@@ -231,18 +231,6 @@ public class ColdChainController {
         }
     }
 
-    // 温度预警
-    @RequestMapping("/alertTransport")
-    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS')")
-    public String alertTransport(Long transportId) {
-        int num = coldChainService.alertTransport(transportId);
-        if (num == 1) {
-            return "运输订单已标记为温度预警";
-        } else {
-            return "操作失败";
-        }
-    }
-
     // 异常关闭
     @RequestMapping("/closeTransport")
     @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS')")

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, inject, type Ref } from 'vue'
-import { Check, Close, Delete, Download, Edit, Plus, Search, Select, Upload, Van, Warning } from '@element-plus/icons-vue'
+import { Check, Close, Delete, Download, Edit, Plus, Search, Select, Upload, Van } from '@element-plus/icons-vue'
 import { coldChainApi, productionApi, enterpriseApi, salesOrderApi } from '../services/api'
 import Pagination from '../components/Pagination.vue'
 import type { RoleKey } from '../config/navigation'
@@ -8,6 +8,7 @@ import type { RoleKey } from '../config/navigation'
 const currentRole = inject<Ref<RoleKey>>('currentRole')
 const isLogistics = computed(() => currentRole?.value === 'logistics' || currentRole?.value === 'super-admin')
 const isOtherEnterprise = computed(() => !isLogistics.value)
+const canCreateTransport = computed(() => currentRole?.value === 'super-admin' || currentRole?.value === 'manufacturer' || currentRole?.value === 'supplier')
 
 const toast = ref<{ type: 'success' | 'error'; text: string } | null>(null)
 
@@ -22,14 +23,14 @@ const showTModal = ref(false); const editingT = ref<any>(null); const showTConfi
 const tForm = ref({ orderNo: '', plateNo: '', productName: '', prodBatchNo: '', salesOrderCode: '', departureName: '', destinationName: '', transportMethod: 0, logisticsCompany: '', remark: '' })
 const logisticsOptions = ref<any[]>([])
 const transportMethodLabels = ['', '公路', '铁路', '航空', '海运']
-const transportStatusLabels = ['待匹配', '待发运', '运输中', '已签收', '温度预警', '异常关闭']
+const transportStatusLabels = ['待匹配', '待发运', '运输中', '—', '已签收', '异常关闭']
 const vehicleOptions = ref<any[]>([])
 const enterpriseOptions = ref<any[]>([])
 
 const tStats = computed(() => ({
+  total: transports.value.length,
   inTransit: transports.value.filter((r: any) => r.transportStatus === 2).length,
-  alert: transports.value.filter((r: any) => r.transportStatus === 4).length,
-  arrived: transports.value.filter((r: any) => r.transportStatus === 3).length,
+  arrived: transports.value.filter((r: any) => r.transportStatus === 4).length,
 }))
 
 // ==================== Vehicle ====================
@@ -61,7 +62,7 @@ function notify(type: 'success' | 'error', text: string) { toast.value = { type,
 function statusClass(s: string) {
   if (['已签收', '空闲', '启用', '正常', '完好', '一致'].some(x => s.includes(x))) return 'status-active'
   if (['运输中', '待发运', '待签收'].some(x => s.includes(x))) return 'status-pending'
-  if (['温度预警', '维修中', '异常', '破损'].some(x => s.includes(x))) return 'status-void'
+  if (['维修中', '异常', '破损'].some(x => s.includes(x))) return 'status-void'
   return 'status-active'
 }
 
@@ -225,9 +226,9 @@ function confirmDeleteT(id: number) { if (isOtherEnterprise.value) { notify('err
 async function doDeleteT() { try { await coldChainApi.deleteTransport(deletingTId.value!); notify('success', '订单删除成功'); showTConfirm.value = false; loadTransports() } catch (e: any) { notify('error', '删除失败: ' + e.message) } }
 async function stateAction(action: string, id: number) {
   if (isOtherEnterprise.value) { notify('error', '仅冷链物流商可执行此操作'); return }
-  const labels: Record<string, string> = { depart: '发运', arrive: '签收', alert: '预警', close: '关闭' }
+  const labels: Record<string, string> = { depart: '发运', arrive: '签收', close: '关闭' }
   if (!confirm(`确认执行"${labels[action] || action}"操作？`)) return
-  try { if (action === 'depart') await coldChainApi.departTransport(id); else if (action === 'arrive') await coldChainApi.arriveTransport(id); else if (action === 'alert') await coldChainApi.alertTransport(id); else if (action === 'close') await coldChainApi.closeTransport(id); notify('success', '操作成功'); loadTransports(); loadShippingOrders() } catch (e: any) { notify('error', '操作失败: ' + e.message) }
+  try { if (action === 'depart') await coldChainApi.departTransport(id); else if (action === 'arrive') await coldChainApi.arriveTransport(id); else if (action === 'close') await coldChainApi.closeTransport(id); notify('success', '操作成功'); loadTransports(); loadShippingOrders() } catch (e: any) { notify('error', '操作失败: ' + e.message) }
 }
 
 // ==================== Vehicle CRUD (仅物流商) ====================
@@ -336,7 +337,6 @@ onMounted(loadTransports)
     <section v-if="tab === 'transport'" class="trace-stats">
       <article><span><el-icon><Van /></el-icon> 运输订单</span><b>{{ tStats.total }}</b><em>个订单</em></article>
       <article class="amber"><span><el-icon><Van /></el-icon> 运输中</span><b>{{ tStats.inTransit }}</b><em>正在运输</em></article>
-      <article v-if="tStats.alert > 0" class="red"><span><el-icon><Warning /></el-icon> 温度预警</span><b>{{ tStats.alert }}</b><em>需处理</em></article>
       <article class="green"><span><el-icon><Check /></el-icon> 已签收</span><b>{{ tStats.arrived }}</b><em>已完成</em></article>
     </section>
 
@@ -352,7 +352,7 @@ onMounted(loadTransports)
     <template v-if="tab === 'transport'">
       <section class="trace-panel filter-panel">
         <div class="filter-grid-4">
-          <label>状态<select v-model="tFilters.transportStatus"><option value="">全部</option><option value="0">待匹配</option><option value="1">待发运</option><option value="2">运输中</option><option value="3">已签收</option><option value="4">温度预警</option><option value="5">异常关闭</option></select></label>
+          <label>状态<select v-model="tFilters.transportStatus"><option value="">全部</option><option value="0">待匹配</option><option value="1">待发运</option><option value="2">运输中</option><option value="4">已签收</option><option value="5">异常关闭</option></select></label>
           <label>生产批次<input v-model="tFilters.prodBatchNo" @keyup.enter="loadTransports" /></label>
           <label>车牌号<input v-model="tFilters.plateNo" @keyup.enter="loadTransports" /></label>
           <div class="filter-actions"><button class="primary" @click="loadTransports"><el-icon><Search /></el-icon> 查询</button></div>
@@ -361,7 +361,7 @@ onMounted(loadTransports)
       <section class="trace-panel list-panel">
         <header class="panel-header">
           <div><p>运输台账</p><h2>运输订单列表</h2></div>
-          <button v-if="!isLogistics" class="primary create" @click="openCreateT"><el-icon><Plus /></el-icon> 新建运输订单</button>
+          <button v-if="canCreateTransport" class="primary create" @click="openCreateT"><el-icon><Plus /></el-icon> 新建运输订单</button>
         </header>
         <div class="table-wrap"><table><thead><tr><th>订单号</th><th>运输车辆</th><th>销售编码</th><th>生产批次</th><th>产品</th><th>发运地</th><th>目的地</th><th>运输方式</th><th>状态</th><th>操作</th></tr></thead>
           <tbody>
@@ -378,10 +378,10 @@ onMounted(loadTransports)
               <td>{{ transportMethodLabels[row.transportMethod] || '-' }}</td>
               <td><span class="status" :class="statusClass(transportStatusLabels[row.transportStatus] || '')">{{ transportStatusLabels[row.transportStatus] || '-' }}</span></td>
               <td class="actions">
-                <button @click="openEditT(row)"><el-icon><Edit /></el-icon> 编辑</button>
+                <button v-if="canCreateTransport" @click="openEditT(row)"><el-icon><Edit /></el-icon> 编辑</button>
                 <button v-if="row.transportStatus === 1" @click="stateAction('depart', row.transportId)"><el-icon><Upload /></el-icon> 发运</button>
                 <button v-if="row.transportStatus === 2" @click="stateAction('arrive', row.transportId)"><el-icon><Download /></el-icon> 签收</button>
-                <button v-if="row.transportStatus === 4" class="danger" @click="stateAction('close', row.transportId)"><el-icon><Close /></el-icon> 关闭</button>
+                <button v-if="row.transportStatus === 2 || row.transportStatus === 3" class="danger" @click="stateAction('close', row.transportId)"><el-icon><Close /></el-icon> 关闭</button>
                 <button class="danger" @click="confirmDeleteT(row.transportId)"><el-icon><Delete /></el-icon> 删除</button>
               </td>
             </tr>
