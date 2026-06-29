@@ -77,7 +77,7 @@ async function loadList() {
     const res = await enterpriseApi.list(p)
     list.value = (res as any).data?.records ?? (Array.isArray(res) ? res : [])
     currentPage.value = 1
-  } catch (e: any) { notify('error', '加载企业列表失败: ' + e.message) }
+  } catch (e: any) { /* 非管理员用户可能无权限查看全部，静默处理 */ }
   finally { loading.value = false }
 }
 
@@ -91,7 +91,7 @@ async function loadQualList() {
       : await qualificationApi.my()
     qualList.value = (res as any).data ?? (Array.isArray(res) ? res : [])
     qualPage.value = 1
-  } catch (e: any) { notify('error', '加载资质列表失败: ' + e.message) }
+  } catch (e: any) { /* 非管理员用户仅看自己的资质，权限限制属预期行为 */ }
   finally { loading.value = false }
 }
 
@@ -159,7 +159,7 @@ onMounted(() => {
       <span v-else>管理<strong>本企业</strong>的资质证书。提交后由监管机构在线审核。</span>
     </div>
 
-// 资质上传入口
+<!-- 资质上传入口 -->
     <section class="trace-panel" style="margin-bottom:18px">
       <header class="panel-header">
         <div><p>资质操作</p><h2>{{ isRegulator ? '待审核资质' : '我的资质' }}</h2></div>

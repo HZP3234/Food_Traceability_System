@@ -11,6 +11,7 @@
         <result column="driver_phone" property="driverPhone"/>
         <result column="product_name" property="productName"/>
         <result column="prod_batch_no" property="prodBatchNo"/>
+        <result column="sales_order_code" property="salesOrderCode"/>
         <result column="departure_id" property="departureId"/>
         <result column="departure_name" property="departureName"/>
         <result column="destination_id" property="destinationId"/>

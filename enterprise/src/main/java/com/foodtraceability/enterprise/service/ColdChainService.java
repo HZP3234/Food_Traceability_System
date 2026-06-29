@@ -17,12 +17,14 @@ import com.foodtraceability.enterprise.entity.CcTransport;
 import com.foodtraceability.enterprise.entity.CcTempHumidity;
 import com.foodtraceability.enterprise.entity.CcTransportNode;
 import com.foodtraceability.enterprise.entity.CcReceipt;
+import com.foodtraceability.enterprise.entity.SalesOrder;
 import com.foodtraceability.enterprise.mapper.WarehouseMapper;
 import com.foodtraceability.enterprise.mapper.CcVehicleMapper;
 import com.foodtraceability.enterprise.mapper.EnterpriseCcTransportMapper;
 import com.foodtraceability.enterprise.mapper.CcTempHumidityMapper;
 import com.foodtraceability.enterprise.mapper.CcTransportNodeMapper;
 import com.foodtraceability.enterprise.mapper.CcReceiptMapper;
+import com.foodtraceability.enterprise.mapper.SalesOrderMapper;
 import com.foodtraceability.enterprise.entity.RawTransportPending;
 import com.foodtraceability.enterprise.mapper.RawTransportPendingMapper;
 import com.foodtraceability.enterprise.util.CurrentUserUtil;
@@ -45,6 +47,8 @@ public class ColdChainService {
     private CcReceiptMapper ccReceiptMapper;
     @Autowired
     private RawTransportPendingMapper rawTransportPendingMapper;
+    @Autowired
+    private SalesOrderMapper salesOrderMapper;
     @Autowired
     private CurrentUserUtil currentUserUtil;
 
@@ -251,6 +255,23 @@ public class ColdChainService {
         }
         if (transport.getOrderNo() == null || transport.getOrderNo().isBlank()) {
             transport.setOrderNo(generateTransportOrderNo());
+        }
+        // 根据销售编码自动填充生产批次和产品名称
+        if (transport.getSalesOrderCode() != null && !transport.getSalesOrderCode().isBlank()) {
+            QueryWrapper<SalesOrder> qw = new QueryWrapper<>();
+            qw.eq("sales_order_code", transport.getSalesOrderCode());
+            qw.eq("is_deleted", 0);
+            SalesOrder salesOrder = salesOrderMapper.selectOne(qw);
+            if (salesOrder != null) {
+                if (transport.getProdBatchNo() == null || transport.getProdBatchNo().isBlank()) {
+                    transport.setProdBatchNo(salesOrder.getProdBatchNo());
+                }
+                if (transport.getProductName() == null || transport.getProductName().isBlank()) {
+                    transport.setProductName(salesOrder.getProductName());
+                }
+            } else {
+                throw new RuntimeException("销售编码 " + transport.getSalesOrderCode() + " 不存在");
+            }
         }
         transport.setTransportStatus(0); // 待匹配
         String now = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));

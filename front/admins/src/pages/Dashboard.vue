@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, inject, onMounted, type Ref } from 'vue'
+import { ref, inject, onMounted, computed, type Ref } from 'vue'
 import { Box, Document, Grid, OfficeBuilding, SetUp, Shop, Van, Warning } from '@element-plus/icons-vue'
 import { rawApi, productionApi, coldChainApi, salesApi, traceCodeApi, enterpriseApi, auditApi } from '../services/api'
 import type { RoleKey } from '../config/navigation'
+import { navigation } from '../config/navigation'
 
 const currentRole = inject<Ref<RoleKey>>('currentRole')
 const emit = defineEmits<{ (e: 'navigate', page: string): void }>()
@@ -72,6 +73,20 @@ const quickLinks = [
   { id: 'audit-log', icon: Document, label: '审计日志', desc: '操作日志与审计' },
 ]
 
+// 从导航配置中提取每个页面允许的角色
+const navRoleMap: Record<string, RoleKey[]> = {}
+navigation.forEach(group =>
+  group.items.forEach(item => { navRoleMap[item.id] = item.roles })
+)
+
+// 根据当前角色过滤快捷入口
+const filteredQuickLinks = computed(() =>
+  quickLinks.filter(link => {
+    const roles = navRoleMap[link.id]
+    return roles ? roles.includes(currentRole?.value as RoleKey) : true
+  })
+)
+
 onMounted(loadStats)
 </script>
 
@@ -128,9 +143,9 @@ onMounted(loadStats)
       <!-- 快捷入口 -->
       <section class="trace-panel" style="flex:2;padding:18px 20px">
         <h3 style="margin:0 0 16px;font-size:15px;color:#25486b">📌 快捷入口</h3>
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
-          <button v-for="link in quickLinks" :key="link.id" type="button" @click="$emit('navigate', link.id)"
-            style="display:flex;align-items:center;gap:12px;padding:14px;border:1px solid #e6eef6;border-radius:10px;background:#fafcfe;cursor:pointer;text-align:left;transition:border-color .16s,box-shadow .16s,transform .16s"
+        <div style="display:flex;flex-wrap:wrap;gap:10px">
+          <button v-for="link in filteredQuickLinks" :key="link.id" type="button" @click="$emit('navigate', link.id)"
+            style="display:flex;align-items:center;gap:12px;padding:14px;border:1px solid #e6eef6;border-radius:10px;background:#fafcfe;cursor:pointer;text-align:left;transition:border-color .16s,box-shadow .16s,transform .16s;flex:1 1 200px;min-width:180px"
             onmouseover="this.style.borderColor='#bdd3f0';this.style.boxShadow='0 4px 12px rgba(43,93,135,.08)';this.style.transform='translateY(-1px)'"
             onmouseout="this.style.borderColor='#e6eef6';this.style.boxShadow='none';this.style.transform='none'">
             <span style="width:36px;height:36px;display:grid;place-items:center;flex-shrink:0;border-radius:8px;color:#3778ed;background:#eef4ff;font-size:16px;font-weight:800">
