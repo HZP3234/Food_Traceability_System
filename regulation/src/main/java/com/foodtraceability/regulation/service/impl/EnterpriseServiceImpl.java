@@ -43,6 +43,11 @@ public class EnterpriseServiceImpl extends ServiceImpl<EnterpriseMapper, Enterpr
     }
 
     @Override
+    public Enterprise getByEnterpriseUuid(String uuid) {
+        return baseMapper.selectByEnterpriseUuid(uuid);
+    }
+
+    @Override
     public List<Enterprise> listByRiskLevel(Integer riskLevel) {
         LambdaQueryWrapper<Enterprise> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Enterprise::getRiskLevel, riskLevel)

@@ -360,6 +360,8 @@ export const enterpriseApi = {
     if (name) params.set('name', name)
     return get<any[]>('/api/enterprise/search' + (params.toString() ? '?' + params.toString() : ''))
   },
+  /** 按企业UUID查询企业详情 */
+  getByUuid: (uuid: string) => get('/api/enterprise/by-uuid/' + encodeURIComponent(uuid)),
 }
 
 // ==================== Qualification (资质提交+审核，regulation 后端 :8081) ====================

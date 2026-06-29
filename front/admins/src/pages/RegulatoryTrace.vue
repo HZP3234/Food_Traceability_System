@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { Box, Close, Document, Location, Refresh, Search, SetUp, Shop, Van, View } from '@element-plus/icons-vue'
-import { traceApi, productionApi, rawApi, coldChainApi, salesOrderApi } from '../services/api'
+import { traceApi, productionApi, rawApi, coldChainApi, salesOrderApi, enterpriseApi } from '../services/api'
 import Pagination from '../components/Pagination.vue'
 
 const searchMode = ref<'code' | 'batch' | 'enterprise'>('code')
@@ -27,11 +27,17 @@ const chainData = ref<{
   salesOrders: any[]
 }>({ rawMaterials: [], productionBatches: [], coldChainTransports: [], salesOrders: [] })
 
+// 商家/企业信息
+const enterpriseInfo = ref<any>(null)
+const enterpriseLoading = ref(false)
+
 const codeTypeLabels: Record<number, string> = { 1: '单品码', 2: '箱码', 3: '托盘码' }
 const storageLabels: Record<number, string> = { 0: '常温', 1: '冷藏', 2: '冷冻' }
 const shiftLabels: Record<number, string> = { 1: '早班', 2: '中班', 3: '晚班' }
 const transportMethodLabels: Record<number, string> = { 1: '公路', 2: '铁路', 3: '冷链专线' }
 const orderStatusLabels: Record<number, string> = { 1: '待补充', 2: '已补充', 3: '已完成' }
+const enterpriseTypeLabels: Record<number, string> = { 1: '供应商', 2: '加工商', 3: '物流商', 4: '零售商' }
+const riskLevelLabels: Record<number, string> = { 1: '低风险', 2: '中风险', 3: '高风险' }
 
 function notify(type: 'success' | 'error', text: string) { toast.value = { type, text }; setTimeout(() => (toast.value = null), 2600) }
 
@@ -71,6 +77,20 @@ async function openDetail(row: any) {
   showDetail.value = true
   chainLoading.value = true
   chainData.value = { rawMaterials: [], productionBatches: [], coldChainTransports: [], salesOrders: [] }
+
+  // 获取商家/企业详细信息
+  enterpriseInfo.value = null
+  enterpriseLoading.value = true
+  if (row.enterpriseUuid) {
+    try {
+      const entRes = await enterpriseApi.getByUuid(row.enterpriseUuid)
+      enterpriseInfo.value = (entRes as any).data ?? entRes
+      console.log('[全链追溯] 企业信息查询结果:', enterpriseInfo.value)
+    } catch (e: any) {
+      console.warn('[全链追溯] 企业信息查询失败:', e.message || e)
+    }
+  }
+  enterpriseLoading.value = false
 
   const batchNo = row.batchNo
   console.log('[全链追溯] 溯源码batchNo:', batchNo)
@@ -193,6 +213,22 @@ onMounted(loadAll)
             <div><span>批次号</span><code>{{ viewing.batchNo || '-' }}</code></div>
             <div><span>创建时间</span><b>{{ viewing.createTime || '-' }}</b></div>
             <div><span>过期时间</span><b>{{ viewing.expireTime || '-' }}</b></div>
+          </div>
+
+          <!-- 商家/企业信息 -->
+          <div class="chain-section-title" style="margin-top:22px"><el-icon><Shop /></el-icon> 商家信息</div>
+          <div v-if="enterpriseLoading" style="text-align:center;padding:20px;color:#92a6b9">加载商家信息中...</div>
+          <div v-else-if="!enterpriseInfo" class="chain-node-empty">暂无商家信息</div>
+          <div v-else class="detail-grid">
+            <div><span>企业名称</span><b>{{ enterpriseInfo.enterpriseName || '-' }}</b></div>
+            <div><span>企业类型</span><b>{{ enterpriseTypeLabels[enterpriseInfo.enterpriseType] || '-' }}</b></div>
+            <div><span>统一社会信用代码</span><code>{{ enterpriseInfo.certNo || '-' }}</code></div>
+            <div><span>联系电话</span><b style="color:#2467df">{{ enterpriseInfo.contactPhone || '-' }}</b></div>
+            <div><span>联系人</span><b>{{ enterpriseInfo.contactPerson || '-' }}</b></div>
+            <div><span>企业状态</span><b :style="{ color: enterpriseInfo.status === 1 ? '#198658' : '#c04550' }">{{ enterpriseInfo.status === 1 ? '✅ 正常' : '❌ 停用' }}</b></div>
+            <div class="full"><span>注册地址</span><b>{{ enterpriseInfo.address || '-' }}</b></div>
+            <div><span>风险等级</span><b :style="{ color: enterpriseInfo.riskLevel === 3 ? '#c04550' : enterpriseInfo.riskLevel === 2 ? '#a4730a' : '#198658' }">{{ riskLevelLabels[enterpriseInfo.riskLevel] || '-' }}</b></div>
+            <div><span>备注</span><b>{{ enterpriseInfo.remark || '-' }}</b></div>
           </div>
 
           <!-- 全链路追踪 -->

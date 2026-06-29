@@ -22,6 +22,11 @@ public interface EnterpriseService extends IService<Enterprise> {
     List<Enterprise> searchByName(String name);
 
     /**
+     * 按企业UUID查询
+     */
+    Enterprise getByEnterpriseUuid(String uuid);
+
+    /**
      * 按风险等级筛选
      */
     List<Enterprise> listByRiskLevel(Integer riskLevel);
