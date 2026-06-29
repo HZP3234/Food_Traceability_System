@@ -47,6 +47,17 @@ public class EnterpriseController {
         return Result.success(enterpriseService.getById(enterpriseId));
     }
 
+    @Operation(summary = "按企业UUID查询企业信息")
+    @GetMapping("/by-uuid/{uuid}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'REGULATOR')")
+    public Result<Enterprise> getByUuid(@PathVariable String uuid) {
+        Enterprise enterprise = enterpriseService.getByEnterpriseUuid(uuid);
+        if (enterprise == null) {
+            return Result.error("企业不存在: " + uuid);
+        }
+        return Result.success(enterprise);
+    }
+
     @Operation(summary = "按风险等级筛选")
     @GetMapping("/risk/{level}")
     @PreAuthorize("hasAnyRole('ADMIN', 'REGULATOR')")
