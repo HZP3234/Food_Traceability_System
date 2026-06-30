@@ -139,9 +139,19 @@ public class TraceabilityServiceImpl implements TraceabilityService {
         List<Map<String, Object>> salesOrderList = new ArrayList<>();
 
         if (productName != null && !productName.isBlank()) {
-            // 1. 原料 - 按商品名称查 t_raw_batch
+            // 1. 原料 - 优先用 ProdBatch.rawBatchNo 精确查询
             try {
-                rawList = custRawMapper.selectByProductName(productName);
+                String rawBatchNoFromProd = prod != null ? prod.getRawBatchNo() : null;
+                if (rawBatchNoFromProd != null && !rawBatchNoFromProd.isBlank()) {
+                    Map<String, Object> rawByBatch = custRawMapper.selectByBatchNo(rawBatchNoFromProd);
+                    if (rawByBatch != null && !rawByBatch.isEmpty()) {
+                        rawList.add(rawByBatch);
+                    }
+                }
+                // 如果 rawBatchNo 查不到，回退到按商品名称查询
+                if (rawList.isEmpty()) {
+                    rawList = custRawMapper.selectByProductName(productName);
+                }
             } catch (Exception e) {
                 log.warn("查询原料失败: productName={}", productName, e);
             }
@@ -153,8 +163,29 @@ public class TraceabilityServiceImpl implements TraceabilityService {
                 log.warn("查询加工批次失败: productName={}", productName, e);
             }
 
-            // 3. 物流 - 按商品名称+批次号查 t_cc_transport
+            // 3. 物流 - 按商品名称+批次号查 t_cc_transport（成品运输 + 原料运输）
             transportList = ccTransportMapper.selectByProductName(productName, batchNo);
+            // 同时按原料批次号查原料运输订单
+            try {
+                List<Map<String, Object>> rawTransports = ccTransportMapper.selectByRawBatchNo(batchNo);
+                if (rawTransports != null && !rawTransports.isEmpty()) {
+                    // 合并去重（按 order_no 去重）
+                    java.util.Set<String> existingOrderNos = new java.util.HashSet<>();
+                    for (Map<String, Object> t : transportList) {
+                        Object on = t.get("order_no");
+                        if (on != null) existingOrderNos.add(on.toString());
+                    }
+                    for (Map<String, Object> rt : rawTransports) {
+                        Object on = rt.get("order_no");
+                        if (on != null && !existingOrderNos.contains(on.toString())) {
+                            transportList.add(rt);
+                            existingOrderNos.add(on.toString());
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("查询原料运输订单失败: batchNo={}", batchNo, e);
+            }
 
             // 4. 销售 - 库存信息
             try {
@@ -174,9 +205,6 @@ public class TraceabilityServiceImpl implements TraceabilityService {
                 Map<String, Object> firstRaw = rawList.get(0);
                 vo.setSupplierName(str(firstRaw.get("supplier_name")));
                 vo.setRawBatchNo(str(firstRaw.get("batch_no")));
-                if (vo.getManufacturer() == null || vo.getManufacturer().isBlank()) {
-                    vo.setManufacturer(str(firstRaw.get("supplier_name")));
-                }
             }
         }
 

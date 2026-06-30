@@ -156,6 +156,10 @@ onMounted(() => {
             <span class="cell-label">供应商</span>
             <span class="cell-value">{{ data.supplierName || '-' }}</span>
           </div>
+          <div v-if="data.rawBatchNo" class="product-cell">
+            <span class="cell-label">原料批次</span>
+            <span class="cell-value code-text">{{ data.rawBatchNo }}</span>
+          </div>
           <div class="product-cell">
             <span class="cell-label">生产日期</span>
             <span class="cell-value">{{ formatDate(data.productionDate) }}</span>
