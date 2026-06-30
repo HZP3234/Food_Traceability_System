@@ -304,6 +304,8 @@ public class ColdChainService {
         if (vehicle == null) return 0;
         String now = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         transport.setPlateNo(plateNo);
+        transport.setDriverName(vehicle.getDriverName());
+        transport.setDriverPhone(vehicle.getDriverPhone());
         transport.setTransportStatus(1); // 待发运
         transport.setUpdateTime(now);
         return ccTransportMapper.updateById(transport);
@@ -533,16 +535,29 @@ public class ColdChainService {
     @Transactional
     public int signReceipt(CcReceipt receipt) {
         String now = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-        receipt.setSignTime(now);
-        receipt.setCreateTime(now);
         receipt.setUpdateTime(now);
-        receipt.setCreateBy("SYSTEM");
         receipt.setUpdateBy("SYSTEM");
 
         if (receipt.getIsPackageIntact() == 0) receipt.setIsPackageIntact(1);
         if (receipt.getQtyMatch() == 0) receipt.setQtyMatch(1);
 
-        int num = ccReceiptMapper.insert(receipt);
+        // 查询是否已存在同运单的签收单，存在则更新
+        QueryWrapper<CcReceipt> qw = new QueryWrapper<>();
+        qw.eq("order_no", receipt.getOrderNo());
+        qw.eq("is_deleted", 0);
+        CcReceipt exist = ccReceiptMapper.selectOne(qw);
+        int num;
+        if (exist != null) {
+            receipt.setReceiptId(exist.getReceiptId());
+            receipt.setCreateTime(exist.getCreateTime());
+            receipt.setCreateBy(exist.getCreateBy());
+            num = ccReceiptMapper.updateById(receipt);
+        } else {
+            receipt.setSignTime(now);
+            receipt.setCreateTime(now);
+            receipt.setCreateBy("SYSTEM");
+            num = ccReceiptMapper.insert(receipt);
+        }
 
         // 联动更新运输订单状态为已签收
         if (receipt.getOrderNo() != null) {

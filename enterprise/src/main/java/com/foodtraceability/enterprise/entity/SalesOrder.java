@@ -16,6 +16,8 @@ public class SalesOrder {
     private String buyerEnterpriseId;
     private String buyerEnterpriseName;
     private String sellerEnterpriseName;
+    private String terminalId;
+    private String terminalName;
     private Integer orderQuantity;
     private BigDecimal unitPrice;
     private BigDecimal totalAmount;
@@ -50,6 +52,12 @@ public class SalesOrder {
 
     public String getSellerEnterpriseName() { return sellerEnterpriseName; }
     public void setSellerEnterpriseName(String sellerEnterpriseName) { this.sellerEnterpriseName = sellerEnterpriseName; }
+
+    public String getTerminalId() { return terminalId; }
+    public void setTerminalId(String terminalId) { this.terminalId = terminalId; }
+
+    public String getTerminalName() { return terminalName; }
+    public void setTerminalName(String terminalName) { this.terminalName = terminalName; }
 
     public Integer getOrderQuantity() { return orderQuantity; }
     public void setOrderQuantity(Integer orderQuantity) { this.orderQuantity = orderQuantity; }

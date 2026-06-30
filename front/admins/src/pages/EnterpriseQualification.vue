@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, inject, type Ref } from 'vue'
-import { Check, Close, Delete, OfficeBuilding, Plus, Refresh, Search, View, Warning } from '@element-plus/icons-vue'
+import { Check, Close, Delete, Edit, OfficeBuilding, Plus, Refresh, Search, View, Warning } from '@element-plus/icons-vue'
 import { enterpriseApi, qualificationApi } from '../services/api'
 import Pagination from '../components/Pagination.vue'
 import type { RoleKey } from '../config/navigation'
@@ -101,6 +101,11 @@ function resetFilters() {
 }
 
 function openDetail(row: any) { viewing.value = row; showDetail.value = true }
+
+// 企业编辑
+const showEditModal = ref(false); const editForm = ref({ enterpriseName: '', enterpriseType: 1, certNo: '', contactPerson: '', contactPhone: '', address: '', riskLevel: 1, status: 1, remark: '' }); let editId: number | null = null
+function openEdit(row: any) { editId = row.enterpriseId; editForm.value = { enterpriseName: row.enterpriseName || '', enterpriseType: row.enterpriseType || 1, certNo: row.certNo || '', contactPerson: row.contactPerson || '', contactPhone: row.contactPhone || '', address: row.address || '', riskLevel: row.riskLevel || 1, status: row.status ?? 1, remark: row.remark || '' }; showEditModal.value = true }
+async function submitEdit() { if (!editForm.value.enterpriseName.trim()) { notify('error', '企业名称不能为空'); return }; try { await enterpriseApi.update(editId!, editForm.value); notify('success', '企业信息已更新'); showEditModal.value = false; loadList() } catch (e: any) { notify('error', '更新失败: ' + e.message) } }
 
 const showQualDetail = ref(false)
 const qualViewing = ref<any>(null)
@@ -266,6 +271,7 @@ onMounted(() => {
               <td><span class="status" :class="row.status === 1 ? 'status-active' : 'status-void'">{{ statusLabels[row.status] ?? '-' }}</span></td>
               <td class="actions">
                 <button @click="openDetail(row)"><el-icon><View /></el-icon> 详情</button>
+                <button @click="openEdit(row)"><el-icon><Edit /></el-icon> 编辑</button>
                 <button v-if="isRegulator" class="danger" @click="confirmDelete(row.enterpriseId)"><el-icon><Delete /></el-icon> 删除</button>
               </td>
             </tr>
@@ -329,6 +335,25 @@ onMounted(() => {
           </div>
         </div>
         <footer><button class="secondary" @click="showQualDetail = false"><el-icon><Close /></el-icon> 关闭</button></footer>
+      </section>
+    </div>
+
+    <!-- 编辑企业信息 -->
+    <div v-if="showEditModal" class="trace-modal-backdrop" @click.self="showEditModal = false">
+      <section class="trace-modal" style="width:600px">
+        <header><div><p>企业档案</p><h2>编辑企业信息</h2></div><button @click="showEditModal = false"><el-icon><Close /></el-icon></button></header>
+        <div class="modal-body grid-form">
+          <label>企业名称 *<input v-model="editForm.enterpriseName" /></label>
+          <label>企业类型（不可更改）<input :value="enterpriseTypeLabels[editForm.enterpriseType] || '-'" readonly disabled style="background:#f5f7fa;color:#8195aa" /></label>
+          <label>统一社会信用代码<input v-model="editForm.certNo" /></label>
+          <label>联系人<input v-model="editForm.contactPerson" /></label>
+          <label>联系电话<input v-model="editForm.contactPhone" /></label>
+          <label>注册地址<input v-model="editForm.address" /></label>
+          <label>风险等级<select v-model.number="editForm.riskLevel"><option :value="1">低风险</option><option :value="2">中风险</option><option :value="3">高风险</option></select></label>
+          <label>状态<select v-model.number="editForm.status"><option :value="1">正常</option><option :value="0">停用</option></select></label>
+        </div>
+        <label style="display:grid;gap:6px;color:#718ba6;font-size:12px;font-weight:700;margin:0 23px">备注<textarea v-model="editForm.remark" style="width:100%;padding:9px;border:1px solid #d7e4f0;border-radius:7px;min-height:60px" /></label>
+        <footer><button class="secondary" @click="showEditModal = false"><el-icon><Close /></el-icon> 取消</button><button class="primary" @click="submitEdit"><el-icon><Check /></el-icon> 保存</button></footer>
       </section>
     </div>
 

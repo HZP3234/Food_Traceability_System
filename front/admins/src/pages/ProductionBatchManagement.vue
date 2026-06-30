@@ -8,24 +8,22 @@ import type { RoleKey } from '../config/navigation'
 const currentRole = inject<Ref<RoleKey>>('currentRole')
 const canEdit = computed(() => currentRole?.value === 'super-admin' || currentRole?.value === 'manufacturer')
 
-const tab = ref<'prod' | 'template' | 'input'>('prod')
+const tab = ref<'prod' | 'template'>('prod')
 const loading = ref(false)
 const toast = ref<{ type: 'success' | 'error'; text: string } | null>(null)
 
 const showModal = ref(false); const showTemplateModal = ref(false)
-const showInputModal = ref(false)
 const showConfirm = ref(false)
 const confirmTitle = ref('确认操作'); const confirmMsg = ref(''); const confirmBtnLabel = ref('确认'); const confirmBtnClass = ref('danger-fill')
 const confirmCallback = ref<null | (() => void)>(null)
 
-const list = ref<any[]>([]); const templates = ref<any[]>([]); const materialInputs = ref<any[]>([])
+const list = ref<any[]>([]); const templates = ref<any[]>([])
 
 
 // Pagination
-const prodPage = ref(1); const tplPage = ref(1); const inputPage = ref(1); const pageSize = ref(10)
+const prodPage = ref(1); const tplPage = ref(1); const pageSize = ref(10)
 const paginatedList = computed(() => { const s = (prodPage.value - 1) * pageSize.value; return list.value.slice(s, s + pageSize.value) })
 const paginatedTemplates = computed(() => { const s = (tplPage.value - 1) * pageSize.value; return templates.value.slice(s, s + pageSize.value) })
-const paginatedInputs = computed(() => { const s = (inputPage.value - 1) * pageSize.value; return materialInputs.value.slice(s, s + pageSize.value) })
 const editing = ref<any>(null); const editingTemplate = ref<any>(null)
 
 const filters = ref({ productName: '', productionLine: '', batchStatus: '', codeStatus: '' })
@@ -44,9 +42,7 @@ const materialInputRows = ref<any[]>([])
 const rawBatchOptions = ref<any[]>([])
 const rawBatchLoading = ref(false)
 const templateOptions = ref<any[]>([])
-const templateForm = ref({ templateName: '', version: '', applicableProduct: '', targetTemp: '', duration: '', pressure: '', coolTemp: '', fillTemp: '', stirSpeed: '', phValue: '', viscosity: '', cleanLevel: 0, templateStatus: 1, remark: '' })
-const inputForm = ref({ rawBatchNo: '', materialName: '', inputAmount: '', unit: '', operator: '', inputTime: '', remark: '' })
-
+const templateForm = ref({ templateName: '', version: '', applicableProduct: '', targetTemp: '', duration: '', pressure: '', coolTemp: '', fillTemp: '', stirSpeed: '', phValue: '', viscosity: '', cleanLevel: 1, templateStatus: 1, remark: '' })
 const checkResultLabels = ['', '合格', '不合格']; const prodBatchStatusLabels = ['', '待生产', '生产中', '生产完成', '已废弃']
 
 const stats = computed(() => {
@@ -61,7 +57,6 @@ const stats = computed(() => {
       { label: '启用', icon: Check, cls: 'green', val: templates.value.filter((r: any) => r.templateStatus === 1).length },
       { label: '停用', icon: Close, cls: '', val: templates.value.filter((r: any) => r.templateStatus === 2).length },
     ]
-    case 'input': return [{ label: '投料记录', icon: Edit, cls: '', val: materialInputs.value.length }]
     default: return []
   }
 })
@@ -172,19 +167,15 @@ function completeProd(id: number) { confirmTitle.value = '确认完成'; confirm
 function bindCode(id: number) { confirmTitle.value = '确认绑码'; confirmMsg.value = '确认为该生产批次绑定溯源码？'; confirmBtnLabel.value = '确认绑码'; confirmBtnClass.value = 'primary'; confirmCallback.value = async () => { try { await productionApi.bindCode(id); notify('success', '溯源码绑定完成'); showConfirm.value = false; loadProdBatch() } catch (e: any) { notify('error', '绑码失败: ' + e.message) } }; showConfirm.value = true }
 // Template
 async function loadTemplates() { try { const p: Record<string, any> = {}; if (templateFilters.value.applicableProduct) p.applicableProduct = templateFilters.value.applicableProduct; if (templateFilters.value.templateStatus) p.templateStatus = Number(templateFilters.value.templateStatus); const data = await productionApi.listTemplate(p); templates.value = Array.isArray(data) ? data : []; tplPage.value = 1 } catch (e: any) { notify('error', '加载失败') } }
-function openCreateTemplate() { editingTemplate.value = null; templateForm.value = { templateName: '', version: '', applicableProduct: '', targetTemp: '', duration: '', pressure: '', coolTemp: '', fillTemp: '', stirSpeed: '', phValue: '', viscosity: '', cleanLevel: 0, templateStatus: 1, remark: '' }; showTemplateModal.value = true }
-function openEditTemplate(row: any) { editingTemplate.value = row; templateForm.value = { templateName: row.templateName ?? '', version: row.version ?? '', applicableProduct: row.applicableProduct ?? '', targetTemp: row.targetTemp ?? '', duration: row.duration ?? '', pressure: row.pressure ?? '', coolTemp: row.coolTemp ?? '', fillTemp: row.fillTemp ?? '', stirSpeed: row.stirSpeed ?? '', phValue: row.phValue ?? '', viscosity: row.viscosity ?? '', cleanLevel: row.cleanLevel ?? 0, templateStatus: row.templateStatus ?? 1, remark: row.remark ?? '' }; showTemplateModal.value = true }
+function openCreateTemplate() { editingTemplate.value = null; templateForm.value = { templateName: '', version: '', applicableProduct: '', targetTemp: '', duration: '', pressure: '', coolTemp: '', fillTemp: '', stirSpeed: '', phValue: '', viscosity: '', cleanLevel: 1, templateStatus: 1, remark: '' }; showTemplateModal.value = true }
+function openEditTemplate(row: any) { editingTemplate.value = row; templateForm.value = { templateName: row.templateName ?? '', version: row.version ?? '', applicableProduct: row.applicableProduct ?? '', targetTemp: row.targetTemp ?? '', duration: row.duration ?? '', pressure: row.pressure ?? '', coolTemp: row.coolTemp ?? '', fillTemp: row.fillTemp ?? '', stirSpeed: row.stirSpeed ?? '', phValue: row.phValue ?? '', viscosity: row.viscosity ?? '', cleanLevel: row.cleanLevel || 1, templateStatus: row.templateStatus ?? 1, remark: row.remark ?? '' }; showTemplateModal.value = true }
 function submitTemplate() { if (!templateForm.value.templateName.trim()) { notify('error', '请填写模板名称'); return }; const label = editingTemplate.value ? '更新' : '创建'; confirmTitle.value = `确认${label}`; confirmMsg.value = `确认${label}该工艺模板？`; confirmBtnLabel.value = `确认${label}`; confirmBtnClass.value = 'primary'; confirmCallback.value = async () => { try { const data: Record<string, any> = { ...templateForm.value }; if (editingTemplate.value) { data.templateId = editingTemplate.value.templateId; await productionApi.updateTemplate(data); notify('success', '工艺模板更新成功') } else { await productionApi.createTemplate(data); notify('success', '工艺模板创建成功') } showTemplateModal.value = false; showConfirm.value = false; loadTemplates() } catch (e: any) { notify('error', '操作失败: ' + e.message) } }; showConfirm.value = true }
 function confirmDeleteTemplate(id: number) { confirmTitle.value = '确认删除'; confirmMsg.value = '确定要删除该工艺模板吗？'; confirmBtnLabel.value = '确认删除'; confirmBtnClass.value = 'danger-fill'; confirmCallback.value = async () => { try { await productionApi.deleteTemplate(id); notify('success', '工艺模板删除成功'); showConfirm.value = false; loadTemplates() } catch (e: any) { notify('error', '删除失败: ' + e.message) } }; showConfirm.value = true }
-
-// Material Input
-async function loadMaterialInput() { try { const d = await productionApi.listMaterialInput(); materialInputs.value = Array.isArray(d) ? d : []; inputPage.value = 1 } catch (e: any) { notify('error', '加载失败') } }
-function submitMaterialInput() { confirmTitle.value = '确认投料'; confirmMsg.value = '确认记录该投料信息？'; confirmBtnLabel.value = '确认记录'; confirmBtnClass.value = 'primary'; confirmCallback.value = async () => { try { await productionApi.recordMaterialInput(inputForm.value); notify('success', '投料记录成功'); showInputModal.value = false; showConfirm.value = false; loadMaterialInput() } catch (e: any) { notify('error', '投料失败: ' + e.message) } }; showConfirm.value = true }
 
 // Delete
 function confirmDeleteProd(id: number) { confirmTitle.value = '确认删除'; confirmMsg.value = '确定要删除该生产批次吗？'; confirmBtnLabel.value = '确认删除'; confirmBtnClass.value = 'danger-fill'; confirmCallback.value = async () => { try { await productionApi.deleteProdBatch(id); notify('success', '删除成功'); showConfirm.value = false; loadProdBatch() } catch (e: any) { notify('error', '删除失败: ' + e.message) } }; showConfirm.value = true }
 
-function switchTab(t: typeof tab.value) { tab.value = t; if (t === 'prod') loadProdBatch(); else if (t === 'template') loadTemplates(); else if (t === 'input') loadMaterialInput() }
+function switchTab(t: typeof tab.value) { tab.value = t; if (t === 'prod') loadProdBatch(); else if (t === 'template') loadTemplates() }
 function doConfirm() { if (confirmCallback.value) { confirmCallback.value() } }
 
 // 投料明细行操作
@@ -252,7 +243,6 @@ onMounted(loadProdBatch)
     <div class="trace-tabs">
       <button class="trace-tab-btn" :class="{ active: tab === 'prod' }" @click="switchTab('prod')"><el-icon><Edit /></el-icon> 生产批次</button>
       <button class="trace-tab-btn" :class="{ active: tab === 'template' }" @click="switchTab('template')"><el-icon><DocumentChecked /></el-icon> 工艺模板</button>
-      <button class="trace-tab-btn" :class="{ active: tab === 'input' }" @click="switchTab('input')"><el-icon><Plus /></el-icon> 投料记录</button>
     </div>
 
     <!-- Production Batch (含加工参数) -->
@@ -315,18 +305,6 @@ onMounted(loadProdBatch)
             </tr>
           </tbody></table></div>
       <Pagination v-model="tplPage" :total="templates.length" :page-size="pageSize" />
-      </section>
-    </template>
-
-    <!-- Material Input -->
-    <template v-if="tab === 'input'">
-      <section class="trace-panel list-panel">
-        <header class="panel-header"><div><p>投料台账</p><h2>投料记录</h2></div><button v-if="canEdit" class="primary create" @click="showInputModal = true"><el-icon><Plus /></el-icon> 记录投料</button></header>
-        <div class="table-wrap"><table><thead><tr><th>原料批次</th><th>原料名称</th><th>投料数量</th><th>单位</th><th>操作员</th><th>投料时间</th></tr></thead>
-          <tbody><tr v-if="!materialInputs.length"><td colspan="6" class="empty">暂无投料记录</td></tr>
-            <tr v-for="row in paginatedInputs" :key="row.inputId"><td><code>{{ row.rawBatchNo }}</code></td><td>{{ row.materialName }}</td><td>{{ row.inputAmount }}{{ row.unit }}</td><td>{{ row.unit }}</td><td>{{ row.operator }}</td><td>{{ row.inputTime }}</td></tr>
-          </tbody></table></div>
-      <Pagination v-model="inputPage" :total="materialInputs.length" :page-size="pageSize" />
       </section>
     </template>
 
@@ -422,7 +400,7 @@ onMounted(loadProdBatch)
           <label>时长 (s)<input v-model="templateForm.duration" /></label><label>压力 (MPa)<input v-model="templateForm.pressure" /></label>
           <label>冷却温度 (℃)<input v-model="templateForm.coolTemp" /></label><label>灌装温度 (℃)<input v-model="templateForm.fillTemp" /></label>
           <label>搅拌速度 (rpm)<input v-model="templateForm.stirSpeed" /></label><label>pH 值<input v-model="templateForm.phValue" /></label>
-          <label>粘度 (mPa·s)<input v-model="templateForm.viscosity" /></label><label>清洁等级<input v-model.number="templateForm.cleanLevel" type="number" /></label>
+          <label>粘度 (mPa·s)<input v-model="templateForm.viscosity" /></label><label>清洁等级<input v-model.number="templateForm.cleanLevel" type="number" min="1" max="5" /></label>
           <label>模板状态<select v-model.number="templateForm.templateStatus"><option :value="1">启用</option><option :value="2">停用</option></select></label>
         </div>
         <label style="display:grid;gap:6px;color:#718ba6;font-size:12px;font-weight:700;margin:0 23px">备注<textarea v-model="templateForm.remark" style="width:100%;padding:9px;border:1px solid #d7e4f0;border-radius:7px;min-height:60px" /></label>
@@ -430,18 +408,7 @@ onMounted(loadProdBatch)
       </section>
     </div>
 
-    <!-- Other Modals -->
-    <div v-if="showInputModal" class="trace-modal-backdrop" @click.self="showInputModal = false">
-      <section class="trace-modal"><header><div><p>投料管理</p><h2>记录投料</h2></div><button @click="showInputModal = false"><el-icon><Close /></el-icon></button></header>
-        <div class="modal-body grid-form">
-          <label>原料批次 *<input v-model="inputForm.rawBatchNo" /></label><label>原料名称<input v-model="inputForm.materialName" /></label>
-          <label>投料数量<input v-model="inputForm.inputAmount" type="number" /></label><label>单位<input v-model="inputForm.unit" placeholder="kg" /></label>
-          <label>操作员<input v-model="inputForm.operator" /></label><label>投料时间<input v-model="inputForm.inputTime" /></label>
-        </div>
-        <label style="display:grid;gap:6px;color:#718ba6;font-size:12px;font-weight:700;margin:0 23px">备注<textarea v-model="inputForm.remark" style="width:100%;padding:9px;border:1px solid #d7e4f0;border-radius:7px;min-height:60px" /></label>
-        <footer><button class="secondary" @click="showInputModal = false"><el-icon><Close /></el-icon> 取消</button><button class="primary" @click="submitMaterialInput"><el-icon><Check /></el-icon> 记录</button></footer>
-      </section>
-    </div>
+
 
     <!-- Confirm Dialog -->
     <div v-if="showConfirm" class="trace-confirm-overlay" @click.self="showConfirm = false">

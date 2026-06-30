@@ -47,7 +47,7 @@ public class ColdChainController {
 
     // 新增仓库
     @RequestMapping("/createWarehouse")
-    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'MANUFACTURER', 'SUPPLIER', 'SELLER', 'ENTERPRISE')")
     public String createWarehouse(Warehouse warehouse) {
         int num = coldChainService.createWarehouse(warehouse);
         if (num == 1) {
@@ -59,7 +59,7 @@ public class ColdChainController {
 
     // 更新仓库
     @RequestMapping("/updateWarehouse")
-    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'MANUFACTURER', 'SUPPLIER', 'SELLER', 'ENTERPRISE')")
     public String updateWarehouse(Warehouse warehouse) {
         int num = coldChainService.updateWarehouse(warehouse);
         if (num == 1) {
@@ -71,7 +71,7 @@ public class ColdChainController {
 
     // 软删除仓库
     @RequestMapping("/deleteWarehouse")
-    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'MANUFACTURER', 'SUPPLIER', 'SELLER', 'ENTERPRISE')")
     public String deleteWarehouse(Long warehouseId) {
         int num = coldChainService.deleteWarehouse(warehouseId);
         if (num == 1) {
@@ -106,7 +106,7 @@ public class ColdChainController {
 
     // 注册冷链车辆
     @RequestMapping("/createVehicle")
-    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'MANUFACTURER', 'SUPPLIER', 'SELLER', 'ENTERPRISE')")
     public String createVehicle(CcVehicle vehicle) {
         int num = coldChainService.createVehicle(vehicle);
         if (num == 1) {
@@ -118,7 +118,7 @@ public class ColdChainController {
 
     // 更新车辆信息
     @RequestMapping("/updateVehicle")
-    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'MANUFACTURER', 'SUPPLIER', 'SELLER', 'ENTERPRISE')")
     public String updateVehicle(CcVehicle vehicle) {
         int num = coldChainService.updateVehicle(vehicle);
         if (num == 1) {
@@ -130,7 +130,7 @@ public class ColdChainController {
 
     // 更新车辆状态
     @RequestMapping("/updateVehicleStatus")
-    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'MANUFACTURER', 'SUPPLIER', 'SELLER', 'ENTERPRISE')")
     public String updateVehicleStatus(Long vehicleId, int vehicleStatus) {
         int num = coldChainService.updateVehicleStatus(vehicleId, vehicleStatus);
         if (num == 1) {
@@ -142,7 +142,7 @@ public class ColdChainController {
 
     // 软删除车辆
     @RequestMapping("/deleteVehicle")
-    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'MANUFACTURER', 'SUPPLIER', 'SELLER', 'ENTERPRISE')")
     public String deleteVehicle(Long vehicleId) {
         int num = coldChainService.deleteVehicle(vehicleId);
         if (num == 1) {
@@ -197,7 +197,7 @@ public class ColdChainController {
 
     // 更新运输订单
     @RequestMapping("/updateTransport")
-    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'MANUFACTURER', 'SUPPLIER', 'SELLER', 'ENTERPRISE')")
     public String updateTransport(CcTransport transport) {
         int num = coldChainService.updateTransport(transport);
         if (num == 1) {
@@ -209,7 +209,7 @@ public class ColdChainController {
 
     // 发运
     @RequestMapping("/departTransport")
-    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'MANUFACTURER', 'SUPPLIER', 'SELLER', 'ENTERPRISE')")
     public String departTransport(Long transportId) {
         int num = coldChainService.departTransport(transportId);
         if (num == 1) {
@@ -221,7 +221,7 @@ public class ColdChainController {
 
     // 抵达签收
     @RequestMapping("/arriveTransport")
-    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'MANUFACTURER', 'SUPPLIER', 'SELLER', 'ENTERPRISE')")
     public String arriveTransport(Long transportId) {
         int num = coldChainService.arriveTransport(transportId);
         if (num == 1) {
@@ -233,7 +233,7 @@ public class ColdChainController {
 
     // 异常关闭
     @RequestMapping("/closeTransport")
-    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'MANUFACTURER', 'SUPPLIER', 'SELLER', 'ENTERPRISE')")
     public String closeTransport(Long transportId) {
         int num = coldChainService.closeTransport(transportId);
         if (num == 1) {
@@ -245,7 +245,7 @@ public class ColdChainController {
 
     // 软删除运输订单
     @RequestMapping("/deleteTransport")
-    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'MANUFACTURER', 'SUPPLIER', 'SELLER', 'ENTERPRISE')")
     public String deleteTransport(Long transportId) {
         int num = coldChainService.deleteTransport(transportId);
         if (num == 1) {
@@ -274,7 +274,7 @@ public class ColdChainController {
 
     // 记录温湿度
     @RequestMapping("/recordTempHumidity")
-    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'MANUFACTURER', 'SUPPLIER', 'SELLER', 'ENTERPRISE')")
     public String recordTempHumidity(CcTempHumidity record) {
         int num = coldChainService.recordTempHumidity(record);
         if (num == 1) {
@@ -305,7 +305,7 @@ public class ColdChainController {
 
     // 记录运输节点
     @RequestMapping("/recordNode")
-    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'MANUFACTURER', 'SUPPLIER', 'SELLER', 'ENTERPRISE')")
     public String recordNode(CcTransportNode node) {
         int num = coldChainService.recordNode(node);
         if (num == 1) {
@@ -317,7 +317,7 @@ public class ColdChainController {
 
     // 更新节点状态
     @RequestMapping("/updateNode")
-    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'MANUFACTURER', 'SUPPLIER', 'SELLER', 'ENTERPRISE')")
     public String updateNode(CcTransportNode node) {
         int num = coldChainService.updateNode(node);
         if (num == 1) {
@@ -338,7 +338,7 @@ public class ColdChainController {
 
     // 签收确认
     @RequestMapping("/signReceipt")
-    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'MANUFACTURER', 'SUPPLIER', 'SELLER', 'ENTERPRISE')")
     public String signReceipt(CcReceipt receipt) {
         int num = coldChainService.signReceipt(receipt);
         if (num == 1) {
@@ -350,7 +350,7 @@ public class ColdChainController {
 
     // 更新签收单
     @RequestMapping("/updateReceipt")
-    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'MANUFACTURER', 'SUPPLIER', 'SELLER', 'ENTERPRISE')")
     public String updateReceipt(CcReceipt receipt) {
         int num = coldChainService.updateReceipt(receipt);
         if (num == 1) {
@@ -380,14 +380,14 @@ public class ColdChainController {
 
     // 物流商查询待匹配的运输订单（其他企业指定本公司承运的）
     @RequestMapping("/listPendingTransport")
-    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'MANUFACTURER', 'SUPPLIER', 'SELLER', 'ENTERPRISE')")
     public List<CcTransport> listPendingTransport() {
         return coldChainService.listPendingForLogistics();
     }
 
     // 物流商匹配运输订单到车辆
     @RequestMapping("/matchTransport")
-    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'MANUFACTURER', 'SUPPLIER', 'SELLER', 'ENTERPRISE')")
     public String matchTransport(Long transportId, String plateNo) {
         int num = coldChainService.matchTransport(transportId, plateNo);
         return num == 1 ? "运输订单匹配成功，已分配车辆" : "匹配失败：订单不存在或已匹配";

@@ -44,9 +44,9 @@ public class SalesController {
         return salesService.listByOperatorId(operatorId);
     }
 
-    // 注册销售终端
+    // 注册销售终端（所有企业角色均可注册自己公司的终端）
     @RequestMapping("/createTerminal")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SELLER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SELLER', 'MANUFACTURER', 'SUPPLIER', 'LOGISTICS', 'ENTERPRISE')")
     public String createTerminal(SalesTerminal terminal) {
         int num = salesService.createTerminal(terminal);
         if (num == 1) {
@@ -58,7 +58,7 @@ public class SalesController {
 
     // 更新终端信息
     @RequestMapping("/updateTerminal")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SELLER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SELLER', 'MANUFACTURER', 'SUPPLIER', 'LOGISTICS', 'ENTERPRISE')")
     public String updateTerminal(SalesTerminal terminal) {
         int num = salesService.updateTerminal(terminal);
         if (num == 1) {
@@ -70,7 +70,7 @@ public class SalesController {
 
     // 软删除终端
     @RequestMapping("/deleteTerminal")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SELLER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SELLER', 'MANUFACTURER', 'SUPPLIER', 'LOGISTICS', 'ENTERPRISE')")
     public String deleteTerminal(Long terminalId) {
         int num = salesService.deleteTerminal(terminalId);
         if (num == 1) {

@@ -42,7 +42,7 @@ async function get<T = any>(path: string, params?: Record<string, any>): Promise
     })
   }
   const res = await fetch(url.toString(), { headers: authHeaders() })
-  if (res.status === 403) return ([] as any)
+  if (res.status === 403) throw new Error('权限不足，请联系管理员')
   if (!res.ok) throw new Error(`请求失败 ${res.status}`)
   const text = await res.text()
   let json: any
@@ -64,7 +64,7 @@ async function post<T = any>(path: string, data?: Record<string, any>): Promise<
     headers: authHeaders({ 'Content-Type': 'application/x-www-form-urlencoded' }),
     body: body.toString(),
   })
-  if (res.status === 403) return ('' as any)
+  if (res.status === 403) throw new Error('权限不足，请联系管理员')
   if (!res.ok) throw new Error(`请求失败 ${res.status}`)
   const text = await res.text()
   let json: any
@@ -80,7 +80,7 @@ async function postJson<T = any>(path: string, data?: Record<string, any>): Prom
     headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: data ? JSON.stringify(data) : undefined,
   })
-  if (res.status === 403) return ([] as any)
+  if (res.status === 403) throw new Error('权限不足，请联系管理员')
   if (!res.ok) throw new Error(`请求失败 ${res.status}`)
   const text = await res.text()
   let json: any
@@ -115,7 +115,7 @@ async function put<T = any>(path: string, data?: Record<string, any>): Promise<T
     headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: data ? JSON.stringify(data) : undefined,
   })
-  if (res.status === 403) return ([] as any)
+  if (res.status === 403) throw new Error('权限不足，请联系管理员')
   if (!res.ok) throw new Error(`请求失败 ${res.status}`)
   const text = await res.text()
   let json: any

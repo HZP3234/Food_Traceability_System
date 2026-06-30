@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, inject, onMounted, type Ref } from 'vue'
+import { ref, computed, inject, onMounted, watch, type Ref } from 'vue'
 import { Close, DocumentAdd, Plus, Search, Select, Shop, SoldOut, Upload } from '@element-plus/icons-vue'
 import { salesApi, salesOrderApi, enterpriseApi, productionApi } from '../services/api'
 import Pagination from '../components/Pagination.vue'
@@ -59,6 +59,13 @@ const showOModal = ref(false); const editingO = ref<any>(null); const showOConfi
 const oForm = ref({ salesOrderCode: '', productName: '', prodBatchNo: '', buyerEnterpriseId: '', buyerEnterpriseName: '', sellerEnterpriseName: '', orderQuantity: '', unitPrice: '', totalAmount: '', orderDate: '', orderStatus: 1, remark: '' })
 const oPage = ref(1)
 const paginatedOrders = computed(() => { const start = (oPage.value - 1) * pageSize.value; return orders.value.slice(start, start + pageSize.value) })
+
+// 总金额自动计算：单价 × 数量
+watch([() => oForm.value.unitPrice, () => oForm.value.orderQuantity], ([price, qty]) => {
+  const p = parseFloat(price) || 0
+  const q = parseFloat(qty) || 0
+  oForm.value.totalAmount = (p * q).toFixed(2)
+})
 
 // Order Detail
 const showODModal = ref(false); const editingOD = ref<any>(null)
@@ -185,12 +192,21 @@ async function submitSup() { try { const data: Record<string, any> = { ...supFor
 async function runAntiFraud() { try { await salesApi.runAntiFraud(); notify('success', '防窜货核验执行完毕') } catch (e: any) { notify('error', '核验失败') } }
 
 // Sales Order CRUD
+const terminalOptions = ref<any[]>([])
+async function loadTerminalOptions() { try { const data = await salesApi.listTerminal({}); terminalOptions.value = Array.isArray(data) ? data : [] } catch { terminalOptions.value = [] } }
+function onTerminalSelect() { const t = terminalOptions.value.find((t: any) => String(t.terminalId) === oForm.value.terminalId); oForm.value.terminalName = t ? t.terminalName : '' }
 async function loadOrders() { loadingO.value = true; try { const p: Record<string, any> = {}; if (oFilters.value.buyerName) p.buyerName = oFilters.value.buyerName; if (oFilters.value.productName) p.productName = oFilters.value.productName; if (oFilters.value.orderStatus) p.orderStatus = Number(oFilters.value.orderStatus); const data = await salesOrderApi.listOrder(p); orders.value = Array.isArray(data) ? data : []; oPage.value = 1 } catch (e: any) { notify('error', '加载失败') } finally { loadingO.value = false } }
 function openCreateO() { editingO.value = null; oForm.value = { salesOrderCode: '', productName: '', prodBatchNo: '', buyerEnterpriseId: '', buyerEnterpriseName: '', sellerEnterpriseName: enterpriseName || currentUser, orderQuantity: '', unitPrice: '', totalAmount: '', orderDate: new Date().toISOString().slice(0, 10), orderStatus: 1, remark: '' }; buyerSearchText.value = ''; buyerOptions.value = []; prodBatchSearchText.value = ''; prodBatchOptions.value = []; loadProdBatchOptions(); showOModal.value = true }
 function openEditO(row: any) { editingO.value = row; oForm.value = { salesOrderCode: row.salesOrderCode ?? '', productName: row.productName ?? '', prodBatchNo: row.prodBatchNo ?? '', buyerEnterpriseId: row.buyerEnterpriseId ?? '', buyerEnterpriseName: row.buyerEnterpriseName ?? '', sellerEnterpriseName: row.sellerEnterpriseName ?? '', orderQuantity: row.orderQuantity ?? '', unitPrice: row.unitPrice ?? '', totalAmount: row.totalAmount ?? '', orderDate: row.orderDate ?? '', orderStatus: row.orderStatus ?? 1, remark: row.remark ?? '' }; buyerSearchText.value = row.buyerEnterpriseName ?? ''; buyerOptions.value = []; prodBatchSearchText.value = row.prodBatchNo ? (row.prodBatchNo + ' — ' + (row.productName || '')) : ''; prodBatchOptions.value = []; showOModal.value = true }
 async function submitO() { try { const data: Record<string, any> = { ...oForm.value }; if (editingO.value) { data.salesOrderId = editingO.value.salesOrderId; await salesOrderApi.updateOrder(data); notify('success', '订单更新成功') } else { const code = await salesOrderApi.createOrder(data); if (code && !code.includes('失败') && !code.includes('错误')) { notify('success', '订单创建成功 — ' + code) } else { notify('error', typeof code === 'string' ? code : '订单创建失败') } } showOModal.value = false; loadOrders() } catch (e: any) { notify('error', '操作失败: ' + (e.message || '')) } }
 function confirmDeleteO(id: number) { deletingOId.value = id; showOConfirm.value = true }
 async function doDeleteO() { try { await salesOrderApi.deleteOrder(deletingOId.value!); notify('success', '已删除'); showOConfirm.value = false; loadOrders() } catch (e: any) { notify('error', '删除失败') } }
+
+// 分配终端
+const showAssignModal = ref(false); const assignTarget = ref<any>(null); const assignTerminalId = ref('')
+function openAssign(row: any) { assignTarget.value = row; assignTerminalId.value = row.terminalId || ''; loadTerminalOptions(); showAssignModal.value = true }
+function onAssignSelect() { /* placeholder */ }
+async function submitAssign() { try { await salesOrderApi.updateOrder({ salesOrderId: assignTarget.value.salesOrderId, terminalId: assignTerminalId.value, terminalName: terminalOptions.value.find((t: any) => String(t.terminalId) === assignTerminalId.value)?.terminalName || '' }); notify('success', '终端分配成功'); showAssignModal.value = false; loadOrders() } catch (e: any) { notify('error', '分配失败: ' + (e.message || '')) } }
 
 // Order Detail
 function openDetailUpload(row: any) {
@@ -342,6 +358,7 @@ onMounted(() => { if (isSeller.value) loadUploadData(); else loadOrders() })
                 <button v-if="isSeller && row.orderStatus === 1" class="primary" @click="openDetailUpload(row)"><el-icon><Upload /></el-icon> 补充销售详情</button>
                 <button v-if="isSeller && row.orderStatus >= 2" @click="openDetailUpload(row)"><el-icon><SoldOut /></el-icon> 查看/编辑详情</button>
                 <button v-if="isManufacturer" @click="openEditO(row)"><el-icon><SoldOut /></el-icon> 编辑</button>
+                <button v-if="isManufacturer" @click="openAssign(row)"><el-icon><Shop /></el-icon> 分配终端</button>
                 <button v-if="isManufacturer" class="danger" @click="confirmDeleteO(row.salesOrderId)"><el-icon><Close /></el-icon> 删除</button>
               </td>
             </tr></tbody></table></div>
@@ -377,7 +394,7 @@ onMounted(() => { if (isSeller.value) loadUploadData(); else loadOrders() })
             </div>
             <label>数量<input v-model="oForm.orderQuantity" type="number" /></label>
             <label>单价<input v-model="oForm.unitPrice" type="number" step="0.01" /></label>
-            <label>总金额<input v-model="oForm.totalAmount" type="number" step="0.01" /></label>
+            <label>总金额（自动计算）<input :value="oForm.totalAmount" readonly style="background:#f5f7fa;color:#198658;font-weight:700" /></label>
             <label>订单日期<input v-model="oForm.orderDate" type="date" /></label>
           </div>
           <label style="display:grid;gap:6px;color:#718ba6;font-size:12px;font-weight:700;margin:0 23px">备注<textarea v-model="oForm.remark" style="width:100%;padding:9px;border:1px solid #d7e4f0;border-radius:7px;min-height:60px" /></label>
@@ -388,6 +405,23 @@ onMounted(() => { if (isSeller.value) loadUploadData(); else loadOrders() })
       <!-- Order Delete Confirm -->
       <div v-if="showOConfirm" class="trace-confirm-overlay" @click.self="showOConfirm = false">
         <div class="trace-confirm-box"><h3>确认删除</h3><p>确定要删除该销售订单吗？</p><div class="trace-confirm-actions"><button class="secondary" @click="showOConfirm = false"><el-icon><Close /></el-icon> 取消</button><button class="primary danger-fill" @click="doDeleteO"><el-icon><Close /></el-icon> 确认删除</button></div></div>
+      </div>
+
+      <!-- Assign Terminal Modal -->
+      <div v-if="showAssignModal" class="trace-modal-backdrop" @click.self="showAssignModal = false">
+        <section class="trace-modal" style="width:420px">
+          <header><div><p>分配终端</p><h2>为订单分配销售终端</h2></div><button @click="showAssignModal = false"><el-icon><Close /></el-icon></button></header>
+          <div class="modal-body">
+            <p style="color:#6c84a3;margin:0 0 14px;font-size:13px">订单：<code>{{ assignTarget?.salesOrderCode }}</code><br/>产品：<strong>{{ assignTarget?.productName }}</strong></p>
+            <label style="display:grid;gap:6px;color:#718ba6;font-size:12px;font-weight:700">选择终端
+              <select v-model="assignTerminalId" style="width:100%;padding:9px;border:1px solid #d7e4f0;border-radius:7px">
+                <option value="">暂不分配</option>
+                <option v-for="t in terminalOptions" :key="t.terminalId" :value="String(t.terminalId)">{{ t.terminalName }} ({{ t.terminalCode }})</option>
+              </select>
+            </label>
+          </div>
+          <footer><button class="secondary" @click="showAssignModal = false"><el-icon><Close /></el-icon> 取消</button><button class="primary" @click="submitAssign"><el-icon><Check /></el-icon> 确认分配</button></footer>
+        </section>
       </div>
     </template>
 
@@ -428,7 +462,7 @@ onMounted(() => { if (isSeller.value) loadUploadData(); else loadOrders() })
       <div v-if="showTModal" class="trace-modal-backdrop" @click.self="showTModal = false">
         <section class="trace-modal"><header><div><p>终端管理</p><h2>{{ editingT ? '编辑终端' : '注册销售终端' }}</h2></div><button @click="showTModal = false"><el-icon><Close /></el-icon></button></header>
           <div class="modal-body grid-form">
-            <label>终端编码 *<input v-model="tForm.terminalCode" /></label>
+            <label>终端编码（自动生成）<input :value="tForm.terminalCode || '保存后自动生成'" readonly disabled style="background:#f5f7fa;color:#8195aa" /></label>
             <label>终端名称 *<input v-model="tForm.terminalName" /></label>
             <label>类型<select v-model.number="tForm.terminalType"><option :value="0">请选择</option><option :value="1">超市</option><option :value="2">便利店</option><option :value="3">餐饮</option><option :value="4">电商</option><option :value="5">农贸</option><option :value="6">其他</option></select></label>
             <label>区域<input v-model="tForm.area" /></label>

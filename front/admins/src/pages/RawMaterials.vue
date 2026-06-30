@@ -32,7 +32,7 @@ const showMatchModal = ref(false)
 const matchPendingItem = ref<any>(null)
 const matchTargetBatch = ref('')
 
-const filters = ref({ supplierName: '', productCategory: '', warehouse: '', batchStatus: '', detailStatus: '' })
+const filters = ref({ supplierName: '', productCategory: '', warehouse: '', detailStatus: '' })
 
 const stats = computed(() => ({
   total: list.value.length,
@@ -85,7 +85,6 @@ async function loadList() {
     if (filters.value.supplierName) p.supplierName = filters.value.supplierName
     if (filters.value.productCategory) p.productCategory = filters.value.productCategory
     if (filters.value.warehouse) p.warehouse = filters.value.warehouse
-    if (filters.value.batchStatus) p.batchStatus = Number(filters.value.batchStatus)
     if (filters.value.detailStatus) p.detailStatus = Number(filters.value.detailStatus)
     const data = await rawApi.list(p)
     list.value = Array.isArray(data) ? data : []
@@ -97,7 +96,7 @@ async function loadList() {
 }
 
 function resetFilters() {
-  filters.value = { supplierName: '', productCategory: '', warehouse: '', batchStatus: '', detailStatus: '' }
+  filters.value = { supplierName: '', productCategory: '', warehouse: '', detailStatus: '' }
   loadList()
 }
 
@@ -157,7 +156,6 @@ onMounted(loadList)
       <div class="filter-grid">
         <label>供应商<input v-model="filters.supplierName" placeholder="供应商名称" @keyup.enter="loadList" /></label>
         <label>产品类别<input v-model="filters.productCategory" @keyup.enter="loadList" /></label>
-        <label>状态<select v-model="filters.batchStatus"><option value="">全部</option><option value="1">待入库</option><option value="2">已入库</option><option value="3">已启用</option></select></label>
         <label>溯源匹配<select v-model="filters.detailStatus"><option value="">全部</option><option value="0">待上传</option><option value="1">已上传</option><option value="2">已匹配</option></select></label>
         <div class="filter-actions"><button class="secondary" @click="resetFilters"><el-icon><Refresh /></el-icon> 重置</button><button class="primary" @click="loadList"><el-icon><Search /></el-icon> 查询</button></div>
       </div>
@@ -165,14 +163,13 @@ onMounted(loadList)
 
     <section class="trace-panel list-panel" style="margin-bottom:28px">
       <header class="panel-header"><div><p>原料台账</p><h2>原料批次列表</h2></div><button v-if="canEdit" class="primary create" @click="openCreate"><el-icon><Plus /></el-icon> 创建原料批次</button></header>
-      <div class="table-wrap"><table><thead><tr><th>批次号</th><th>产品</th><th>供应商</th><th>数量</th><th>仓库</th><th>状态</th><th>溯源匹配</th><th>日期</th><th>操作</th></tr></thead>
+      <div class="table-wrap"><table><thead><tr><th>批次号</th><th>产品</th><th>供应商</th><th>数量</th><th>仓库</th><th>溯源匹配</th><th>日期</th><th>操作</th></tr></thead>
         <tbody>
-          <tr v-if="loading"><td colspan="9" class="empty">加载中...</td></tr>
-          <tr v-else-if="!list.length"><td colspan="9" class="empty">暂无原料批次，点击"创建原料批次"开始</td></tr>
+          <tr v-if="loading"><td colspan="8" class="empty">加载中...</td></tr>
+          <tr v-else-if="!list.length"><td colspan="8" class="empty">暂无原料批次，点击"创建原料批次"开始</td></tr>
           <tr v-for="row in paginatedList" :key="row.rawBatchId">
             <td><code>{{ row.batchNo }}</code></td><td>{{ row.productName }}</td><td>{{ row.supplierName }}</td>
             <td>{{ row.amount }}{{ row.unit }}</td><td>{{ row.warehouse }}</td>
-            <td><span class="status" :class="row.batchStatus === 2 ? 'status-active' : row.batchStatus === 1 ? 'status-pending' : 'status-active'">{{ ['','待入库','已入库','已启用'][row.batchStatus] || '-' }}</span></td>
             <td>
               <span v-if="row.detailStatus >= 1" class="status status-active">✓ 已匹配</span>
               <span v-else class="status status-pending">⏳ 待上传</span>

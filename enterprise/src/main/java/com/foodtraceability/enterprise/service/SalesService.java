@@ -71,37 +71,44 @@ public class SalesService {
         return salesTerminalMapper.selectOne(qw);
     }
 
-    // 条件列表查询
+    // 条件列表查询（非管理员只能看自己企业的终端）
     public List<SalesTerminal> listTerminal(Integer terminalType, String area, Integer terminalStatus) {
         QueryWrapper<SalesTerminal> qw = new QueryWrapper<>();
         qw.eq("is_deleted", 0);
         if (terminalType != null) qw.eq("terminal_type", terminalType);
         if (area != null && !area.isBlank()) qw.eq("area", area);
         if (terminalStatus != null) qw.eq("terminal_status", terminalStatus);
+        if (!currentUserUtil.isAdmin()) {
+            qw.eq("enterprise_id", currentUserUtil.getEnterpriseUuid());
+        }
         qw.orderByDesc("create_time");
         return salesTerminalMapper.selectList(qw);
     }
 
-    // 按运营企业查询
+    // 按运营企业查询（非管理员只能看自己企业的终端）
     public List<SalesTerminal> listByOperatorId(String operatorId) {
         QueryWrapper<SalesTerminal> qw = new QueryWrapper<>();
         qw.eq("operator_id", operatorId);
         qw.eq("is_deleted", 0);
+        if (!currentUserUtil.isAdmin()) {
+            qw.eq("enterprise_id", currentUserUtil.getEnterpriseUuid());
+        }
         qw.orderByDesc("create_time");
         return salesTerminalMapper.selectList(qw);
     }
 
-    // 注册销售终端
+    // 注册销售终端（自动关联当前企业）
     public int createTerminal(SalesTerminal terminal) {
         if (terminal.getTerminalCode() == null || terminal.getTerminalCode().isBlank()) {
             terminal.setTerminalCode(generateTerminalCode());
         }
         if (terminal.getTerminalStatus() == null) terminal.setTerminalStatus(1);
+        terminal.setEnterpriseId(currentUserUtil.getEnterpriseUuid());
         String now = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         terminal.setCreateTime(now);
         terminal.setUpdateTime(now);
-        terminal.setCreateBy(terminal.getCreateBy() != null ? terminal.getCreateBy() : "SYSTEM");
-        terminal.setUpdateBy(terminal.getUpdateBy() != null ? terminal.getUpdateBy() : "SYSTEM");
+        terminal.setCreateBy(currentUserUtil.getCurrentUsername());
+        terminal.setUpdateBy(currentUserUtil.getCurrentUsername());
         return salesTerminalMapper.insert(terminal);
     }
 

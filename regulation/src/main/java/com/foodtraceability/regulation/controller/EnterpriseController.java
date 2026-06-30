@@ -8,9 +8,12 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * 企业资质管理 Controller (需求 3.2.9)
@@ -23,9 +26,9 @@ public class EnterpriseController {
 
     private final EnterpriseService enterpriseService;
 
-    @Operation(summary = "查询企业列表")
+    @Operation(summary = "查询企业列表（所有角色可查看，非管理员只看自己企业）")
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'REGULATOR')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'REGULATOR', 'MANUFACTURER', 'SUPPLIER', 'LOGISTICS', 'SELLER', 'ENTERPRISE')")
     public Result<Page<Enterprise>> list(
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer size,
@@ -42,14 +45,14 @@ public class EnterpriseController {
 
     @Operation(summary = "查看企业详情")
     @GetMapping("/{enterpriseId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'REGULATOR')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'REGULATOR', 'MANUFACTURER', 'SUPPLIER', 'LOGISTICS', 'SELLER', 'ENTERPRISE')")
     public Result<Enterprise> detail(@PathVariable Long enterpriseId) {
         return Result.success(enterpriseService.getById(enterpriseId));
     }
 
     @Operation(summary = "按企业UUID查询企业信息")
     @GetMapping("/by-uuid/{uuid}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'REGULATOR')")
+    @PreAuthorize("hasAnyRole('ADMIN','REGULATOR','MANUFACTURER','SUPPLIER','LOGISTICS','SELLER','ENTERPRISE')")
     public Result<Enterprise> getByUuid(@PathVariable String uuid) {
         Enterprise enterprise = enterpriseService.getByEnterpriseUuid(uuid);
         if (enterprise == null) {
@@ -60,24 +63,34 @@ public class EnterpriseController {
 
     @Operation(summary = "按风险等级筛选")
     @GetMapping("/risk/{level}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'REGULATOR')")
+    @PreAuthorize("hasAnyRole('ADMIN','REGULATOR','MANUFACTURER','SUPPLIER','LOGISTICS','SELLER','ENTERPRISE')")
     public Result<List<Enterprise>> listByRisk(@PathVariable Integer level) {
         return Result.success(enterpriseService.listByRiskLevel(level));
     }
 
     @Operation(summary = "新增企业")
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','MANUFACTURER','SUPPLIER','LOGISTICS','SELLER','REGULATOR','ENTERPRISE')")
     public Result<Enterprise> create(@RequestBody Enterprise enterprise) {
+        String user = SecurityContextHolder.getContext().getAuthentication().getName();
+        if (enterprise.getEnterpriseUuid() == null || enterprise.getEnterpriseUuid().isBlank()) {
+            enterprise.setEnterpriseUuid(java.util.UUID.randomUUID().toString().replace("-", ""));
+        }
+        enterprise.setCreateBy(user);
+        enterprise.setUpdateBy(user);
+        enterprise.setCreateTime(LocalDateTime.now());
+        enterprise.setUpdateTime(LocalDateTime.now());
         enterpriseService.save(enterprise);
         return Result.success(enterprise);
     }
 
     @Operation(summary = "修改企业信息")
     @PutMapping("/{enterpriseId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','MANUFACTURER','SUPPLIER','LOGISTICS','SELLER','REGULATOR','ENTERPRISE')")
     public Result<Enterprise> update(@PathVariable Long enterpriseId, @RequestBody Enterprise enterprise) {
         enterprise.setEnterpriseId(enterpriseId);
+        enterprise.setUpdateBy(SecurityContextHolder.getContext().getAuthentication().getName());
+        enterprise.setUpdateTime(LocalDateTime.now());
         enterpriseService.updateById(enterprise);
         return Result.success(enterprise);
     }
@@ -92,7 +105,7 @@ public class EnterpriseController {
 
     @Operation(summary = "搜索企业（模糊匹配，开放给所有企业角色用于冷链/销售中选择企业）")
     @GetMapping("/search")
-    @PreAuthorize("hasAnyRole('ADMIN','REGULATOR','MANUFACTURER','SUPPLIER','LOGISTICS','SELLER')")
+    @PreAuthorize("hasAnyRole('ADMIN','REGULATOR','MANUFACTURER','SUPPLIER','LOGISTICS','SELLER','ENTERPRISE')")
     public List<Enterprise> search(@RequestParam(required = false) String name) {
         return enterpriseService.searchByName(name);
     }

@@ -10,6 +10,7 @@ public class SalesTerminal {
     private Long terminalId;
     private String terminalCode;
     private String terminalName;
+    private String enterpriseId;
     private int terminalType;
     private String area;
     private String address;
@@ -31,6 +32,9 @@ public class SalesTerminal {
 
     public String getTerminalName() { return terminalName; }
     public void setTerminalName(String terminalName) { this.terminalName = terminalName; }
+
+    public String getEnterpriseId() { return enterpriseId; }
+    public void setEnterpriseId(String enterpriseId) { this.enterpriseId = enterpriseId; }
 
     public int getTerminalType() { return terminalType; }
     public void setTerminalType(int terminalType) { this.terminalType = terminalType; }

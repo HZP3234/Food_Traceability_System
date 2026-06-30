@@ -2,11 +2,21 @@ package com.foodtraceability.customers.service.impl;
 
 import com.foodtraceability.customers.common.BusinessException;
 import com.foodtraceability.customers.dto.TraceabilityVO;
+import com.foodtraceability.customers.entity.Enterprise;
 import com.foodtraceability.customers.entity.ProdBatch;
 import com.foodtraceability.customers.entity.ScanRecord;
 import com.foodtraceability.customers.entity.TraceabilityNode;
 import com.foodtraceability.customers.entity.TraceCode;
-import com.foodtraceability.customers.mapper.*;
+import com.foodtraceability.customers.mapper.ConsumerMapper;
+import com.foodtraceability.customers.mapper.CustEnterpriseMapper;
+import com.foodtraceability.customers.mapper.CustRawMapper;
+import com.foodtraceability.customers.mapper.CustSalesOrderMapper;
+import com.foodtraceability.customers.mapper.CustSalesStockMapper;
+import com.foodtraceability.customers.mapper.CcTransportMapper;
+import com.foodtraceability.customers.mapper.ProcessBatchMapper;
+import com.foodtraceability.customers.mapper.ProdBatchMapper;
+import com.foodtraceability.customers.mapper.ScanRecordMapper;
+import com.foodtraceability.customers.mapper.TraceCodeMapper;
 import com.foodtraceability.customers.service.TraceabilityService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +45,7 @@ public class TraceabilityServiceImpl implements TraceabilityService {
     private final TraceCodeMapper traceCodeMapper;
     private final ScanRecordMapper scanRecordMapper;
     private final ConsumerMapper consumerMapper;
+    private final CustEnterpriseMapper custEnterpriseMapper;
 
     @Override
     public TraceabilityVO queryByBatchNo(String productBatchNo) {
@@ -78,6 +89,22 @@ public class TraceabilityServiceImpl implements TraceabilityService {
             vo.setManufacturer(tc.getEnterpriseName());
             vo.setTxHash(tc.getTxHash());
             productName = tc.getProductName();
+
+            // 查询企业详细信息
+            if (tc.getEnterpriseUuid() != null && !tc.getEnterpriseUuid().isBlank()) {
+                try {
+                    Enterprise enterprise = custEnterpriseMapper.selectByEnterpriseUuid(tc.getEnterpriseUuid());
+                    if (enterprise != null) {
+                        vo.setEnterpriseType(enterprise.getEnterpriseType());
+                        vo.setCertNo(enterprise.getCertNo());
+                        vo.setAddress(enterprise.getAddress());
+                        vo.setContactPhone(enterprise.getContactPhone());
+                        vo.setContactPerson(enterprise.getContactPerson());
+                    }
+                } catch (Exception e) {
+                    log.warn("查询企业信息失败: enterpriseUuid={}", tc.getEnterpriseUuid(), e);
+                }
+            }
         }
 
         // 校验 ProdBatch 的产品名是否与溯源码一致，不一致则按productName重查
@@ -245,8 +272,7 @@ public class TraceabilityServiceImpl implements TraceabilityService {
             node.setOperator(str(trans.get("driver_name")));
             node.setNodeDescription("运单: " + str(trans.get("order_no"))
                     + "，车牌: " + str(trans.get("plate_no"))
-                    + "，状态: " + statusName
-                    + "，温控: " + str(trans.get("temp_lower")) + "~" + str(trans.get("temp_upper")) + "℃");
+                    + "，状态: " + statusName);
             nodes.add(node);
         }
 

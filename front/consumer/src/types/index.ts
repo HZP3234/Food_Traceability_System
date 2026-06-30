@@ -56,6 +56,11 @@ export interface TraceabilityVO {
   productionDate: string
   expirationDate: string
   productionLine: string
+  enterpriseType: number
+  certNo: string
+  address: string
+  contactPhone: string
+  contactPerson: string
   txHash: string
   nodes: TraceabilityNode[]
 }

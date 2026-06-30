@@ -272,7 +272,6 @@ onMounted(loadAll)
                     <div class="chain-node-row"><span>关联原料</span><code>{{ p.rawBatchNo || '-' }}</code></div>
                     <div class="chain-node-row"><span>产线</span><b>{{ p.productionLine || '-' }}</b></div>
                     <div class="chain-node-row"><span>操作员</span><b>{{ p.operator || '-' }}</b></div>
-                    <div class="chain-node-row"><span>班次</span><b>{{ shiftLabels[p.shift] || '-' }}</b></div>
                     <div class="chain-node-row"><span>计划数量</span><b>{{ p.plannedAmount ?? '-' }}</b></div>
                     <div class="chain-node-row"><span>实际数量</span><b>{{ p.actualAmount ?? '-' }}</b></div>
                     <div class="chain-node-row"><span>生产日期</span><b>{{ p.productionDate || '-' }}</b></div>
@@ -307,22 +306,11 @@ onMounted(loadAll)
                     <div class="chain-node-row"><span>驾驶员</span><b>{{ c.driverName || '-' }}</b></div>
                     <div class="chain-node-row"><span>联系电话</span><b>{{ c.driverPhone || '-' }}</b></div>
                     <div class="chain-node-row"><span>运输方式</span><b>{{ transportMethodLabels[c.transportMethod] || '-' }}</b></div>
-                    <div class="chain-node-row"><span>装载温度</span><b>{{ c.loadingTemp || '-' }}</b></div>
                     <div class="chain-node-row"><span>发运地</span><b>{{ c.departureName || '-' }}</b></div>
                     <div class="chain-node-row"><span>目的地</span><b>{{ c.destinationName || '-' }}</b></div>
                     <div class="chain-node-row"><span>发运时间</span><b>{{ c.departTime || '-' }}</b></div>
-                    <div class="chain-node-row"><span>预计到达</span><b>{{ c.estimatedArrival || '-' }}</b></div>
                     <div class="chain-node-row"><span>实际到达</span><b>{{ c.actualArrival || '-' }}</b></div>
-                    <div class="chain-node-row"><span>采集间隔</span><b>{{ c.collectInterval || '-' }}</b></div>
-                    <div class="chain-node-row full-width"><span>运输状态</span><b :style="{ color: c.transportStatus === 3 ? '#198658' : c.transportStatus === 4 ? '#c04550' : '#2467df' }">{{ c.transportStatus === 0 ? '📦 待发运' : c.transportStatus === 1 ? '🚚 运输中' : c.transportStatus === 2 ? '📬 已到达' : c.transportStatus === 3 ? '✅ 已签收' : c.transportStatus === 4 ? '⚠ 温度预警' : '-' }}</b></div>
-                  </div>
-                  <div class="chain-node-section-title">🌡 温湿度监控</div>
-                  <div class="chain-node-card-grid">
-                    <div class="chain-node-row"><span>温度上限</span><b>{{ c.tempUpper != null ? c.tempUpper + '℃' : '-' }}</b></div>
-                    <div class="chain-node-row"><span>温度下限</span><b>{{ c.tempLower != null ? c.tempLower + '℃' : '-' }}</b></div>
-                    <div class="chain-node-row"><span>湿度上限</span><b>{{ c.humidUpper != null ? c.humidUpper + '%' : '-' }}</b></div>
-                    <div class="chain-node-row"><span>湿度下限</span><b>{{ c.humidLower != null ? c.humidLower + '%' : '-' }}</b></div>
-                    <div class="chain-node-row full-width"><span>预警方式</span><b>{{ c.alertMethod || '-' }}</b></div>
+                    <div class="chain-node-row full-width"><span>运输状态</span><b :style="{ color: c.transportStatus === 3 ? '#198658' : '#2467df' }">{{ c.transportStatus === 0 ? '📦 待发运' : c.transportStatus === 1 ? '🚚 运输中' : c.transportStatus === 2 ? '📬 已到达' : c.transportStatus === 3 ? '✅ 已签收' : '-' }}</b></div>
                   </div>
                 </div>
               </div>

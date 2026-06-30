@@ -187,6 +187,40 @@ onMounted(() => {
         </div>
       </div>
 
+      <!-- 企业信息卡片 -->
+      <div v-if="data.certNo || data.address || data.contactPhone" class="company-card">
+        <div class="section-title">
+          <van-icon name="shop-o" size="16" />
+          <span>企业信息</span>
+        </div>
+        <div class="company-grid">
+          <div class="product-cell">
+            <span class="cell-label">企业名称</span>
+            <span class="cell-value">{{ data.manufacturer || '-' }}</span>
+          </div>
+          <div class="product-cell">
+            <span class="cell-label">企业类型</span>
+            <span class="cell-value">{{ ['','供应商','加工商','物流商','零售商'][data.enterpriseType] || '-' }}</span>
+          </div>
+          <div v-if="data.certNo" class="product-cell">
+            <span class="cell-label">统一社会信用代码</span>
+            <span class="cell-value code-text">{{ data.certNo }}</span>
+          </div>
+          <div v-if="data.address" class="product-cell full-width">
+            <span class="cell-label">注册地址</span>
+            <span class="cell-value">{{ data.address }}</span>
+          </div>
+          <div v-if="data.contactPhone" class="product-cell">
+            <span class="cell-label">联系电话</span>
+            <span class="cell-value">{{ data.contactPhone }}</span>
+          </div>
+          <div v-if="data.contactPerson" class="product-cell">
+            <span class="cell-label">联系人</span>
+            <span class="cell-value">{{ data.contactPerson }}</span>
+          </div>
+        </div>
+      </div>
+
       <!-- 四大溯源环节 -->
       <div v-if="sections.length" class="sections-wrapper">
         <div class="section-title">
@@ -353,6 +387,25 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 2px;
+}
+
+.product-cell.full-width {
+  grid-column: 1 / -1;
+}
+
+.company-card {
+  margin: 12px 16px;
+  padding: 16px;
+  border-radius: 10px;
+  background: #f8fbfe;
+  border: 1px solid #e8f0fe;
+}
+
+.company-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 16px;
+  padding-top: 12px;
 }
 
 .cell-label {
