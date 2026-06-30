@@ -45,12 +45,6 @@ public class TraceCodeDetailVO {
     /** 区块链存证编号 */
     private String proofId;
 
-    /** 质检结果：1-合格 2-不合格 3-待检 */
-    private Integer qualityResult;
-
-    /** 质检报告URL */
-    private String qualityReportUrl;
-
     /** 禁用/作废原因 */
     private String reason;
 
@@ -128,12 +122,6 @@ public class TraceCodeDetailVO {
 
     public String getProofId() { return proofId; }
     public void setProofId(String proofId) { this.proofId = proofId; }
-
-    public Integer getQualityResult() { return qualityResult; }
-    public void setQualityResult(Integer qualityResult) { this.qualityResult = qualityResult; }
-
-    public String getQualityReportUrl() { return qualityReportUrl; }
-    public void setQualityReportUrl(String qualityReportUrl) { this.qualityReportUrl = qualityReportUrl; }
 
     public String getReason() { return reason; }
     public void setReason(String reason) { this.reason = reason; }

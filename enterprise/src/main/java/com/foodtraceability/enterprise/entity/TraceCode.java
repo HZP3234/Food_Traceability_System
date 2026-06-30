@@ -96,14 +96,6 @@ public class TraceCode {
     /** 有效期截止时间，过期后消费者扫码提示码已过期 */
     private String expireTime;
 
-    /** 质检结果：1-合格 2-不合格 3-待检 */
-    @TableField(exist = false)
-    private Integer qualityResult;
-
-    /** 质检报告URL */
-    @TableField(exist = false)
-    private String qualityReportUrl;
-
     /** 是否上链：0-否 1-是 */
     @TableField(exist = false)
     private Integer isOnChain;
@@ -193,12 +185,6 @@ public class TraceCode {
 
     public String getExpireTime() { return expireTime; }
     public void setExpireTime(String expireTime) { this.expireTime = expireTime; }
-
-    public Integer getQualityResult() { return qualityResult; }
-    public void setQualityResult(Integer qualityResult) { this.qualityResult = qualityResult; }
-
-    public String getQualityReportUrl() { return qualityReportUrl; }
-    public void setQualityReportUrl(String qualityReportUrl) { this.qualityReportUrl = qualityReportUrl; }
 
     public Integer getIsOnChain() {
         if (isOnChain != null) return isOnChain;

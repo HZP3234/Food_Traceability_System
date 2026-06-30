@@ -75,13 +75,6 @@ function formatDateTime(dateStr: string) {
   return dateStr.replace('T', ' ').substring(0, 16)
 }
 
-const checkResultInfo = computed(() => {
-  const v = data.value?.checkResult
-  if (v === 1) return { text: '合格', cls: 'check-ok' }
-  if (v === 2) return { text: '不合格', cls: 'check-fail' }
-  return { text: '未检测', cls: '' }
-})
-
 function goComplaint() {
   if (!requireLogin()) return
   if (!data.value) return
@@ -187,10 +180,6 @@ onMounted(() => {
             <span class="cell-label">溯源码</span>
             <span class="cell-value code-text">{{ data.traceCode || '-' }}</span>
           </div>
-        </div>
-        <div class="check-row">
-          <span class="cell-label">质检结果</span>
-          <span :class="checkResultInfo.cls">{{ checkResultInfo.text }}</span>
         </div>
         <div v-if="data.txHash" class="blockchain-tag">
           <van-icon name="certificate" size="14" />

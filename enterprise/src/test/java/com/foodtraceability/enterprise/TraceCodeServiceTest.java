@@ -57,8 +57,6 @@ public class TraceCodeServiceTest {
         dto.setEnterpriseId("ENT2026001");
         dto.setEnterpriseName("内蒙古伊利实业集团股份有限公司");
         dto.setBatchNo("PBS20260623001");
-        dto.setQualityResult(1);                 // 合格
-        dto.setQualityReportUrl("http://example.com/report/PBS20260623001.pdf");
         dto.setExpireTime("2027-06-23 23:59:59");
         dto.setOperator("admin");
 
@@ -105,7 +103,6 @@ public class TraceCodeServiceTest {
         dto.setEnterpriseName("蒙牛乳业(集团)股份有限公司");
         dto.setBatchNo("PBS20260623002");
         dto.setGenerateCount(10);                // 批量生成10条
-        dto.setQualityResult(1);
         dto.setExpireTime("2027-06-23 23:59:59");
         dto.setOperator("admin");
 
@@ -151,7 +148,6 @@ public class TraceCodeServiceTest {
         dto.setEnterpriseName("测试企业");
         dto.setBatchNo("PBS20260623003");
         dto.setGenerateCount(99999);             // 超出10000上限
-        dto.setQualityResult(1);
         dto.setOperator("admin");
 
         assertThrows(RuntimeException.class, () -> {
@@ -232,7 +228,6 @@ public class TraceCodeServiceTest {
         System.out.println("产品: " + result.getProductName());
         System.out.println("批次: " + result.getBatchNo());
         System.out.println("码状态: " + result.getCodeStatus());
-        System.out.println("质检: " + result.getQualityResult());
         System.out.println("链上校验: " + result.getChainVerifyResult());
         System.out.println("风险等级: " + result.getRiskLevel());
         System.out.println("节点数: " + result.getTraceNodes().size());
@@ -302,7 +297,6 @@ public class TraceCodeServiceTest {
         genDto.setEnterpriseId("ENT_TEST");
         genDto.setEnterpriseName("测试企业");
         genDto.setBatchNo("PBS20260623099");
-        genDto.setQualityResult(1);
         genDto.setOperator("admin");
         TraceCodeVO vo = traceCodeService.generateTraceCode(genDto);
         String newCode = vo.getTraceCode();
@@ -388,7 +382,6 @@ public class TraceCodeServiceTest {
         genDto.setEnterpriseId("ENT_BIND");
         genDto.setEnterpriseName("绑定测试企业");
         genDto.setBatchNo("PBS20260623100");
-        genDto.setQualityResult(1);
         genDto.setOperator("admin");
         TraceCodeVO vo = traceCodeService.generateTraceCode(genDto);
         String code = vo.getTraceCode();
@@ -443,26 +436,4 @@ public class TraceCodeServiceTest {
         });
     }
 
-    // ==================== 14. 质检不合格生成被拒测试 ====================
-
-    @Test
-    @Order(14)
-    @DisplayName("质检不合格的产品不能生成溯源码")
-    public void testRejectUnqualifiedProduct() {
-        TraceCodeGenerateDTO dto = new TraceCodeGenerateDTO();
-        dto.setCodeType(1);
-        dto.setProductId("PROD_BAD");
-        dto.setProductName("不合格产品");
-        dto.setEnterpriseId("ENT_BAD");
-        dto.setEnterpriseName("不合格企业");
-        dto.setBatchNo("PBS20260623999");
-        dto.setQualityResult(2);  // 不合格
-        dto.setOperator("admin");
-
-        assertThrows(RuntimeException.class, () -> {
-            traceCodeService.generateTraceCode(dto);
-        }, "质检不合格应拒绝生成溯源码");
-
-        System.out.println("========== 不合格产品拒绝测试通过 ==========");
-    }
 }

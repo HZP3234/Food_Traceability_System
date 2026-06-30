@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, inject, type Ref } from 'vue'
-import { Check, Close, Connection, Delete, DocumentChecked, Edit, Link, Plus, Search, VideoPlay } from '@element-plus/icons-vue'
+import { Check, Close, Delete, DocumentChecked, Edit, Link, Plus, Search, VideoPlay } from '@element-plus/icons-vue'
 import { productionApi, rawApi } from '../services/api'
 import Pagination from '../components/Pagination.vue'
 import type { RoleKey } from '../config/navigation'
@@ -8,40 +8,30 @@ import type { RoleKey } from '../config/navigation'
 const currentRole = inject<Ref<RoleKey>>('currentRole')
 const canEdit = computed(() => currentRole?.value === 'super-admin' || currentRole?.value === 'manufacturer')
 
-const tab = ref<'prod' | 'template' | 'input' | 'inspection'>('prod')
+const tab = ref<'prod' | 'template' | 'input'>('prod')
 const loading = ref(false)
 const toast = ref<{ type: 'success' | 'error'; text: string } | null>(null)
 
 const showModal = ref(false); const showTemplateModal = ref(false)
-const showInputModal = ref(false); const showInspectionModal = ref(false)
-const showConfirm = ref(false); const showChainModal = ref(false); const showQcProdModal = ref(false)
+const showInputModal = ref(false)
+const showConfirm = ref(false)
 const confirmTitle = ref('确认操作'); const confirmMsg = ref(''); const confirmBtnLabel = ref('确认'); const confirmBtnClass = ref('danger-fill')
 const confirmCallback = ref<null | (() => void)>(null)
 
-const list = ref<any[]>([]); const templates = ref<any[]>([]); const materialInputs = ref<any[]>([]); const inspections = ref<any[]>([])
+const list = ref<any[]>([]); const templates = ref<any[]>([]); const materialInputs = ref<any[]>([])
 
 
 // Pagination
-const prodPage = ref(1); const tplPage = ref(1); const inputPage = ref(1); const inspPage = ref(1); const pageSize = ref(10)
+const prodPage = ref(1); const tplPage = ref(1); const inputPage = ref(1); const pageSize = ref(10)
 const paginatedList = computed(() => { const s = (prodPage.value - 1) * pageSize.value; return list.value.slice(s, s + pageSize.value) })
 const paginatedTemplates = computed(() => { const s = (tplPage.value - 1) * pageSize.value; return templates.value.slice(s, s + pageSize.value) })
 const paginatedInputs = computed(() => { const s = (inputPage.value - 1) * pageSize.value; return materialInputs.value.slice(s, s + pageSize.value) })
-const paginatedInspections = computed(() => { const s = (inspPage.value - 1) * pageSize.value; return inspections.value.slice(s, s + pageSize.value) })
-const editing = ref<any>(null); const editingTemplate = ref<any>(null); const qcTarget = ref<any>(null); const chainData = ref<any>(null)
-// QC modal form
-const qcForm = ref({
-  checkResult: 1,      // 1合格 2不合格
-  inspector: '',
-  inspectionTime: '',
-  inspectionType: 1,    // 1自检 2抽检 3全检
-  resultDesc: '',
-})
+const editing = ref<any>(null); const editingTemplate = ref<any>(null)
 
 const filters = ref({ productName: '', productionLine: '', batchStatus: '', codeStatus: '' })
 const templateFilters = ref({ applicableProduct: '', templateStatus: '' })
-const inspFilters = ref({ bizType: '', bizBatchNo: '', inspectionType: '', inspectionResult: '' })
 
-// 合并后的生产批次表单（含加工参数、投料明细、三级质检）
+// 合并后的生产批次表单（含加工参数、投料明细）
 const form = ref({
   batchNo: '', productName: '',
   templateName: '', rawBatchNo: '', processDate: '', operator: '', shift: 0,
@@ -54,13 +44,8 @@ const materialInputRows = ref<any[]>([])
 const rawBatchOptions = ref<any[]>([])
 const rawBatchLoading = ref(false)
 const templateOptions = ref<any[]>([])
-const qcFirst = ref({ inspector: '', time: '', result: '合格' })
-const qcProcess = ref({ inspector: '', time: '', result: '合格' })
-const qcFinal = ref({ inspector: '', time: '', result: '合格' })
-
 const templateForm = ref({ templateName: '', version: '', applicableProduct: '', targetTemp: '', duration: '', pressure: '', coolTemp: '', fillTemp: '', stirSpeed: '', phValue: '', viscosity: '', cleanLevel: 0, templateStatus: 1, remark: '' })
 const inputForm = ref({ rawBatchNo: '', materialName: '', inputAmount: '', unit: '', operator: '', inputTime: '', remark: '' })
-const inspectionForm = ref({ inspectionNo: '', bizType: 3, bizBatchNo: '', inspectionType: 1, inspector: '', inspectionDate: '', inspectionResult: 1, resultDesc: '', remark: '' })
 
 const checkResultLabels = ['', '合格', '不合格']; const prodBatchStatusLabels = ['', '待生产', '生产中', '生产完成', '已废弃']
 
@@ -77,11 +62,6 @@ const stats = computed(() => {
       { label: '停用', icon: Close, cls: '', val: templates.value.filter((r: any) => r.templateStatus === 2).length },
     ]
     case 'input': return [{ label: '投料记录', icon: Edit, cls: '', val: materialInputs.value.length }]
-    case 'inspection': return [
-      { label: '质检记录', icon: Edit, cls: '', val: inspections.value.length },
-      { label: '合格', icon: Check, cls: 'green', val: inspections.value.filter((r: any) => r.inspectionResult === 1).length },
-      { label: '不合格', icon: Close, cls: 'amber', val: inspections.value.filter((r: any) => r.inspectionResult === 2).length },
-    ]
     default: return []
   }
 })
@@ -121,10 +101,7 @@ function openCreateProd() {
     productionLine: '', plannedAmount: '', actualAmount: '', productionDate: '', remark: '',
     stirDuration: '', vacuumDegree: ''
   };
-  materialInputRows.value = [{ rawBatchNo: '', materialName: '', inputAmount: '', unit: 'kg', status: '合格' }];
-  qcFirst.value = { inspector: '', time: '', result: '合格' };
-  qcProcess.value = { inspector: '', time: '', result: '合格' };
-  qcFinal.value = { inspector: '', time: '', result: '合格' };
+  materialInputRows.value = [newMaterialRow()];
   templateOptions.value = []
   loadRawBatchOptions()
   showModal.value = true
@@ -143,16 +120,15 @@ function openEditProd(row: any) {
     actualAmount: row.actualAmount ?? '', productionDate: row.productionDate ?? '', remark: row.remark ?? '',
     stirDuration: row.stirDuration ?? '', vacuumDegree: row.vacuumDegree ?? ''
   };
-  // 加载已有的投料记录
-  materialInputRows.value = [{ rawBatchNo: '', materialName: '', inputAmount: '', unit: 'kg', status: '合格' }];
-  if (row.rawBatchNo) {
-    productionApi.queryMaterialInput(row.rawBatchNo).then((input: any) => {
-      if (input && input.rawBatchNo) materialInputRows.value = [{ rawBatchNo: input.rawBatchNo || '', materialName: input.materialName || '', inputAmount: String(input.inputAmount || ''), unit: 'kg', status: input.inputStatus || '合格' }]
+  // 加载已有的投料记录（按生产批次号查询所有关联记录）
+  materialInputRows.value = [newMaterialRow()];
+  if (row.batchNo) {
+    productionApi.listMaterialInputByProdBatch(row.batchNo).then((inputs: any) => {
+      if (Array.isArray(inputs) && inputs.length > 0) {
+        materialInputRows.value = inputs.map((inp: any) => ({ _id: ++_rowId, rawBatchNo: inp.rawBatchNo || '', materialName: inp.materialName || '', inputAmount: String(inp.inputAmount || ''), unit: 'kg', status: inp.inputStatus || '合格' }))
+      }
     }).catch(() => {})
   }
-  qcFirst.value = row.qcFirst ?? { inspector: '', time: '', result: '合格' };
-  qcProcess.value = row.qcProcess ?? { inspector: '', time: '', result: '合格' };
-  qcFinal.value = row.qcFinal ?? { inspector: '', time: '', result: '合格' };
   loadRawBatchOptions()
   showModal.value = true
 }
@@ -172,15 +148,17 @@ function submitProdBatch() {
       if (validRows[0]) data.rawBatchNo = validRows[0].rawBatchNo
       if (editing.value) {
         data.prodBatchId = editing.value.prodBatchId;
+        const prodBatchNo = editing.value.batchNo;
         await productionApi.updateProdBatch(data);
         for (const row of validRows) {
-          await productionApi.recordMaterialInput({ rawBatchNo: row.rawBatchNo, materialName: row.materialName, inputAmount: Number(row.inputAmount), inputStatus: row.status || '已投入' })
+          await productionApi.recordMaterialInput({ prodBatchNo, rawBatchNo: row.rawBatchNo, materialName: row.materialName, inputAmount: Number(row.inputAmount), inputStatus: row.status || '已投入' })
         }
         notify('success', '生产批次更新成功，已保存'+validRows.length+'条投料记录')
       } else {
-        await productionApi.createProdBatch(data);
+        const created: any = await productionApi.createProdBatch(data);
+        const prodBatchNo = created?.batchNo || data.batchNo;
         for (const row of validRows) {
-          await productionApi.recordMaterialInput({ rawBatchNo: row.rawBatchNo, materialName: row.materialName, inputAmount: Number(row.inputAmount), inputStatus: row.status || '已投入' })
+          await productionApi.recordMaterialInput({ prodBatchNo, rawBatchNo: row.rawBatchNo, materialName: row.materialName, inputAmount: Number(row.inputAmount), inputStatus: row.status || '已投入' })
         }
         notify('success', '生产批次创建成功，已保存'+validRows.length+'条投料记录')
       }
@@ -192,49 +170,6 @@ function submitProdBatch() {
 function startProd(id: number) { confirmTitle.value = '确认开始生产'; confirmMsg.value = '确认开始该批次的生产？'; confirmBtnLabel.value = '确认开始'; confirmBtnClass.value = 'primary'; confirmCallback.value = async () => { try { await productionApi.startProdBatch(id); notify('success', '生产已开始'); showConfirm.value = false; loadProdBatch() } catch (e: any) { notify('error', '操作失败: ' + e.message) } }; showConfirm.value = true }
 function completeProd(id: number) { confirmTitle.value = '确认完成'; confirmMsg.value = '确认完成该生产批次？'; confirmBtnLabel.value = '确认完成'; confirmBtnClass.value = 'primary'; confirmCallback.value = async () => { try { await productionApi.completeProdBatch(id); notify('success', '生产批次已完成'); showConfirm.value = false; loadProdBatch() } catch (e: any) { notify('error', '操作失败: ' + e.message) } }; showConfirm.value = true }
 function bindCode(id: number) { confirmTitle.value = '确认绑码'; confirmMsg.value = '确认为该生产批次绑定溯源码？'; confirmBtnLabel.value = '确认绑码'; confirmBtnClass.value = 'primary'; confirmCallback.value = async () => { try { await productionApi.bindCode(id); notify('success', '溯源码绑定完成'); showConfirm.value = false; loadProdBatch() } catch (e: any) { notify('error', '绑码失败: ' + e.message) } }; showConfirm.value = true }
-function openQcProd(row: any) {
-  qcTarget.value = row
-  qcForm.value = {
-    checkResult: row.checkResult || 1,
-    inspector: currentUser || '',
-    inspectionTime: new Date().toISOString().slice(0, 16),
-    inspectionType: 1,
-    resultDesc: '',
-  }
-  showQcProdModal.value = true
-}
-async function submitQcProd() {
-  if (!qcForm.value.inspector.trim()) { notify('error', '请填写质检人'); return }
-  if (!qcForm.value.inspectionTime.trim()) { notify('error', '请选择检验日期'); return }
-  const resultLabel = qcForm.value.checkResult === 1 ? '合格' : '不合格'
-  confirmTitle.value = '确认质检'
-  confirmMsg.value = `确认将该批次质检结果标记为"${resultLabel}"？`
-  confirmBtnLabel.value = `确认${resultLabel}`
-  confirmBtnClass.value = qcForm.value.checkResult === 1 ? 'primary' : 'danger-fill'
-  confirmCallback.value = async () => {
-    try {
-      // 1. 更新生产批次质检结果
-      await productionApi.qualityCheckProd(qcTarget.value.batchNo, qcForm.value.checkResult)
-      // 2. 创建质检记录
-      await productionApi.createInspection({
-        bizType: 3,  // 3=生产
-        bizBatchNo: qcTarget.value.batchNo,
-        inspectionType: qcForm.value.inspectionType,
-        inspector: qcForm.value.inspector,
-        inspectionDate: qcForm.value.inspectionTime,
-        inspectionResult: qcForm.value.checkResult,
-        resultDesc: qcForm.value.resultDesc,
-      })
-      notify('success', `质检结果已录入（${resultLabel}）`)
-      showQcProdModal.value = false
-      showConfirm.value = false
-      loadProdBatch()
-    } catch (e: any) { notify('error', '质检失败: ' + e.message) }
-  }
-  showConfirm.value = true
-}
-async function traceChain(batchNo: string) { try { const result = await productionApi.traceProcessChain(batchNo); chainData.value = result; showChainModal.value = true } catch (e: any) { notify('error', '追溯失败: ' + e.message) } }
-
 // Template
 async function loadTemplates() { try { const p: Record<string, any> = {}; if (templateFilters.value.applicableProduct) p.applicableProduct = templateFilters.value.applicableProduct; if (templateFilters.value.templateStatus) p.templateStatus = Number(templateFilters.value.templateStatus); const data = await productionApi.listTemplate(p); templates.value = Array.isArray(data) ? data : []; tplPage.value = 1 } catch (e: any) { notify('error', '加载失败') } }
 function openCreateTemplate() { editingTemplate.value = null; templateForm.value = { templateName: '', version: '', applicableProduct: '', targetTemp: '', duration: '', pressure: '', coolTemp: '', fillTemp: '', stirSpeed: '', phValue: '', viscosity: '', cleanLevel: 0, templateStatus: 1, remark: '' }; showTemplateModal.value = true }
@@ -246,18 +181,16 @@ function confirmDeleteTemplate(id: number) { confirmTitle.value = '确认删除'
 async function loadMaterialInput() { try { const d = await productionApi.listMaterialInput(); materialInputs.value = Array.isArray(d) ? d : []; inputPage.value = 1 } catch (e: any) { notify('error', '加载失败') } }
 function submitMaterialInput() { confirmTitle.value = '确认投料'; confirmMsg.value = '确认记录该投料信息？'; confirmBtnLabel.value = '确认记录'; confirmBtnClass.value = 'primary'; confirmCallback.value = async () => { try { await productionApi.recordMaterialInput(inputForm.value); notify('success', '投料记录成功'); showInputModal.value = false; showConfirm.value = false; loadMaterialInput() } catch (e: any) { notify('error', '投料失败: ' + e.message) } }; showConfirm.value = true }
 
-// Inspection
-async function loadInspections() { try { const p: Record<string, any> = {}; if (inspFilters.value.bizType) p.bizType = Number(inspFilters.value.bizType); if (inspFilters.value.bizBatchNo) p.bizBatchNo = inspFilters.value.bizBatchNo; if (inspFilters.value.inspectionResult) p.inspectionResult = Number(inspFilters.value.inspectionResult); const d = await productionApi.listInspection(p); inspections.value = Array.isArray(d) ? d : []; inspPage.value = 1 } catch (e: any) { notify('error', '加载失败') } }
-function submitInspection() { confirmTitle.value = '确认提交'; confirmMsg.value = '确认创建该质检记录？'; confirmBtnLabel.value = '确认提交'; confirmBtnClass.value = 'primary'; confirmCallback.value = async () => { try { await productionApi.createInspection(inspectionForm.value); notify('success', '质检记录创建成功'); showInspectionModal.value = false; showConfirm.value = false; loadInspections() } catch (e: any) { notify('error', '创建失败: ' + e.message) } }; showConfirm.value = true }
-
 // Delete
 function confirmDeleteProd(id: number) { confirmTitle.value = '确认删除'; confirmMsg.value = '确定要删除该生产批次吗？'; confirmBtnLabel.value = '确认删除'; confirmBtnClass.value = 'danger-fill'; confirmCallback.value = async () => { try { await productionApi.deleteProdBatch(id); notify('success', '删除成功'); showConfirm.value = false; loadProdBatch() } catch (e: any) { notify('error', '删除失败: ' + e.message) } }; showConfirm.value = true }
 
-function switchTab(t: typeof tab.value) { tab.value = t; if (t === 'prod') loadProdBatch(); else if (t === 'template') loadTemplates(); else if (t === 'input') loadMaterialInput(); else loadInspections() }
+function switchTab(t: typeof tab.value) { tab.value = t; if (t === 'prod') loadProdBatch(); else if (t === 'template') loadTemplates(); else if (t === 'input') loadMaterialInput() }
 function doConfirm() { if (confirmCallback.value) { confirmCallback.value() } }
 
 // 投料明细行操作
-function addMaterialRow() { materialInputRows.value.push({ rawBatchNo: '', materialName: '', inputAmount: '', unit: 'kg', status: '合格' }) }
+let _rowId = 0
+function newMaterialRow() { return { _id: ++_rowId, rawBatchNo: '', materialName: '', inputAmount: '', unit: 'kg', status: '合格' } }
+function addMaterialRow() { materialInputRows.value.push(newMaterialRow()) }
 function removeMaterialRow(index: number) { if (materialInputRows.value.length > 1) materialInputRows.value.splice(index, 1) }
 
 // 加载本公司原料批次选项（供投料明细下拉搜索使用）
@@ -320,7 +253,6 @@ onMounted(loadProdBatch)
       <button class="trace-tab-btn" :class="{ active: tab === 'prod' }" @click="switchTab('prod')"><el-icon><Edit /></el-icon> 生产批次</button>
       <button class="trace-tab-btn" :class="{ active: tab === 'template' }" @click="switchTab('template')"><el-icon><DocumentChecked /></el-icon> 工艺模板</button>
       <button class="trace-tab-btn" :class="{ active: tab === 'input' }" @click="switchTab('input')"><el-icon><Plus /></el-icon> 投料记录</button>
-      <button class="trace-tab-btn" :class="{ active: tab === 'inspection' }" @click="switchTab('inspection')"><el-icon><DocumentChecked /></el-icon> 质检记录</button>
     </div>
 
     <!-- Production Batch (含加工参数) -->
@@ -351,8 +283,6 @@ onMounted(loadProdBatch)
                 <button v-if="canEdit && row.batchStatus === 1" @click="startProd(row.prodBatchId)"><el-icon><VideoPlay /></el-icon> 开始</button>
                 <button v-if="canEdit && row.batchStatus === 2" @click="completeProd(row.prodBatchId)"><el-icon><Check /></el-icon> 完成</button>
                 <button v-if="canEdit && row.batchStatus === 3 && !row.codeStatus" @click="bindCode(row.prodBatchId)"><el-icon><Link /></el-icon> 绑码</button>
-                <button v-if="canEdit && !row.checkResult" @click="openQcProd(row)"><el-icon><DocumentChecked /></el-icon> 质检</button>
-                <button @click="traceChain(row.batchNo)"><el-icon><Connection /></el-icon> 追溯</button>
                 <button v-if="canEdit" class="danger" @click="confirmDeleteProd(row.prodBatchId)"><el-icon><Delete /></el-icon> 删除</button>
               </td>
             </tr>
@@ -400,30 +330,7 @@ onMounted(loadProdBatch)
       </section>
     </template>
 
-    <!-- Inspection -->
-    <template v-if="tab === 'inspection'">
-      <section class="trace-panel filter-panel">
-        <div class="filter-grid-4">
-          <label>业务类型<select v-model="inspFilters.bizType"><option value="">全部</option><option value="1">原料</option><option value="3">生产</option><option value="4">冷链</option><option value="5">销售</option></select></label>
-          <label>业务批次<input v-model="inspFilters.bizBatchNo" placeholder="批次号" /></label>
-          <label>检验结果<select v-model="inspFilters.inspectionResult"><option value="">全部</option><option value="1">合格</option><option value="2">不合格</option></select></label>
-          <div class="filter-actions"><button class="primary" @click="loadInspections"><el-icon><Search /></el-icon> 查询</button><button v-if="canEdit" class="secondary" @click="showInspectionModal = true"><el-icon><Plus /></el-icon> 新增质检</button></div>
-        </div>
-      </section>
-      <section class="trace-panel list-panel">
-        <header class="panel-header"><div><p>质检台账</p><h2>质检记录</h2></div></header>
-        <div class="table-wrap"><table><thead><tr><th>检验编号</th><th>业务类型</th><th>业务批次</th><th>检验类型</th><th>检验人</th><th>日期</th><th>结果</th><th>描述</th></tr></thead>
-          <tbody><tr v-if="!inspections.length"><td colspan="8" class="empty">暂无质检记录</td></tr>
-            <tr v-for="row in paginatedInspections" :key="row.inspectionId"><td><code>{{ row.inspectionNo }}</code></td>
-              <td>{{ ['','原料','','生产','冷链','销售'][row.bizType] || row.bizType }}</td><td><code>{{ row.bizBatchNo }}</code></td>
-              <td>{{ ['','自检','抽检','全检'][row.inspectionType] || '其他' }}</td><td>{{ row.inspector }}</td><td>{{ row.inspectionDate }}</td>
-              <td><span class="status" :class="row.inspectionResult === 1 ? 'status-active' : 'status-void'">{{ row.inspectionResult === 1 ? '合格' : '不合格' }}</span></td><td>{{ row.resultDesc || '-' }}</td></tr>
-          </tbody></table></div>
-      <Pagination v-model="inspPage" :total="inspections.length" :page-size="pageSize" />
-      </section>
-    </template>
-
-    <!-- ProdBatch Modal (含加工参数、投料明细、三级质检) -->
+    <!-- ProdBatch Modal (含加工参数、投料明细) -->
     <div v-if="showModal" class="trace-modal-backdrop" @click.self="showModal = false">
       <section class="trace-modal" style="width:820px"><header><div><p>生产管理</p><h2>{{ editing ? '编辑生产批次' : '新建生产计划' }}</h2></div><button @click="showModal = false"><el-icon><Close /></el-icon></button></header>
         <div class="modal-body">
@@ -448,7 +355,7 @@ onMounted(loadProdBatch)
               <table class="inline-table">
                 <thead><tr><th>原料批次</th><th>名称</th><th>投料量</th><th>单位</th><th>状态</th><th style="width:60px">操作</th></tr></thead>
                 <tbody>
-                  <tr v-for="(row, idx) in materialInputRows" :key="idx">
+                  <tr v-for="(row, idx) in materialInputRows" :key="row._id">
                     <td>
                       <el-select
                         v-model="row.rawBatchNo"
@@ -499,46 +406,6 @@ onMounted(loadProdBatch)
             </label>
           </div>
 
-          <!-- Section: 三级质检报告 -->
-          <div class="form-section">
-            <div class="form-section-title"><span class="section-ico">检</span>三级质检报告</div>
-            <div class="qc-cards-row">
-              <div class="qc-card-item">
-                <h4>首件质检</h4>
-                <label>质检人<input v-model="qcFirst.inspector" placeholder="如：张宏伟" /></label>
-                <label style="margin-top:6px">时间<input v-model="qcFirst.time" type="datetime-local" /></label>
-                <label style="margin-top:6px">结果
-                  <select v-model="qcFirst.result">
-                    <option>合格 (感官、净含量达标)</option>
-                    <option>不合格</option>
-                  </select>
-                </label>
-              </div>
-              <div class="qc-card-item">
-                <h4>过程巡检</h4>
-                <label>质检人<input v-model="qcProcess.inspector" placeholder="如：王芳" /></label>
-                <label style="margin-top:6px">时间<input v-model="qcProcess.time" type="datetime-local" /></label>
-                <label style="margin-top:6px">结果
-                  <select v-model="qcProcess.result">
-                    <option>合格 (密封性抽检正常)</option>
-                    <option>不合格</option>
-                  </select>
-                </label>
-              </div>
-              <div class="qc-card-item">
-                <h4>成品出厂检</h4>
-                <label>质检人<input v-model="qcFinal.inspector" placeholder="如：李明" /></label>
-                <label style="margin-top:6px">时间<input v-model="qcFinal.time" type="datetime-local" /></label>
-                <label style="margin-top:6px">结果
-                  <select v-model="qcFinal.result">
-                    <option>合格 (理化、微生物合格)</option>
-                    <option>不合格</option>
-                  </select>
-                </label>
-              </div>
-            </div>
-          </div>
-
           <label style="display:grid;gap:6px;color:#718ba6;font-size:12px;font-weight:700;margin-top:10px">实际数量<input v-model="form.actualAmount" type="number" placeholder="0" style="width:100%;padding:9px;border:1px solid #d7e4f0;border-radius:7px" /></label>
           <label style="display:grid;gap:6px;color:#718ba6;font-size:12px;font-weight:700;margin-top:15px">备注<textarea v-model="form.remark" placeholder="请输入生产计划相关说明。" style="width:100%;padding:9px;border:1px solid #d7e4f0;border-radius:7px;min-height:60px" /></label>
         </div>
@@ -573,54 +440,6 @@ onMounted(loadProdBatch)
         </div>
         <label style="display:grid;gap:6px;color:#718ba6;font-size:12px;font-weight:700;margin:0 23px">备注<textarea v-model="inputForm.remark" style="width:100%;padding:9px;border:1px solid #d7e4f0;border-radius:7px;min-height:60px" /></label>
         <footer><button class="secondary" @click="showInputModal = false"><el-icon><Close /></el-icon> 取消</button><button class="primary" @click="submitMaterialInput"><el-icon><Check /></el-icon> 记录</button></footer>
-      </section>
-    </div>
-
-    <div v-if="showInspectionModal" class="trace-modal-backdrop" @click.self="showInspectionModal = false">
-      <section class="trace-modal"><header><div><p>质检管理</p><h2>质检录入</h2></div><button @click="showInspectionModal = false"><el-icon><Close /></el-icon></button></header>
-        <div class="modal-body grid-form">
-          <label>检验编号<input v-model="inspectionForm.inspectionNo" /></label><label>业务类型 *<select v-model.number="inspectionForm.bizType"><option :value="1">原料</option><option :value="3">生产</option><option :value="4">冷链</option></select></label>
-          <label>业务批次号 *<input v-model="inspectionForm.bizBatchNo" /></label><label>检验人<input v-model="inspectionForm.inspector" /></label>
-          <label>检验日期<input v-model="inspectionForm.inspectionDate" /></label><label>检验类型<select v-model.number="inspectionForm.inspectionType"><option :value="1">自检</option><option :value="2">抽检</option><option :value="3">全检</option></select></label>
-          <label>检验结果 *<select v-model.number="inspectionForm.inspectionResult"><option :value="1">合格</option><option :value="2">不合格</option></select></label>
-        </div>
-        <label style="display:grid;gap:6px;color:#718ba6;font-size:12px;font-weight:700;margin:0 23px">结果描述<textarea v-model="inspectionForm.resultDesc" style="width:100%;padding:9px;border:1px solid #d7e4f0;border-radius:7px;min-height:60px" /></label>
-        <label style="display:grid;gap:6px;color:#718ba6;font-size:12px;font-weight:700;margin:15px 23px 0">备注<textarea v-model="inspectionForm.remark" style="width:100%;padding:9px;border:1px solid #d7e4f0;border-radius:7px;min-height:60px" /></label>
-        <footer><button class="secondary" @click="showInspectionModal = false"><el-icon><Close /></el-icon> 取消</button><button class="primary" @click="submitInspection"><el-icon><Check /></el-icon> 确认提交</button></footer>
-      </section>
-    </div>
-
-    <!-- QC Modal -->
-    <div v-if="showQcProdModal" class="trace-modal-backdrop" @click.self="showQcProdModal = false">
-      <section class="trace-modal" style="width:480px"><header><div><p>质检</p><h2>生产批次质检</h2></div><button @click="showQcProdModal = false"><el-icon><Close /></el-icon></button></header>
-        <div class="modal-body">
-          <p style="color:#6c84a3;margin:0 0 16px;font-size:13px">批次号：<code>{{ qcTarget?.batchNo }}</code><br/>产品：<strong>{{ qcTarget?.productName }}</strong></p>
-          <div class="grid-form">
-            <label>质检结果 *<select v-model.number="qcForm.checkResult" style="width:100%;padding:9px;border:1px solid #d7e4f0;border-radius:7px"><option :value="1">✓ 合格</option><option :value="2">✗ 不合格</option></select></label>
-            <label>质检人 *<input v-model="qcForm.inspector" placeholder="如：张宏伟" /></label>
-            <label>检验日期 *<input v-model="qcForm.inspectionTime" type="datetime-local" /></label>
-            <label>检验类型<select v-model.number="qcForm.inspectionType" style="width:100%;padding:9px;border:1px solid #d7e4f0;border-radius:7px"><option :value="1">自检</option><option :value="2">抽检</option><option :value="3">全检</option></select></label>
-          </div>
-          <label style="display:grid;gap:6px;color:#718ba6;font-size:12px;font-weight:700;margin-top:14px">结果描述<textarea v-model="qcForm.resultDesc" placeholder="请描述检验具体情况…" style="width:100%;padding:9px;border:1px solid #d7e4f0;border-radius:7px;min-height:60px" /></label>
-        </div>
-        <footer><button class="secondary" @click="showQcProdModal = false"><el-icon><Close /></el-icon> 取消</button><button class="primary" :class="qcForm.checkResult === 1 ? '' : 'danger-fill'" @click="submitQcProd"><el-icon><Check /></el-icon> 确认{{ qcForm.checkResult === 1 ? '合格' : '不合格' }}</button></footer>
-      </section>
-    </div>
-
-    <!-- Chain Modal -->
-    <div v-if="showChainModal" class="trace-modal-backdrop" @click.self="showChainModal = false">
-      <section class="trace-modal" style="width:800px"><header><div><p>链路追溯</p><h2>生产全链路追溯</h2></div><button @click="showChainModal = false"><el-icon><Close /></el-icon></button></header>
-        <div class="modal-body">
-          <div class="chain-flow" v-if="chainData" style="display:grid;grid-template-columns:repeat(5,minmax(100px,1fr));gap:10px;margin-top:14px">
-            <div class="chain-node" style="min-height:100px;border:1px solid #dce8f4;border-radius:10px;background:#f8fbfd;padding:12px;text-align:center"><div style="width:30px;height:30px;border-radius:50%;display:grid;place-items:center;margin:0 auto 8px;background:#eaf2ff;color:#2467df;font-weight:900">原</div><strong>原料批次</strong><div style="font-size:12px;color:#8195aa">{{ chainData.rawBatch?.batchNo || '-' }}</div></div>
-            <div class="chain-node" style="min-height:100px;border:1px solid #dce8f4;border-radius:10px;background:#f8fbfd;padding:12px;text-align:center"><div style="width:30px;height:30px;border-radius:50%;display:grid;place-items:center;margin:0 auto 8px;background:#eaf2ff;color:#2467df;font-weight:900">产</div><strong>生产批次</strong><div style="font-size:12px;color:#8195aa">{{ chainData.prodBatch?.batchNo || '-' }}</div></div>
-            <div class="chain-node" style="min-height:100px;border:1px solid #dce8f4;border-radius:10px;background:#f8fbfd;padding:12px;text-align:center"><div style="width:30px;height:30px;border-radius:50%;display:grid;place-items:center;margin:0 auto 8px;background:#eaf2ff;color:#2467df;font-weight:900">冷</div><strong>冷链运输</strong></div>
-            <div class="chain-node" style="min-height:100px;border:1px solid #dce8f4;border-radius:10px;background:#f8fbfd;padding:12px;text-align:center"><div style="width:30px;height:30px;border-radius:50%;display:grid;place-items:center;margin:0 auto 8px;background:#eaf2ff;color:#2467df;font-weight:900">售</div><strong>销售终端</strong></div>
-            <div class="chain-node" style="min-height:100px;border:1px solid #dce8f4;border-radius:10px;background:#f8fbfd;padding:12px;text-align:center"><div style="width:30px;height:30px;border-radius:50%;display:grid;place-items:center;margin:0 auto 8px;background:#eaf2ff;color:#2467df;font-weight:900">监</div><strong>监管核验</strong></div>
-          </div>
-          <pre v-if="chainData" style="background:#f8fafc;padding:12px;border-radius:8px;font-size:12px;max-height:200px;overflow:auto;margin-top:14px">{{ JSON.stringify(chainData, null, 2) }}</pre>
-        </div>
-        <footer><button class="secondary" @click="showChainModal = false"><el-icon><Close /></el-icon> 关闭</button></footer>
       </section>
     </div>
 
@@ -744,44 +563,5 @@ onMounted(loadProdBatch)
   font-size: 12px;
   color: #294b6e;
 }
-
-/* 三级质检卡片 */
-.qc-cards-row {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
-}
-
-.qc-card-item {
-  border: 1px solid #dce8f4;
-  border-radius: 10px;
-  background: #f8fbfd;
-  padding: 14px;
-}
-
-.qc-card-item h4 {
-  margin: 0 0 10px;
-  font-size: 13px;
-  color: #2467df;
-}
-
-.qc-card-item label {
-  display: grid;
-  gap: 4px;
-  color: #718ba6;
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.qc-card-item input,
-.qc-card-item select {
-  width: 100%;
-  padding: 7px 8px;
-  border: 1px solid #d7e4f0;
-  border-radius: 6px;
-  font-size: 12px;
-  color: #294b6e;
-  background: #fff;
-  outline-color: #2a6cea;
-}
 </style>
+

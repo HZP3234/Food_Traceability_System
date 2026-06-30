@@ -199,6 +199,7 @@ export const productionApi = {
   // Material Input
   queryMaterialInput: (rawBatchNo: string) => get('/Production/queryMaterialInput', { rawBatchNo }),
   listMaterialInput: (materialName?: string) => get('/Production/listMaterialInput', { materialName }),
+  listMaterialInputByProdBatch: (prodBatchNo: string) => get('/Production/listMaterialInputByProdBatch', { prodBatchNo }),
   recordMaterialInput: (data: Record<string, any>) => post('/Production/recordMaterialInput', data),
   updateMaterialInput: (data: Record<string, any>) => post('/Production/updateMaterialInput', data),
 

@@ -24,8 +24,6 @@ CREATE TABLE IF NOT EXISTS t_trace_code (
     disable_reason      VARCHAR(500),
     void_reason         VARCHAR(500),
     expire_time         VARCHAR(32),
-    quality_result      INT          DEFAULT 3,
-    quality_report_url  VARCHAR(500),
     is_on_chain         INT          DEFAULT 0,
     generate_time       VARCHAR(32),
     enable_time         VARCHAR(32),

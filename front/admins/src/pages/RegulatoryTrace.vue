@@ -253,7 +253,6 @@ onMounted(loadAll)
                     <div class="chain-node-row"><span>储存方式</span><b>{{ storageLabels[r.storageMethod] || '-' }}</b></div>
                     <div class="chain-node-row"><span>保质期</span><b>{{ r.shelfLife || '-' }}</b></div>
                     <div class="chain-node-row"><span>采购日期</span><b>{{ r.purchaseDate || '-' }}</b></div>
-                    <div class="chain-node-row full-width"><span>质检结果</span><b :style="{ color: r.checkResult === 1 ? '#198658' : r.checkResult === 2 ? '#c04550' : '#92a6b9' }">{{ r.checkResult === 1 ? '✅ 合格' : r.checkResult === 2 ? '❌ 不合格' : '⚠ 未检测' }}</b></div>
                   </div>
                 </div>
               </div>
@@ -279,7 +278,6 @@ onMounted(loadAll)
                     <div class="chain-node-row"><span>生产日期</span><b>{{ p.productionDate || '-' }}</b></div>
                     <div class="chain-node-row"><span>加工日期</span><b>{{ p.processDate || '-' }}</b></div>
                     <div class="chain-node-row"><span>生产状态</span><b :style="{ color: p.batchStatus === 3 ? '#198658' : p.batchStatus === 2 ? '#2467df' : '#a4730a' }">{{ p.batchStatus === 1 ? '待生产' : p.batchStatus === 2 ? '生产中' : p.batchStatus === 3 ? '已完成' : p.batchStatus === 4 ? '已废弃' : '-' }}</b></div>
-                    <div class="chain-node-row"><span>质检结果</span><b :style="{ color: p.checkResult === 1 ? '#198658' : p.checkResult === 2 ? '#c04550' : '#92a6b9' }">{{ p.checkResult === 1 ? '✅ 合格' : p.checkResult === 2 ? '❌ 不合格' : '⚠ 未检测' }}</b></div>
                   </div>
                   <div class="chain-node-section-title">🔧 加工参数</div>
                   <div class="chain-node-card-grid">

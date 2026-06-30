@@ -41,9 +41,6 @@ public class TraceabilityVO {
     /** 生产线 */
     private String productionLine;
 
-    /** 质检结果: 1-合格 2-不合格 */
-    private Integer checkResult;
-
     /** 区块链交易哈希 */
     private String txHash;
 

@@ -34,9 +34,6 @@ public class TraceCodeBatchDTO {
     /** 生成数量 */
     private Integer generateCount;
 
-    /** 质检结果：1-合格 2-不合格 3-待检 */
-    private Integer qualityResult;
-
     /** 有效期截止时间（yyyy-MM-dd HH:mm:ss） */
     private String expireTime;
 
@@ -68,9 +65,6 @@ public class TraceCodeBatchDTO {
 
     public Integer getGenerateCount() { return generateCount; }
     public void setGenerateCount(Integer generateCount) { this.generateCount = generateCount; }
-
-    public Integer getQualityResult() { return qualityResult; }
-    public void setQualityResult(Integer qualityResult) { this.qualityResult = qualityResult; }
 
     public String getExpireTime() { return expireTime; }
     public void setExpireTime(String expireTime) { this.expireTime = expireTime; }

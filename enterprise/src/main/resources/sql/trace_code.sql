@@ -26,8 +26,6 @@ CREATE TABLE IF NOT EXISTS `t_trace_code` (
     `disable_reason`      VARCHAR(500)  DEFAULT NULL             COMMENT '禁用原因',
     `void_reason`         VARCHAR(500)  DEFAULT NULL             COMMENT '作废原因',
     `expire_time`         VARCHAR(32)   DEFAULT NULL             COMMENT '有效期截止时间',
-    `quality_result`      INT(11)       DEFAULT 3                COMMENT '质检结果：1-合格 2-不合格 3-待检',
-    `quality_report_url`  VARCHAR(500)  DEFAULT NULL             COMMENT '质检报告URL',
     `is_on_chain`         INT(11)       DEFAULT 0                COMMENT '是否上链：0-否 1-是',
     `generate_time`       VARCHAR(32)   DEFAULT NULL             COMMENT '生成时间',
     `enable_time`         VARCHAR(32)   DEFAULT NULL             COMMENT '启用时间',

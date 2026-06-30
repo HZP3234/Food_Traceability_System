@@ -298,6 +298,10 @@ public class ProductionService {
         return prodMaterialInputMapper.selectList(qw);
     }
 
+    public List<ProdMaterialInput> listByProdBatchNo(String prodBatchNo) {
+        return prodMaterialInputMapper.selectByProdBatchNo(prodBatchNo);
+    }
+
     public int recordMaterialInput(ProdMaterialInput input) {
         String now = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         input.setUpdateTime(now);

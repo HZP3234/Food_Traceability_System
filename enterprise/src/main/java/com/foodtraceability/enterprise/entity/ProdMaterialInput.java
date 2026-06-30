@@ -9,6 +9,7 @@ public class ProdMaterialInput {
     @TableId(type = IdType.AUTO)
     private Long inputId;
     private String rawBatchNo;
+    private String prodBatchNo;
     private String materialName;
     private int inputAmount;
     private String inputStatus;
@@ -23,6 +24,9 @@ public class ProdMaterialInput {
 
     public String getRawBatchNo() { return rawBatchNo; }
     public void setRawBatchNo(String rawBatchNo) { this.rawBatchNo = rawBatchNo; }
+
+    public String getProdBatchNo() { return prodBatchNo; }
+    public void setProdBatchNo(String prodBatchNo) { this.prodBatchNo = prodBatchNo; }
 
     public String getMaterialName() { return materialName; }
     public void setMaterialName(String materialName) { this.materialName = materialName; }

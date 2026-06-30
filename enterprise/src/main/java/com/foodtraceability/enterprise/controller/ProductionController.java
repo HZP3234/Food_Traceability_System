@@ -90,12 +90,12 @@ public class ProductionController {
                 checkResult, batchStatus, codeStatus, rawBatchNo);
     }
 
-    /** 新增生产批次（含加工参数） */
+    /** 新增生产批次（含加工参数），返回完整对象以便前端获取自动生成的batchNo */
     @RequestMapping("/createProdBatch")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANUFACTURER')")
-    public String createProdBatch(ProdBatch prodBatch) {
-        int num = productionService.createProdBatch(prodBatch);
-        return num == 1 ? "生产批次创建成功，批次号：" + prodBatch.getBatchNo() : "生产批次创建失败";
+    public ProdBatch createProdBatch(ProdBatch prodBatch) {
+        productionService.createProdBatch(prodBatch);
+        return prodBatch;
     }
 
     @RequestMapping("/updateProdBatch")
@@ -145,6 +145,12 @@ public class ProductionController {
     @PreAuthorize("hasAnyRole('ADMIN', 'MANUFACTURER', 'REGULATOR')")
     public List<ProdMaterialInput> listMaterialInput(String materialName) {
         return productionService.listMaterialInput(materialName);
+    }
+
+    @RequestMapping("/listMaterialInputByProdBatch")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANUFACTURER', 'REGULATOR')")
+    public List<ProdMaterialInput> listMaterialInputByProdBatch(String prodBatchNo) {
+        return productionService.listByProdBatchNo(prodBatchNo);
     }
 
     @RequestMapping("/recordMaterialInput")

@@ -27,9 +27,6 @@ public class ConsumerTraceVO {
     /** 溯源码状态 */
     private String codeStatus;
 
-    /** 质检结果：合格/不合格/待检 */
-    private String qualityResult;
-
     // ========== 流转轨迹 ==========
 
     /** 流转节点列表（原料→加工→生产→物流→销售） */
@@ -121,9 +118,6 @@ public class ConsumerTraceVO {
 
     public String getCodeStatus() { return codeStatus; }
     public void setCodeStatus(String codeStatus) { this.codeStatus = codeStatus; }
-
-    public String getQualityResult() { return qualityResult; }
-    public void setQualityResult(String qualityResult) { this.qualityResult = qualityResult; }
 
     public List<TraceNode> getTraceNodes() { return traceNodes; }
     public void setTraceNodes(List<TraceNode> traceNodes) { this.traceNodes = traceNodes; }

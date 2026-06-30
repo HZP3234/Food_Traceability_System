@@ -136,8 +136,6 @@ public class TraceCodeService {
         tc.setEnterpriseName(dto.getEnterpriseName());
         tc.setBatchNo(dto.getBatchNo());
         tc.setTraceCodeStatus(1); // 已绑定
-        tc.setQualityResult(dto.getQualityResult() != null ? dto.getQualityResult() : 3);
-        tc.setQualityReportUrl(dto.getQualityReportUrl());
         tc.setExpireTime(dto.getExpireTime());
         tc.setGenerateTime(now);
         tc.setOperator(dto.getOperator());
@@ -217,7 +215,6 @@ public class TraceCodeService {
             tc.setEnterpriseName(dto.getEnterpriseName());
             tc.setBatchNo(dto.getBatchNo());
             tc.setTraceCodeStatus(1); // 已绑定
-            tc.setQualityResult(dto.getQualityResult() != null ? dto.getQualityResult() : 3);
             tc.setExpireTime(dto.getExpireTime());
             tc.setGenerateTime(now);
             tc.setGenerateCount(count);
@@ -273,8 +270,6 @@ public class TraceCodeService {
         vo.setContentHash(tc.getContentHash());
         vo.setTxHash(tc.getTxHash());
         vo.setProofId(tc.getProofId());
-        vo.setQualityResult(tc.getQualityResult());
-        vo.setQualityReportUrl(tc.getQualityReportUrl());
 
         // 原因字段
         if (tc.getTraceCodeStatus() != null && tc.getTraceCodeStatus() == 3) {
@@ -451,16 +446,6 @@ public class TraceCodeService {
         vo.setEnterpriseName(tc.getEnterpriseName());
         vo.setCodeStatus("正常");
 
-        // 质检结果
-        Integer qr = tc.getQualityResult();
-        if (qr == null || qr == 3) {
-            vo.setQualityResult("待检");
-        } else if (qr == 1) {
-            vo.setQualityResult("合格");
-        } else {
-            vo.setQualityResult("不合格");
-        }
-
         // ---------- 构建流转轨迹 ----------
         List<TraceCodeBind> binds = listBindsByCode(traceCode);
         List<ConsumerTraceVO.TraceNode> nodes = new ArrayList<>();
@@ -509,10 +494,6 @@ public class TraceCodeService {
         // ---------- 风险等级评估 ----------
         String riskLevel = "低";
         String riskSuggestion = "产品溯源信息正常。";
-        if ("不合格".equals(vo.getQualityResult())) {
-            riskLevel = "高";
-            riskSuggestion = "该产品质检不合格，请谨慎食用。";
-        }
         vo.setRiskLevel(riskLevel);
         vo.setRiskSuggestion(riskSuggestion);
 
@@ -551,10 +532,6 @@ public class TraceCodeService {
             // 启用（激活）
             if (currentStatus != 1) {
                 throw new RuntimeException("只有「已绑定」状态的溯源码才能激活，当前状态: " + getStatusName(currentStatus));
-            }
-            // 激活前校验：质检必须合格
-            if (tc.getQualityResult() != null && tc.getQualityResult() == 2) {
-                throw new RuntimeException("质检不合格的溯源码不能激活");
             }
             tc.setTraceCodeStatus(2);
             tc.setEnableTime(now);
@@ -774,10 +751,6 @@ public class TraceCodeService {
         }
         if (dto.getBatchNo() == null || dto.getBatchNo().isBlank()) {
             throw new RuntimeException("生产批次号不能为空");
-        }
-        // 质检结果校验：不合格(2)的产品不应生成溯源码
-        if (dto.getQualityResult() != null && dto.getQualityResult() == 2) {
-            throw new RuntimeException("质检不合格的产品不能生成溯源码");
         }
     }
 

@@ -323,7 +323,6 @@ public class EndToEndTraceabilityTest {
         dto.setEnterpriseId("ENT_001");
         dto.setEnterpriseName("龙大食品有限公司");
         dto.setBatchNo(prodBatchNo);
-        dto.setQualityResult(1);                     // 合格
         dto.setOperator("admin");
 
         traceCode = traceCodeService.generateTraceCode(dto).getTraceCode();
@@ -379,7 +378,6 @@ public class EndToEndTraceabilityTest {
         batchDTO.setEnterpriseName("龙大食品有限公司");
         batchDTO.setBatchNo(prodBatchNo);
         batchDTO.setGenerateCount(5);           // 批量生成5条
-        batchDTO.setQualityResult(1);
         batchDTO.setOperator("admin");
 
         List<TraceCodeVO> batchResult = traceCodeService.batchGenerateTraceCode(batchDTO);
@@ -692,7 +690,6 @@ public class EndToEndTraceabilityTest {
         System.out.println("  ├ 批次: " + vo.getBatchNo());
         System.out.println("  ├ 企业: " + vo.getEnterpriseName());
         System.out.println("  ├ 码状态: " + vo.getCodeStatus());
-        System.out.println("  ├ 质检结果: " + vo.getQualityResult());
         System.out.println("  ├ 链上校验: " + vo.getChainVerifyResult());
         System.out.println("  ├ 风险等级: " + vo.getRiskLevel());
         System.out.println("  ├ 扫码时间: " + vo.getScanTime());

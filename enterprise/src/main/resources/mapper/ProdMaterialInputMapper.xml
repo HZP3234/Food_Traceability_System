@@ -6,6 +6,7 @@
     <resultMap id="BaseResultMap" type="com.foodtraceability.enterprise.entity.ProdMaterialInput">
         <id column="input_id" property="inputId"/>
         <result column="raw_batch_no" property="rawBatchNo"/>
+        <result column="prod_batch_no" property="prodBatchNo"/>
         <result column="material_name" property="materialName"/>
         <result column="input_amount" property="inputAmount"/>
         <result column="input_status" property="inputStatus"/>
@@ -22,6 +23,10 @@
 
     <select id="selectByMaterialName" resultMap="BaseResultMap">
         SELECT * FROM t_prod_material_input WHERE material_name LIKE CONCAT('%', #{materialName}, '%') AND is_deleted = 0 ORDER BY create_time DESC
+    </select>
+
+    <select id="selectByProdBatchNo" resultMap="BaseResultMap">
+        SELECT * FROM t_prod_material_input WHERE prod_batch_no = #{prodBatchNo} AND is_deleted = 0 ORDER BY create_time
     </select>
 
 </mapper>

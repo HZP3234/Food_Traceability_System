@@ -43,8 +43,6 @@ type DetailData = {
   contentHash?: string
   txHash?: string
   proofId?: string
-  qualityResult?: number
-  qualityReportUrl?: string
   reason?: string
   generateTime?: string
   enableTime?: string
@@ -89,20 +87,18 @@ try {
 } catch { /* ignore */ }
 const generateForm = ref({
   productName: '', enterpriseId: currentUser?.enterpriseUuid || '', enterpriseName: currentUser?.enterpriseName || '', batchNo: '',
-  codeType: 1, packageLevel: 1, generateCount: 1, qualityResult: 1,
+  codeType: 1, packageLevel: 1, generateCount: 1,
   expireTime: '', operator: currentUser?.realName || currentUser?.username || 'admin',
 })
 const statusForm = ref({ reason: '', operator: currentUser?.realName || currentUser?.username || 'admin' })
 // 批次下拉选项
 const batchOptions = ref<{ batchNo: string; productName: string; checkResult?: number }[]>([])
 const batchLoading = ref(false)
-// 选中批次时自动同步产品名称和质检结果
+// 选中批次时自动同步产品名称
 function onBatchSelect(batchNo: string) {
   const batch = batchOptions.value.find(b => b.batchNo === batchNo)
   if (batch) {
     generateForm.value.productName = batch.productName || ''
-    // 使用批次已有的质检结果，默认为待检(3)
-    generateForm.value.qualityResult = batch.checkResult != null && batch.checkResult > 0 ? batch.checkResult : 3
   }
 }
 
@@ -143,15 +139,6 @@ function statusText(row: TraceCodeRow) {
   )
 }
 
-function qualityText(qr?: number) {
-  if (qr == null) return '—'
-  return ({ 1: '合格', 2: '不合格', 3: '待检' } as Record<number, string>)[qr] || '—'
-}
-
-function qualityClass(qr?: number) {
-  if (qr == null) return ''
-  return ({ 1: 'qa-pass', 2: 'qa-fail', 3: 'qa-pending' } as Record<number, string>)[qr] || ''
-}
 
 // ---- QR Code generation + download ----
 async function getQrCode(code: string, size: number): Promise<string> {
@@ -247,7 +234,7 @@ async function toggleExpand(row: TraceCodeRow) {
 async function openGenerate() {
   generateForm.value = {
     productName: '', enterpriseId: currentUser?.enterpriseUuid || '', enterpriseName: currentUser?.enterpriseName || '', batchNo: '',
-    codeType: 1, packageLevel: 1, generateCount: 1, qualityResult: 3,
+    codeType: 1, packageLevel: 1, generateCount: 1,
     expireTime: '', operator: currentUser?.realName || currentUser?.username || 'admin',
   }
   // 加载生产批次下拉选项
@@ -464,10 +451,6 @@ onMounted(loadList)
                         <div><span>码类型</span><b>{{ expandedData[row.traceCode]!.data!.codeTypeName || '—' }}</b></div>
                         <div><span>包装层级</span><b>{{ expandedData[row.traceCode]!.data!.packageLevelName || '—' }}</b></div>
                         <div><span>状态</span><b>{{ expandedData[row.traceCode]!.data!.traceCodeStatusName || '—' }}</b></div>
-                        <div>
-                          <span>质检结果</span>
-                          <b :class="qualityClass(expandedData[row.traceCode]!.data!.qualityResult)">{{ qualityText(expandedData[row.traceCode]!.data!.qualityResult) }}</b>
-                        </div>
                         <div><span>生成时间</span><b>{{ expandedData[row.traceCode]!.data!.generateTime || '—' }}</b></div>
                         <div><span>启用时间</span><b>{{ expandedData[row.traceCode]!.data!.enableTime || '—' }}</b></div>
                         <div><span>有效期</span><b>{{ expandedData[row.traceCode]!.data!.expireTime || '—' }}</b></div>
@@ -577,10 +560,6 @@ onMounted(loadList)
                 <div><span>状态</span><b>{{ detail.traceCodeStatusName || '—' }}</b></div>
                 <div><span>码类型</span><b>{{ detail.codeTypeName || '—' }}</b></div>
                 <div><span>包装层级</span><b>{{ detail.packageLevelName || '—' }}</b></div>
-                <div>
-                  <span>质检结果</span>
-                  <b :class="qualityClass(detail.qualityResult)">{{ qualityText(detail.qualityResult) }}</b>
-                </div>
                 <div><span>生成时间</span><b>{{ detail.generateTime || '—' }}</b></div>
                 <div><span>启用时间</span><b>{{ detail.enableTime || '—' }}</b></div>
                 <div><span>有效期</span><b>{{ detail.expireTime || '—' }}</b></div>
@@ -698,12 +677,7 @@ onMounted(loadList)
   font-family: Consolas, monospace; }
 .detail-modal-fields { flex: 1; min-width: 0; overflow: hidden; }
 
-/* ===== Quality badges ===== */
-.qa-pass { color: #198658 !important; }
-.qa-fail { color: #d34f59 !important; }
-.qa-pending { color: #a4730a !important; }
-
-/* ===== Misc ===== */
+/* ===== Status badges ===== */
 .warning-detail { padding: 10px; border-radius: 7px; background: #fff6ed; }
 .target-code { margin: 0 0 18px; padding: 11px; border-radius: 7px; color: #2366d9; background: #f1f6ff;
   font-family: Consolas, monospace; }

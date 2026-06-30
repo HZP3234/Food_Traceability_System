@@ -32,12 +32,6 @@ public class TraceCodeGenerateDTO {
     /** 关联生产批次号 */
     private String batchNo;
 
-    /** 质检结果：1-合格 2-不合格 3-待检 */
-    private Integer qualityResult;
-
-    /** 质检报告URL */
-    private String qualityReportUrl;
-
     /** 有效期截止时间（yyyy-MM-dd HH:mm:ss） */
     private String expireTime;
 
@@ -66,12 +60,6 @@ public class TraceCodeGenerateDTO {
 
     public String getBatchNo() { return batchNo; }
     public void setBatchNo(String batchNo) { this.batchNo = batchNo; }
-
-    public Integer getQualityResult() { return qualityResult; }
-    public void setQualityResult(Integer qualityResult) { this.qualityResult = qualityResult; }
-
-    public String getQualityReportUrl() { return qualityReportUrl; }
-    public void setQualityReportUrl(String qualityReportUrl) { this.qualityReportUrl = qualityReportUrl; }
 
     public String getExpireTime() { return expireTime; }
     public void setExpireTime(String expireTime) { this.expireTime = expireTime; }

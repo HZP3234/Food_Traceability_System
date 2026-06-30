@@ -32,7 +32,6 @@ public class TraceabilityServiceImpl implements TraceabilityService {
     private final CustSalesStockMapper custSalesStockMapper;
     private final CustSalesOrderMapper custSalesOrderMapper;
     private final ProcessBatchMapper processBatchMapper;
-    private final QualityInspectionMapper qualityInspectionMapper;
     private final TraceCodeMapper traceCodeMapper;
     private final ScanRecordMapper scanRecordMapper;
     private final ConsumerMapper consumerMapper;
@@ -96,7 +95,6 @@ public class TraceabilityServiceImpl implements TraceabilityService {
             }
             vo.setProductionDate(prod.getProductionDate());
             vo.setProductionLine(prod.getProductionLine());
-            vo.setCheckResult(prod.getCheckResult());
             if (vo.getTxHash() == null) {
                 vo.setTxHash(prod.getChainHash());
             }
@@ -109,7 +107,6 @@ public class TraceabilityServiceImpl implements TraceabilityService {
         // 通过商品名称检索原料、生产、物流、销售信息
         List<Map<String, Object>> rawList = new ArrayList<>();
         List<Map<String, Object>> processList = new ArrayList<>();
-        List<Map<String, Object>> inspectionList = new ArrayList<>();
         List<Map<String, Object>> transportList = new ArrayList<>();
         List<Map<String, Object>> salesStockList = new ArrayList<>();
         List<Map<String, Object>> salesOrderList = new ArrayList<>();
@@ -127,29 +124,6 @@ public class TraceabilityServiceImpl implements TraceabilityService {
                 processList = processBatchMapper.selectByProductName(productName);
             } catch (Exception e) {
                 log.warn("查询加工批次失败: productName={}", productName, e);
-            }
-
-            // 2. 生产 - 质量检测 (用已验证的ProdBatch批次号 + 加工批次号)
-            java.util.Set<String> inspectedBatchNos = new java.util.HashSet<>();
-            if (prod != null) {
-                String prodBatchNo = prod.getBatchNo();
-                if (prodBatchNo != null && !prodBatchNo.isBlank() && inspectedBatchNos.add(prodBatchNo)) {
-                    try {
-                        inspectionList.addAll(qualityInspectionMapper.selectByBizBatchNo(prodBatchNo));
-                    } catch (Exception e) {
-                        log.warn("查询质量检测失败: batchNo={}", prodBatchNo, e);
-                    }
-                }
-            }
-            for (Map<String, Object> process : processList) {
-                String procBatchNo = str(process.get("batch_no"));
-                if (!procBatchNo.isBlank() && inspectedBatchNos.add(procBatchNo)) {
-                    try {
-                        inspectionList.addAll(qualityInspectionMapper.selectByBizBatchNo(procBatchNo));
-                    } catch (Exception e) {
-                        log.warn("查询质量检测失败: procBatchNo={}", procBatchNo, e);
-                    }
-                }
             }
 
             // 3. 物流 - 按商品名称+批次号查 t_cc_transport
@@ -179,7 +153,7 @@ public class TraceabilityServiceImpl implements TraceabilityService {
             }
         }
 
-        vo.setNodes(buildNodes(batchNo, prod, rawList, processList, inspectionList, transportList, salesStockList, salesOrderList));
+        vo.setNodes(buildNodes(batchNo, prod, rawList, processList, transportList, salesStockList, salesOrderList));
         return vo;
     }
 
@@ -192,7 +166,6 @@ public class TraceabilityServiceImpl implements TraceabilityService {
     private List<TraceabilityNode> buildNodes(String batchNo, ProdBatch prod,
             List<Map<String, Object>> rawList,
             List<Map<String, Object>> processList,
-            List<Map<String, Object>> inspectionList,
             List<Map<String, Object>> transportList,
             List<Map<String, Object>> salesStockList,
             List<Map<String, Object>> salesOrderList) {
@@ -202,8 +175,6 @@ public class TraceabilityServiceImpl implements TraceabilityService {
         // ========== 1. 原料 ==========
         for (Map<String, Object> raw : rawList) {
             sort++;
-            int checkResult = toInt(raw.get("check_result"));
-            String rawCheckTxt = checkResult == 1 ? "合格" : checkResult == 2 ? "不合格" : "未检测";
             TraceabilityNode node = new TraceabilityNode();
             node.setNodeName("原料");
             node.setSortOrder(sort);
@@ -213,7 +184,6 @@ public class TraceabilityServiceImpl implements TraceabilityService {
             node.setNodeDescription("原料批次: " + str(raw.get("batch_no"))
                     + "，原料: " + str(raw.get("product_name"))
                     + "，数量: " + str(raw.get("amount")) + str(raw.get("unit"))
-                    + "，质检: " + rawCheckTxt
                     + "，保质期: " + str(raw.get("shelf_life")));
             nodes.add(node);
         }
@@ -259,26 +229,6 @@ public class TraceabilityServiceImpl implements TraceabilityService {
                     + "，温度: " + str(process.get("actual_temp")) + "℃"
                     + "，耗时: " + str(process.get("actual_duration"))
                     + "，状态: " + (toInt(process.get("batch_status")) == 1 ? "进行中" : toInt(process.get("batch_status")) == 2 ? "已完成" : "待开始"));
-            nodes.add(node);
-        }
-
-        // 2c. 质量检测
-        for (Map<String, Object> insp : inspectionList) {
-            sort++;
-            int inspResult = toInt(insp.get("inspection_result"));
-            String resultTxt = inspResult == 1 ? "合格" : inspResult == 2 ? "不合格" : "待检";
-            TraceabilityNode node = new TraceabilityNode();
-            node.setNodeName("生产");
-            node.setSortOrder(sort);
-            node.setNodeTime(parseDateTime(str(insp.get("inspection_date"))));
-            node.setLocation("质检中心");
-            node.setOperator(str(insp.get("inspector")));
-            node.setNodeDescription("检测单号: " + str(insp.get("inspection_no"))
-                    + "，类型: " + (toInt(insp.get("inspection_type")) == 1 ? "原料检测" : toInt(insp.get("inspection_type")) == 2 ? "过程检测" : toInt(insp.get("inspection_type")) == 3 ? "成品检测" : "其他")
-                    + "，结果: " + resultTxt
-                    + "，感官: " + (toInt(insp.get("sensory_check")) == 1 ? "合格" : toInt(insp.get("sensory_check")) == 2 ? "不合格" : "未检")
-                    + "，微生物: " + (toInt(insp.get("microbe_check")) == 1 ? "合格" : toInt(insp.get("microbe_check")) == 2 ? "不合格" : "未检")
-                    + "，封口: " + (toInt(insp.get("seal_check")) == 1 ? "合格" : toInt(insp.get("seal_check")) == 2 ? "不合格" : "未检"));
             nodes.add(node);
         }
 

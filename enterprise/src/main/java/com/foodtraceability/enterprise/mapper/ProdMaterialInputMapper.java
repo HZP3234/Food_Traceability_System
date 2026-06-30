@@ -14,4 +14,6 @@ public interface ProdMaterialInputMapper extends BaseMapper<ProdMaterialInput> {
 
     List<ProdMaterialInput> selectByMaterialName(@Param("materialName") String materialName);
 
+    List<ProdMaterialInput> selectByProdBatchNo(@Param("prodBatchNo") String prodBatchNo);
+
 }
