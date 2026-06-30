@@ -17,6 +17,7 @@ public class CcTransport {
     private String driverPhone;
     private String productName;
     private String prodBatchNo;
+    private String rawBatchNo;
     private String salesOrderCode;
     private String departureId;
     private String departureName;
@@ -64,6 +65,9 @@ public class CcTransport {
 
     public String getProdBatchNo() { return prodBatchNo; }
     public void setProdBatchNo(String prodBatchNo) { this.prodBatchNo = prodBatchNo; }
+
+    public String getRawBatchNo() { return rawBatchNo; }
+    public void setRawBatchNo(String rawBatchNo) { this.rawBatchNo = rawBatchNo; }
 
     public String getSalesOrderCode() { return salesOrderCode; }
     public void setSalesOrderCode(String salesOrderCode) { this.salesOrderCode = salesOrderCode; }

@@ -27,6 +27,8 @@ import com.foodtraceability.enterprise.mapper.CcReceiptMapper;
 import com.foodtraceability.enterprise.mapper.SalesOrderMapper;
 import com.foodtraceability.enterprise.entity.RawTransportPending;
 import com.foodtraceability.enterprise.mapper.RawTransportPendingMapper;
+import com.foodtraceability.enterprise.entity.Raw;
+import com.foodtraceability.enterprise.mapper.RawMapper;
 import com.foodtraceability.enterprise.util.CurrentUserUtil;
 //
 @Service
@@ -49,6 +51,8 @@ public class ColdChainService {
     private RawTransportPendingMapper rawTransportPendingMapper;
     @Autowired
     private SalesOrderMapper salesOrderMapper;
+    @Autowired
+    private RawMapper rawMapper;
     @Autowired
     private CurrentUserUtil currentUserUtil;
 
@@ -219,6 +223,15 @@ public class ColdChainService {
         return ccTransportMapper.selectList(qw);
     }
 
+    // 按原料批次号查询运输订单
+    public List<CcTransport> listByRawBatchNo(String rawBatchNo) {
+        QueryWrapper<CcTransport> qw = new QueryWrapper<>();
+        qw.eq("raw_batch_no", rawBatchNo);
+        qw.eq("is_deleted", 0);
+        qw.orderByDesc("create_time");
+        return ccTransportMapper.selectList(qw);
+    }
+
     // 按车牌号查询运输订单
     public List<CcTransport> listByPlateNo(String plateNo) {
         QueryWrapper<CcTransport> qw = new QueryWrapper<>();
@@ -230,7 +243,7 @@ public class ColdChainService {
 
     // 条件列表查询：物流公司看全部，其他公司只看自己创建的
     public List<CcTransport> listTransport(Integer transportStatus, String prodBatchNo,
-                                            String plateNo, Integer transportMethod) {
+                                            String rawBatchNo, String plateNo, Integer transportMethod) {
         QueryWrapper<CcTransport> qw = new QueryWrapper<>();
         qw.eq("is_deleted", 0);
         if (!currentUserUtil.isAdmin() && !currentUserUtil.isLogistics() && !currentUserUtil.isRegulator()) {
@@ -240,6 +253,8 @@ public class ColdChainService {
             qw.eq("transport_status", transportStatus);
         if (prodBatchNo != null && !prodBatchNo.isBlank())
             qw.eq("prod_batch_no", prodBatchNo);
+        if (rawBatchNo != null && !rawBatchNo.isBlank())
+            qw.eq("raw_batch_no", rawBatchNo);
         if (plateNo != null && !plateNo.isBlank())
             qw.eq("plate_no", plateNo);
         if (transportMethod != null)
@@ -256,8 +271,32 @@ public class ColdChainService {
         if (transport.getOrderNo() == null || transport.getOrderNo().isBlank()) {
             transport.setOrderNo(generateTransportOrderNo());
         }
-        // 根据销售编码自动填充生产批次和产品名称
-        if (transport.getSalesOrderCode() != null && !transport.getSalesOrderCode().isBlank()) {
+
+        // 原料商创建原料运输：根据原料批次号自动填充产品名和发运地
+        if (currentUserUtil.isSupplier()) {
+            if (transport.getRawBatchNo() == null || transport.getRawBatchNo().isBlank()) {
+                throw new RuntimeException("原料商创建运输订单必须指定关联原料批次号");
+            }
+            QueryWrapper<Raw> rawQw = new QueryWrapper<>();
+            rawQw.eq("batch_no", transport.getRawBatchNo());
+            rawQw.eq("is_deleted", 0);
+            Raw raw = rawMapper.selectOne(rawQw);
+            if (raw != null) {
+                if (transport.getProductName() == null || transport.getProductName().isBlank()) {
+                    transport.setProductName(raw.getProductName());
+                }
+                if (transport.getDepartureName() == null || transport.getDepartureName().isBlank()) {
+                    transport.setDepartureName(raw.getSupplierName() != null ? raw.getSupplierName() : "");
+                }
+            } else {
+                throw new RuntimeException("原料批次 " + transport.getRawBatchNo() + " 不存在");
+            }
+            // 原料运输不需要销售编码，显式置空
+            transport.setSalesOrderCode(null);
+        }
+
+        // 加工商创建成品运输：根据销售编码自动填充生产批次和产品名称
+        if (!currentUserUtil.isSupplier() && transport.getSalesOrderCode() != null && !transport.getSalesOrderCode().isBlank()) {
             QueryWrapper<SalesOrder> qw = new QueryWrapper<>();
             qw.eq("sales_order_code", transport.getSalesOrderCode());
             qw.eq("is_deleted", 0);
@@ -273,6 +312,7 @@ public class ColdChainService {
                 throw new RuntimeException("销售编码 " + transport.getSalesOrderCode() + " 不存在");
             }
         }
+
         transport.setTransportStatus(0); // 待匹配
         String now = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         transport.setCreateTime(now);

@@ -70,6 +70,13 @@ public class CurrentUserUtil {
     }
 
     /**
+     * 当前用户是否为原料供应商（纯 SUPPLIER，不包含 ADMIN）
+     */
+    public boolean isSupplier() {
+        return hasRole("ROLE_SUPPLIER") && !hasRole("ROLE_ADMIN");
+    }
+
+    /**
      * 判断当前用户是否拥有指定角色
      */
     private boolean hasRole(String role) {

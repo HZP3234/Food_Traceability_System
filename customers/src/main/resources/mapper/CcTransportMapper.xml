@@ -23,4 +23,14 @@
         ORDER BY depart_time DESC
     </select>
 
+    <select id="selectByRawBatchNo" resultType="java.util.LinkedHashMap">
+        SELECT order_no, plate_no, driver_name, departure_name, destination_name,
+               depart_time, estimated_arrival, actual_arrival, transport_status,
+               loading_temp, temp_upper, temp_lower
+        FROM t_cc_transport
+        WHERE raw_batch_no = #{rawBatchNo}
+          AND is_deleted = 0
+        ORDER BY depart_time DESC
+    </select>
+
 </mapper>

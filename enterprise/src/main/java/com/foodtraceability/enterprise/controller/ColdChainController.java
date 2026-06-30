@@ -168,6 +168,13 @@ public class ColdChainController {
         return coldChainService.listByProdBatchNo(prodBatchNo);
     }
 
+    // 按原料批次号查询运输订单
+    @RequestMapping("/listTransportByRawBatch")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'MANUFACTURER', 'REGULATOR', 'SUPPLIER')")
+    public List<CcTransport> listTransportByRawBatch(String rawBatchNo) {
+        return coldChainService.listByRawBatchNo(rawBatchNo);
+    }
+
     // 按车牌号查询运输订单
     @RequestMapping("/listTransportByPlate")
     @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'REGULATOR', 'MANUFACTURER', 'SUPPLIER')")
@@ -179,8 +186,8 @@ public class ColdChainController {
     @RequestMapping("/listTransport")
     @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'MANUFACTURER', 'REGULATOR', 'SUPPLIER')")
     public List<CcTransport> listTransport(Integer transportStatus, String prodBatchNo,
-                                            String plateNo, Integer transportMethod) {
-        return coldChainService.listTransport(transportStatus, prodBatchNo, plateNo, transportMethod);
+                                            String rawBatchNo, String plateNo, Integer transportMethod) {
+        return coldChainService.listTransport(transportStatus, prodBatchNo, rawBatchNo, plateNo, transportMethod);
     }
 
     // 创建运输订单

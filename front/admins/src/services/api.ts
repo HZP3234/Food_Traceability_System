@@ -252,6 +252,7 @@ export const coldChainApi = {
   // Transport
   queryTransport: (orderNo: string) => get('/ColdChain/queryTransport', { orderNo }),
   listTransportByBatch: (prodBatchNo: string) => get('/ColdChain/listTransportByBatch', { prodBatchNo }),
+  listTransportByRawBatch: (rawBatchNo: string) => get('/ColdChain/listTransportByRawBatch', { rawBatchNo }),
   listTransportByPlate: (plateNo: string) => get('/ColdChain/listTransportByPlate', { plateNo }),
   listTransport: (params: Record<string, any>) => get('/ColdChain/listTransport', params),
   createTransport: (data: Record<string, any>) => post('/ColdChain/createTransport', data),
