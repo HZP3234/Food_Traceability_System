@@ -45,12 +45,7 @@ const matchForm = ref({ pendingCode: '', targetBatchNo: '' })
 
 const supplementForm = ref({
   origin: '', cert: '0', inspectionNo: '',
-  breed: '', farmType: '', feedType: '',
-  scaleDesc: '', collectDate: '',
-  plateNo: '', transportTemp: '',
-  storageMethod: '4', shelfLife: '',
   uploader: '',
-  remark: '',
 })
 
 function notify(type: 'success' | 'error', text: string) { toast.value = { type, text }; setTimeout(() => (toast.value = null), 2600) }
@@ -129,12 +124,7 @@ function openSupplement(row: any) {
   supplementTarget.value = row
   supplementForm.value = {
     origin: '', cert: '0', inspectionNo: '',
-    breed: '', farmType: '', feedType: '',
-    scaleDesc: '', collectDate: new Date().toISOString().slice(0, 10),
-    plateNo: '', transportTemp: '',
-    storageMethod: '4', shelfLife: '2099-12-31',
     uploader: currentUser || '',
-    remark: '',
   }
   showSupplementModal.value = true
 }
@@ -146,17 +136,7 @@ async function submitSupplement() {
         origin: supplementForm.value.origin,
         certType: supplementForm.value.cert || '0',
         inspectionNo: supplementForm.value.inspectionNo,
-        breed: supplementForm.value.breed,
-        farmType: supplementForm.value.farmType,
-        feedType: supplementForm.value.feedType,
-        scaleDesc: supplementForm.value.scaleDesc,
-        collectDate: supplementForm.value.collectDate,
-        plateNo: supplementForm.value.plateNo,
-        transportTemp: supplementForm.value.transportTemp,
-        storageMethod: supplementForm.value.storageMethod,
-        shelfLife: supplementForm.value.shelfLife,
         uploader: currentUser || supplementForm.value.uploader || 'SYSTEM',
-        remark: supplementForm.value.remark,
       },
       supplementTarget.value.batchNo,
       supplementTarget.value.productName || '未知原料',
@@ -359,26 +339,9 @@ onMounted(loadData)
                 </select>
               </label>
               <label>检验报告编号<input v-model="supplementForm.inspectionNo" placeholder="JC20260610001" /></label>
-              <label>品种/品系<input v-model="supplementForm.breed" placeholder="如：西门塔尔牛" /></label>
-              <label>种养类型<input v-model="supplementForm.farmType" placeholder="如：散养牧场" /></label>
-              <label>饲料/肥料类型<input v-model="supplementForm.feedType" placeholder="如：有机饲料" /></label>
-              <label>养殖规模/种植面积<input v-model="supplementForm.scaleDesc" placeholder="如：500头" /></label>
-              <label>采收/收集日期<input v-model="supplementForm.collectDate" type="date" /></label>
-              <label>承运车牌号<input v-model="supplementForm.plateNo" placeholder="冀A12345" /></label>
-              <label>运输温度要求<input v-model="supplementForm.transportTemp" placeholder="如：0-4°C" /></label>
-              <label>储存方式
-                <select v-model="supplementForm.storageMethod">
-                  <option value="1">冷藏立式展示柜</option>
-                  <option value="2">冷藏风幕柜</option>
-                  <option value="3">冷冻卧式冷柜</option>
-                  <option value="4">常温货架</option>
-                </select>
-              </label>
-              <label>保质期至<input v-model="supplementForm.shelfLife" type="date" /></label>
             </div>
           </div>
 
-          <label style="display:grid;gap:6px;color:#718ba6;font-size:12px;font-weight:700;margin-top:10px">备注<textarea v-model="supplementForm.remark" style="width:100%;padding:9px;border:1px solid #d7e4f0;border-radius:7px;min-height:60px" placeholder="请输入原料相关补充说明。" /></label>
         </div>
         <footer>
           <button class="secondary" @click="showSupplementModal = false"><el-icon><Close /></el-icon> 取消</button>
