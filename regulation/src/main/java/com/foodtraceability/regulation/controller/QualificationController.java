@@ -66,6 +66,30 @@ public class QualificationController {
             return Result.error(400, "当前用户未关联企业");
         }
 
+        // 检查同一企业同一资质编号是否已存在，存在则更新
+        QualificationFile existing = qualificationFileMapper.selectOne(
+            new LambdaQueryWrapper<QualificationFile>()
+                .eq(QualificationFile::getEnterpriseUuid, enterpriseUuid)
+                .eq(QualificationFile::getQualificationNo, qualification.getQualificationNo())
+        );
+
+        if (existing != null) {
+            qualification.setQualificationId(existing.getQualificationId());
+            qualification.setQualificationUuid(existing.getQualificationUuid());
+            qualification.setEnterpriseUuid(enterpriseUuid);
+            qualification.setAuditState(0); // 修改后重新待审核
+            if (qualification.getQualificationState() == null) {
+                qualification.setQualificationState(existing.getQualificationState());
+            }
+            if (qualification.getFileHash() == null) {
+                qualification.setFileHash("");
+            }
+            qualification.setUpdateTime(LocalDateTime.now());
+            qualification.setUpdateBy(enterpriseUuid);
+            qualificationFileMapper.updateById(qualification);
+            return Result.success("资质更新成功，已重新提交审核", qualification);
+        }
+
         qualification.setEnterpriseUuid(enterpriseUuid);
         qualification.setQualificationUuid(UUID.randomUUID().toString().replace("-", ""));
         if (qualification.getQualificationState() == null) {
