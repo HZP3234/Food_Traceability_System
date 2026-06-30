@@ -30,6 +30,13 @@ def run_sql(conn, sql, desc=""):
         conn.commit()
         if desc:
             print(f"  OK {desc}")
+    except pymysql.err.OperationalError as e:
+        conn.rollback()
+        if "Duplicate column name" in str(e):
+            print(f"  SKIP {desc}: column already exists")
+        else:
+            print(f"  ERROR {desc}: {e}")
+            raise
     except Exception as e:
         conn.rollback()
         print(f"  ERROR {desc}: {e}")

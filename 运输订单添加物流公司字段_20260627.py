@@ -5,7 +5,7 @@
 为 t_cc_transport 表添加物流公司标识列，用于待匹配运输的企业级过滤
 """
 
-import pymysql5
+import pymysql
 
 DB_CONFIG = {
     'host': 'localhost',
